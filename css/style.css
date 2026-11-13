@@ -10,6 +10,7 @@
   --accent: #2f6fde;
   --accent-texte: #ffffff;
   --erreur: #b3261e;
+  --succes: #1e7a3c;
   --bordure: #d9dde5;
   --rayon: 10px;
   color-scheme: light dark;
@@ -24,6 +25,7 @@
     --accent: #6a9cf5;
     --accent-texte: #0d1117;
     --erreur: #f2a19b;
+    --succes: #7fd69a;
     --bordure: #333a45;
   }
 }
@@ -108,8 +110,92 @@ input {
 
 /* Contour visible quand on navigue au clavier (accessibilité). */
 input:focus-visible,
-.bouton:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.bouton:focus-visible,
+.effacer:focus-visible,
+.pied a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 /* --- Messages --- */
 .erreur { color: var(--erreur); margin: 0.25rem 0 1rem; text-align: center; }
 .info { color: var(--texte-doux); text-align: center; }
+
+.succes { color: var(--succes); text-align: center; margin: 0 0 1rem; }
+
+/* --- Barre de recherche --- */
+.recherche { position: relative; margin-bottom: 1rem; }
+.champ-recherche { width: 100%; padding-right: 2.75rem; }
+/* Chrome et Safari ajoutent leur propre croix : on la cache, la nôtre marche partout. */
+.champ-recherche::-webkit-search-cancel-button { display: none; }
+.effacer {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;            /* zone de clic confortable au doigt */
+  height: 2.25rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texte-doux);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.effacer:hover { color: var(--texte); }
+
+/* --- Résultats de recherche et liste --- */
+.resultats, .liste { list-style: none; margin: 0; padding: 0; }
+
+.resultat {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--bordure);
+}
+.resultat:first-child { border-top: none; padding-top: 0; }
+.resultat-texte { flex: 1; min-width: 0; }  /* min-width : évite qu'un long titre déborde */
+.resultat-texte h3 { margin: 0; font-size: 1rem; }
+.details { margin: 0.1rem 0 0; color: var(--texte-doux); font-size: 0.875rem; }
+.resume {                    /* résumé coupé après 2 lignes */
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.bouton-petit { padding: 0.4rem 0.9rem; font-size: 0.9rem; }
+.deja { margin: 0.5rem 0 0; color: var(--succes); font-weight: 600; font-size: 0.9rem; }
+
+.affiche {
+  flex: none;
+  width: 64px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--fond);
+}
+.affiche-petite { width: 46px; height: 69px; }
+.sans-affiche { border: 1px dashed var(--bordure); }
+
+.element-liste {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--bordure);
+}
+.element-liste:first-child { border-top: none; padding-top: 0; }
+.titre-liste { font-weight: 600; }
+
+/* --- Pied de page : attribution TMDB obligatoire --- */
+.pied {
+  max-width: 40rem;
+  margin: 2rem auto 1rem;
+  padding: 0 1rem;
+  text-align: center;
+  color: var(--texte-doux);
+  font-size: 0.75rem;
+}
+.pied p { margin: 0.35rem 0 0; }
+.logo-tmdb { height: 12px; width: auto; vertical-align: middle; }

@@ -427,7 +427,8 @@ enabled = true
 
 # --- Fonctions serveur (Edge Functions) du projet suivi-series ---
 # Fonction « tmdb » (supabase/functions/tmdb/index.ts) : intermédiaire avec l'API TMDB.
-# verify_jwt = true : Supabase rejette tout appel sans jeton de connexion valide,
-# avant même que le code de la fonction ne s'exécute.
+# verify_jwt = true : Supabase rejette les jetons invalides avant notre code.
+# Attention : un appel SANS jeton passe quand même (constaté le 13/11/2026) ;
+# la vraie vérification est faite dans le code de la fonction.
 [functions.tmdb]
 verify_jwt = true

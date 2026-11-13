@@ -46,6 +46,61 @@ export async function seDeconnecter() {
 }
 
 
+// --- Fonctions serveur (Edge Functions) ---
+
+/**
+ * Appelle une fonction serveur Supabase et renvoie sa réponse (déjà décodée).
+ * supabase-js ajoute tout seul le jeton de connexion de l'utilisateur.
+ * En cas d'échec, lève une erreur portant le message en français renvoyé
+ * par la fonction (champ « erreur »), ou un message générique.
+ */
+export async function appelerFonction(nom, corps) {
+  const { data, error } = await supabase.functions.invoke(nom, { body: corps });
+  if (!error) return data;
+
+  // Quand la fonction répond avec un code d'erreur, supabase-js place la
+  // réponse brute dans error.context : on y lit notre message.
+  let message = '';
+  if (typeof error.context?.json === 'function') {
+    try {
+      message = (await error.context.json())?.erreur ?? '';
+    } catch {
+      // Réponse illisible : on garde le message générique ci-dessous.
+    }
+  }
+  throw new Error(message || 'Le serveur ne répond pas. Réessayez dans un instant.');
+}
+
+
+// --- Ma liste ---
+
+/**
+ * Renvoie les séries suivies par l'utilisateur connecté, de la plus récente
+ * à la plus ancienne, chacune avec sa fiche (titre, affiche…).
+ * Les règles RLS garantissent qu'on ne reçoit que ses propres suivis.
+ */
+export async function listerSuivis() {
+  const { data, error } = await supabase
+    .from('suivis')
+    .select('serie_id, statut_manuel, ajoute_le, series (tmdb_id, titre, affiche_chemin, statut_diffusion)')
+    .order('ajoute_le', { ascending: false });
+  if (error) throw new Error(traduireErreur(error));
+  return data;
+}
+
+/**
+ * Ajoute une série du catalogue (identifiant interne) à la liste de
+ * l'utilisateur connecté. Renvoie false si elle y était déjà.
+ */
+export async function suivreSerie(serieId) {
+  // utilisateur_id n'est pas envoyé : la base le remplit avec auth.uid().
+  const { error } = await supabase.from('suivis').insert({ serie_id: serieId });
+  if (!error) return true;
+  if (error.code === '23505') return false; // 23505 = doublon : déjà dans la liste
+  throw new Error(traduireErreur(error));
+}
+
+
 // Transforme une erreur renvoyée par Supabase en message compréhensible.
 // Les codes ci-dessous sont ceux attendus pour la connexion (à confirmer en test) ;
 // pour tout autre cas, on affiche le message d'origine.

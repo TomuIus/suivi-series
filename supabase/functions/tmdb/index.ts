@@ -92,9 +92,11 @@ function clientAdmin(): SupabaseClient {
 // Étape 1 : qui appelle ?
 // ---------------------------------------------------------------------------
 
-// Supabase a déjà rejeté les appels sans jeton valide (verify_jwt = true dans
-// config.toml). On revérifie ici, car un jeton « valide » peut aussi être
-// celui d'un visiteur non connecté (rôle « anon ») : on exige un vrai compte.
+// C'est CETTE vérification qui protège la fonction. Le réglage verify_jwt de
+// config.toml ne suffit pas : testé le 13/11/2026, Supabase laisse passer un
+// appel qui ne porte que la clé publique, sans jeton de connexion.
+// On exige donc ici un jeton valide, celui d'un vrai compte (rôle
+// « authenticated », pas un visiteur anonyme).
 async function verifierUtilisateur(admin: SupabaseClient, req: Request): Promise<string> {
   const entete = req.headers.get('Authorization') ?? ''
   const jeton = /^Bearer\s+(.+)$/i.exec(entete)?.[1] ?? ''
