@@ -1,0 +1,115 @@
+/* Feuille de style du site : simple, lisible sur téléphone comme sur ordinateur.
+   Les couleurs sont des « variables » (--nom) réutilisées partout ; elles
+   changent automatiquement si l'appareil est réglé en mode sombre. */
+
+:root {
+  --fond: #f6f7f9;
+  --carte: #ffffff;
+  --texte: #1d2330;
+  --texte-doux: #5b6475;
+  --accent: #2f6fde;
+  --accent-texte: #ffffff;
+  --erreur: #b3261e;
+  --bordure: #d9dde5;
+  --rayon: 10px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #14171c;
+    --carte: #1e232b;
+    --texte: #e8ebf0;
+    --texte-doux: #a3abb8;
+    --accent: #6a9cf5;
+    --accent-texte: #0d1117;
+    --erreur: #f2a19b;
+    --bordure: #333a45;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* Cache la page tant que Vue n'a pas pris la main (évite d'afficher les {{ }}). */
+[v-cloak] { display: none; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fond);
+  color: var(--texte);
+  line-height: 1.5;
+}
+
+/* --- En-tête --- */
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--carte);
+  border-bottom: 1px solid var(--bordure);
+}
+.entete h1 { font-size: 1.25rem; margin: 0; }
+.compte { display: flex; align-items: center; gap: 0.75rem; }
+.compte-email { color: var(--texte-doux); font-size: 0.9rem; overflow-wrap: anywhere; }
+
+/* --- Contenu --- */
+main { max-width: 40rem; margin: 0 auto; padding: 1rem; }
+
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  padding: 1.25rem;
+}
+.carte h2 { margin-top: 0; font-size: 1.15rem; }
+
+/* --- Formulaire de connexion --- */
+.connexion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 24rem;
+  margin: 2rem auto;
+}
+label { font-weight: 600; font-size: 0.95rem; }
+input {
+  font: inherit;               /* 16 px : évite le zoom automatique sur téléphone */
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond);
+  color: var(--texte);
+}
+
+/* --- Boutons --- */
+.bouton {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+  margin-top: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-texte);
+  cursor: pointer;
+}
+.bouton:disabled { opacity: 0.6; cursor: wait; }
+.bouton-discret {
+  margin-top: 0;
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--bordure);
+}
+
+/* Contour visible quand on navigue au clavier (accessibilité). */
+input:focus-visible,
+.bouton:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* --- Messages --- */
+.erreur { color: var(--erreur); margin: 0.25rem 0 1rem; text-align: center; }
+.info { color: var(--texte-doux); text-align: center; }

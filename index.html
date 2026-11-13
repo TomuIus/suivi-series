@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Site personnel : on demande aux moteurs de recherche de ne pas l'indexer. -->
+  <meta name="robots" content="noindex">
+  <title>Suivi de séries</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!--
+    Carte des imports : indique au navigateur où télécharger « vue » et
+    « @supabase/supabase-js ». Les versions sont figées pour qu'une mise à
+    jour de ces bibliothèques ne casse pas le site sans prévenir.
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
+      "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm"
+    }
+  }
+  </script>
+
+  <!-- Le code de l'application (chargé une fois la page lue). -->
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <!--
+    Tout ce qui est dans #app est piloté par Vue :
+    - {{ ... }} affiche une valeur ;
+    - v-if / v-else-if / v-else affichent un bloc selon une condition ;
+    - v-model relie un champ de saisie à une variable ;
+    - @submit / @click appellent une fonction lors d'un évènement.
+    v-cloak cache le contenu tant que Vue n'est pas prêt (voir style.css).
+  -->
+  <div id="app" v-cloak>
+    <header class="entete">
+      <h1>Suivi de séries</h1>
+      <div v-if="utilisateur" class="compte">
+        <span class="compte-email">{{ utilisateur.email }}</span>
+        <button type="button" class="bouton bouton-discret" @click="deconnexion">
+          Se déconnecter
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <p v-if="erreur" class="erreur" role="alert">{{ erreur }}</p>
+
+      <p v-if="chargement" class="info">Chargement…</p>
+
+      <!-- Écran de connexion -->
+      <form v-else-if="!utilisateur" class="carte connexion" @submit.prevent="connexion">
+        <h2>Connexion</h2>
+
+        <label for="email">E-mail</label>
+        <input id="email" v-model.trim="email" type="email"
+               autocomplete="username" required>
+
+        <label for="mot-de-passe">Mot de passe</label>
+        <input id="mot-de-passe" v-model="motDePasse" type="password"
+               autocomplete="current-password" required>
+
+        <button type="submit" class="bouton" :disabled="envoiEnCours">
+          {{ envoiEnCours ? 'Connexion…' : 'Se connecter' }}
+        </button>
+      </form>
+
+      <!-- Écran une fois connecté (provisoire) -->
+      <section v-else class="carte">
+        <h2>Ma liste</h2>
+        <p>
+          Vous êtes connecté. La recherche et votre liste de séries
+          arriveront aux prochaines étapes.
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
