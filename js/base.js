@@ -115,6 +115,19 @@ export async function marquerVu(serieId, saison, episode) {
   if (error && error.code !== '23505') throw new Error(traduireErreur(error));
 }
 
+/**
+ * Coche plusieurs épisodes d'un coup (liste de { saison, episode }).
+ * Les épisodes déjà cochés sont simplement ignorés (« ignoreDuplicates »).
+ */
+export async function marquerVus(serieId, episodes) {
+  if (episodes.length === 0) return;
+  const lignes = episodes.map(({ saison, episode }) => ({ serie_id: serieId, saison, episode }));
+  const { error } = await supabase
+    .from('episodes_vus')
+    .upsert(lignes, { onConflict: 'utilisateur_id,serie_id,saison,episode', ignoreDuplicates: true });
+  if (error) throw new Error(traduireErreur(error));
+}
+
 /** Décoche un épisode (les règles RLS limitent la suppression à ses propres épisodes). */
 export async function annulerVu(serieId, saison, episode) {
   const { error } = await supabase
@@ -123,6 +136,86 @@ export async function annulerVu(serieId, saison, episode) {
     .eq('serie_id', serieId)
     .eq('saison', saison)
     .eq('episode', episode);
+  if (error) throw new Error(traduireErreur(error));
+}
+
+
+// --- Fiche d'une série ---
+
+// L'API de Supabase renvoie au plus 1 000 lignes par requête (réglage par
+// défaut « Max rows ») : au-delà, il faut demander la suite page par page.
+const LIGNES_PAR_PAGE = 1000;
+
+// Colonnes de la vue « ma_liste » utiles à la fiche.
+const COLONNES_SUIVI =
+  'serie_id, statut, statut_manuel, nb_diffuses, nb_vus, prochaine_saison, prochain_episode';
+
+/**
+ * Tout ce qu'il faut pour afficher la fiche d'une série :
+ * { serie, saisons, suivi, vus }. « suivi » vaut null si la série n'est pas
+ * dans la liste de l'utilisateur. Les quatre lectures partent en même temps.
+ */
+export async function chargerFiche(serieId) {
+  const [serie, saisons, suivi, vus] = await Promise.all([
+    supabase
+      .from('series')
+      .select('id, tmdb_id, titre, titre_original, affiche_chemin, statut_diffusion, ' +
+              'derniere_saison_diffusee, dernier_episode_diffuse, fiche_maj_le')
+      .eq('id', serieId)
+      .maybeSingle(),
+    supabase.from('saisons').select('numero, nb_episodes').eq('serie_id', serieId).order('numero'),
+    supabase.from('ma_liste').select(COLONNES_SUIVI).eq('serie_id', serieId).maybeSingle(),
+    lireEpisodesVus(serieId),
+  ]);
+  for (const reponse of [serie, saisons, suivi]) {
+    if (reponse.error) throw new Error(traduireErreur(reponse.error));
+  }
+  return { serie: serie.data, saisons: saisons.data, suivi: suivi.data, vus };
+}
+
+/** Relit la ligne de « ma_liste » d'une série (compteurs, prochain épisode, statut). */
+export async function lireSuivi(serieId) {
+  const { data, error } = await supabase
+    .from('ma_liste')
+    .select(COLONNES_SUIVI)
+    .eq('serie_id', serieId)
+    .maybeSingle();
+  if (error) throw new Error(traduireErreur(error));
+  return data;
+}
+
+// Épisodes cochés d'une série, page par page (un long animé peut dépasser 1 000).
+async function lireEpisodesVus(serieId) {
+  const tous = [];
+  for (let debut = 0; ; debut += LIGNES_PAR_PAGE) {
+    const { data, error } = await supabase
+      .from('episodes_vus')
+      .select('saison, episode')
+      .eq('serie_id', serieId)
+      .order('saison')
+      .order('episode')
+      .range(debut, debut + LIGNES_PAR_PAGE - 1);
+    if (error) throw new Error(traduireErreur(error));
+    tous.push(...data);
+    if (data.length < LIGNES_PAR_PAGE) return tous;
+  }
+}
+
+/** Choisit un statut à la main ; null = revenir au statut automatique. */
+export async function changerStatut(serieId, statutManuel) {
+  const { error } = await supabase
+    .from('suivis')
+    .update({ statut_manuel: statutManuel })
+    .eq('serie_id', serieId);
+  if (error) throw new Error(traduireErreur(error));
+}
+
+/**
+ * Retire une série de la liste. Ses épisodes cochés sont effacés avec elle
+ * (« on delete cascade » dans la base, décision 16).
+ */
+export async function retirerSerie(serieId) {
+  const { error } = await supabase.from('suivis').delete().eq('serie_id', serieId);
   if (error) throw new Error(traduireErreur(error));
 }
 

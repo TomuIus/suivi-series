@@ -8,7 +8,7 @@
 //   automatiquement quand elles changent.
 // - « watch(x, ...) » exécute du code à chaque changement de x.
 
-import { createApp, ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { createApp, ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import {
   utilisateurConnecte,
   surChangementDeConnexion,
@@ -20,6 +20,7 @@ import {
   annulerVu,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche } from './tmdb.js';
+import { utiliserFiche } from './fiche.js';
 
 // Réglages de la recherche
 const LONGUEUR_MIN = 2;      // caractères avant de lancer une recherche
@@ -36,6 +37,32 @@ const SECTIONS = [
   { statut: 'termine',   titre: 'Terminé',   repliee: true },
   { statut: 'abandonne', titre: 'Abandonné', repliee: true },
 ];
+
+// Libellés affichés pour les statuts (codes de la base) et pour les statuts
+// de diffusion de TMDB.
+const LIBELLES_STATUT = {
+  a_voir: 'À voir',
+  en_cours: 'En cours',
+  a_jour: 'À jour',
+  termine: 'Terminé',
+  abandonne: 'Abandonné',
+};
+const LIBELLES_DIFFUSION = {
+  'Returning Series': 'En diffusion',
+  'In Production': 'En production',
+  'Planned': 'Prévue',
+  'Pilot': 'Pilote',
+  'Ended': 'Terminée',
+  'Canceled': 'Annulée',
+};
+
+// Quelle page afficher, d'après l'adresse : « #/serie/42 » = fiche de la
+// série 42 ; toute autre adresse = « Ma liste ». Passer par l'adresse permet
+// au bouton retour du navigateur (ou au geste retour du téléphone) de marcher.
+function lireRoute() {
+  const trouve = /^#\/serie\/(\d+)$/.exec(location.hash);
+  return trouve ? { page: 'fiche', serieId: Number(trouve[1]) } : { page: 'liste' };
+}
 
 // Noms de pays en français à partir des codes de TMDB (« JP » → « Japon »).
 let nomsDePays = null;
@@ -89,6 +116,24 @@ createApp({
     // Identifiants TMDB des séries déjà suivies, pour afficher « Dans ma liste ».
     const idsDansListe = computed(() => new Set(liste.value.map((s) => s.tmdb_id)));
 
+    // --- Navigation entre « Ma liste » et les fiches ---
+    const route = ref(lireRoute());
+    let depuisLaListe = false; // la fiche a-t-elle été ouverte depuis la liste ?
+    let positionListe = 0;     // défilement de la liste, pour y revenir au même endroit
+
+    // --- Fiche d'une série (voir fiche.js) ---
+    const ecranFiche = utiliserFiche({
+      erreur,
+      apresRetrait: (titre) => {
+        afficherMessage(`« ${titre} » ne fait plus partie de votre liste.`);
+        retourListe();
+      },
+    });
+
+    // Série interne correspondant à un identifiant TMDB (pour le lien
+    // « voir la fiche » dans les résultats de recherche).
+    const serieIdParTmdb = computed(() => new Map(liste.value.map((s) => [s.tmdb_id, s.serie_id])));
+
     let arreterEcoute = null;
     let minuterieFrappe = null;
     let minuterieMessage = null;
@@ -97,6 +142,7 @@ createApp({
 
     // --- Au démarrage : y a-t-il déjà une session ouverte ? ---
     onMounted(async () => {
+      window.addEventListener('hashchange', surChangementAdresse);
       arreterEcoute = surChangementDeConnexion((u) => {
         utilisateur.value = u;
       });
@@ -110,6 +156,7 @@ createApp({
     });
 
     onUnmounted(() => {
+      window.removeEventListener('hashchange', surChangementAdresse);
       arreterEcoute?.();
       clearTimeout(minuterieFrappe);
       clearTimeout(minuterieMessage);
@@ -118,8 +165,12 @@ createApp({
     // À chaque connexion (nouvel utilisateur), on charge sa liste ;
     // à la déconnexion, on efface de la page tout ce qui le concerne.
     watch(utilisateur, (nouveau, ancien) => {
-      if (nouveau && nouveau.id !== ancien?.id) chargerListe();
+      if (nouveau && nouveau.id !== ancien?.id) {
+        chargerListe();
+        if (route.value.page === 'fiche') ecranFiche.ouvrirFiche(route.value.serieId);
+      }
       if (!nouveau) {
+        ecranFiche.fermerFiche();
         liste.value = [];
         listeChargee.value = false;
         recherche.value = '';
@@ -141,6 +192,42 @@ createApp({
       }
       minuterieFrappe = setTimeout(lancerRecherche, DELAI_FRAPPE);
     });
+
+    // L'adresse a changé (lien vers une fiche, bouton retour…).
+    function surChangementAdresse() {
+      const avant = route.value;
+      const apres = lireRoute();
+      if (avant.page === 'liste' && apres.page === 'fiche') {
+        depuisLaListe = true;
+        positionListe = window.scrollY; // on note où on en était dans la liste
+      }
+      route.value = apres;
+    }
+
+    // À chaque changement de page : on charge ce qu'il faut.
+    watch(route, async (r) => {
+      if (!utilisateur.value) return;
+      if (r.page === 'fiche') {
+        window.scrollTo(0, 0);
+        ecranFiche.ouvrirFiche(r.serieId);
+      } else {
+        ecranFiche.fermerFiche();
+        await nextTick(); // attendre que la liste soit de nouveau affichée
+        window.scrollTo(0, positionListe);
+        chargerListe(); // la fiche a pu changer des épisodes ou le statut
+      }
+    });
+
+    // Bouton « ← Ma liste » : comme le bouton retour si l'on vient de la liste
+    // (on retrouve la liste à la même position), sinon on va à la liste.
+    function retourListe() {
+      if (depuisLaListe) {
+        depuisLaListe = false;
+        history.back();
+      } else {
+        location.hash = '#/';
+      }
+    }
 
     // --- Actions : connexion ---
     async function connexion() {
@@ -299,6 +386,24 @@ createApp({
       return compte;
     }
 
+    function libelleStatut(code) {
+      return LIBELLES_STATUT[code] ?? '—';
+    }
+
+    function libelleDiffusion(statut) {
+      return LIBELLES_DIFFUSION[statut] ?? statut ?? 'Statut de diffusion inconnu';
+    }
+
+    // Phrase de la confirmation de retrait, selon le nombre d'épisodes cochés.
+    function perteEpisodes(nombre) {
+      if (nombre === 0) return "Aucun épisode n'est coché.";
+      if (nombre === 1) return "L'épisode coché sera effacé.";
+      return `Les ${nombre} épisodes cochés seront effacés.`;
+    }
+
+    const statutsManuels = Object.entries(LIBELLES_STATUT)
+      .map(([valeur, libelle]) => ({ valeur, libelle }));
+
     // Ce qui est renvoyé ici est utilisable dans le HTML de #app.
     return {
       utilisateur, chargement, email, motDePasse, erreur, envoiEnCours,
@@ -307,6 +412,9 @@ createApp({
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
+      route, retourListe, serieIdParTmdb,
+      libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels,
+      ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };
   },
 }).mount('#app');

@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=4 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=5 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/style.css?v=5">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,10 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=4",
-      "./js/base.js": "./js/base.js?v=4",
-      "./js/config.js": "./js/config.js?v=4",
-      "./js/tmdb.js": "./js/tmdb.js?v=4"
+      "./js/app.js": "./js/app.js?v=5",
+      "./js/base.js": "./js/base.js?v=5",
+      "./js/config.js": "./js/config.js?v=5",
+      "./js/fiche.js": "./js/fiche.js?v=5",
+      "./js/tmdb.js": "./js/tmdb.js?v=5"
     }
   }
   </script>
@@ -104,96 +105,204 @@
 
       <!-- Écran une fois connecté -->
       <template v-else>
-        <!--
-          Barre de recherche, toujours en haut. Dès qu'on tape, les résultats
-          TMDB remplacent la liste ; la croix (ou Échap) ramène à la liste.
-        -->
-        <form class="recherche" role="search" @submit.prevent="lancerRecherche">
-          <input v-model="recherche" type="search" class="champ-recherche"
-                 placeholder="Rechercher une série ou un animé…"
-                 aria-label="Rechercher une série ou un animé"
-                 autocomplete="off" enterkeyhint="search" maxlength="100"
-                 @keydown.esc="effacerRecherche">
-          <button v-if="recherche" type="button" class="effacer"
-                  aria-label="Effacer la recherche" @click="effacerRecherche">×</button>
-        </form>
-
+        <!-- Confirmation (avec « Annuler » quand c'est possible), sur toutes les pages -->
         <p v-if="message" class="succes" role="status">
           {{ message.texte }}
           <button v-if="message.annuler" type="button" class="lien-bouton"
                   @click="message.annuler()">Annuler</button>
         </p>
 
-        <!-- Résultats de la recherche -->
-        <section v-if="modeRecherche" class="carte" aria-live="polite">
-          <h2>Résultats de la recherche</h2>
-          <p v-if="rechercheTropCourte" class="info">Tapez au moins 2 caractères.</p>
-          <p v-else-if="rechercheEnCours" class="info">Recherche…</p>
-          <p v-else-if="rechercheFaite && resultats.length === 0" class="info">
-            Aucun résultat pour « {{ rechercheFaite }} ».
-          </p>
+        <!-- ================= Page : fiche d'une série ================= -->
+        <template v-if="route.page === 'fiche'">
+          <nav class="retour">
+            <a href="#/" class="bouton bouton-discret" @click.prevent="retourListe">← Ma liste</a>
+          </nav>
 
-          <ul v-if="resultats.length" class="resultats">
-            <li v-for="r in resultats" :key="r.tmdbId" class="resultat">
-              <!-- alt vide : l'image est décorative, le titre est juste à côté -->
-              <img v-if="r.affiche" :src="urlAffiche(r.affiche)" alt=""
-                   class="affiche" width="64" height="96" loading="lazy">
-              <div v-else class="affiche sans-affiche" aria-hidden="true"></div>
+          <p v-if="!ficheChargee" class="info">Chargement de la fiche…</p>
+          <section v-else-if="!fiche" class="carte">
+            <p>Cette série n'est pas (ou plus) dans votre liste.</p>
+          </section>
 
-              <div class="resultat-texte">
-                <h3>{{ r.titre }}</h3>
-                <p class="details">{{ details(r) }}</p>
-                <p v-if="r.resume" class="resume">{{ r.resume }}</p>
+          <template v-else>
+            <!-- En-tête : affiche, titre, progression, statut -->
+            <section class="carte fiche-entete">
+              <img v-if="fiche.serie.affiche_chemin" :src="urlAffiche(fiche.serie.affiche_chemin, 'w185')"
+                   alt="" class="affiche affiche-grande" width="92" height="138">
+              <div v-else class="affiche affiche-grande sans-affiche" aria-hidden="true"></div>
 
-                <p v-if="idsDansListe.has(r.tmdbId)" class="deja">✓ Dans ma liste</p>
-                <button v-else type="button" class="bouton bouton-petit"
-                        :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r)">
-                  {{ ajoutsEnCours.has(r.tmdbId) ? 'Ajout…' : 'Ajouter' }}
-                </button>
+              <div class="fiche-infos">
+                <h2>{{ fiche.serie.titre }}</h2>
+                <p v-if="fiche.serie.titre_original && fiche.serie.titre_original !== fiche.serie.titre"
+                   class="details">{{ fiche.serie.titre_original }}</p>
+                <p class="details">
+                  {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
+                  · {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
+                </p>
+                <p v-if="fiche.suivi.prochaine_saison != null" class="prochain">
+                  Prochain : {{ libelleEpisode(fiche.suivi.prochaine_saison, fiche.suivi.prochain_episode) }}
+                </p>
+
+                <label for="statut" class="etiquette">Statut</label>
+                <select id="statut" class="choix-statut"
+                        :value="fiche.suivi.statut_manuel ?? ''" :disabled="statutEnCours"
+                        @change="modifierStatut($event.target.value)">
+                  <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
+                  <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
+                </select>
               </div>
-            </li>
-          </ul>
-        </section>
+            </section>
 
-        <!--
-          Ma liste, en sections par statut. Chaque section est un bloc
-          « details » : un clic sur son titre la replie ou la déplie.
-          « Terminé » et « Abandonné » sont repliées au départ.
-        -->
-        <section v-else class="carte">
-          <h2>Ma liste</h2>
-          <p v-if="!listeChargee" class="info">Chargement de votre liste…</p>
-          <p v-else-if="liste.length === 0" class="info">
-            Votre liste est vide. Utilisez la recherche ci-dessus pour ajouter
-            une série ou un animé.
-          </p>
+            <!-- Épisodes, saison par saison (blocs dépliables) -->
+            <section class="carte">
+              <h2>Épisodes</h2>
+              <p class="info aide">Touchez un épisode pour le cocher ou le décocher.</p>
 
-          <details v-for="section in sections" :key="section.statut"
-                   class="section" :open="!section.repliee">
-            <summary><h3>{{ section.titre }} ({{ section.series.length }})</h3></summary>
+              <details v-for="saison in fiche.saisons" :key="saison.numero"
+                       class="section" :open="saison.numero === fiche.saisonInitiale">
+                <summary>
+                  <h3>
+                    {{ saison.numero === 0 ? 'Épisodes spéciaux' : 'Saison ' + saison.numero }}
+                    ({{ nbVusSaison(saison) }} / {{ saison.nb_episodes }})
+                  </h3>
+                </summary>
 
-            <ul class="liste">
-              <li v-for="s in section.series" :key="s.serie_id" class="element-liste">
-                <img v-if="s.affiche_chemin" :src="urlAffiche(s.affiche_chemin, 'w92')"
-                     alt="" class="affiche affiche-petite" width="46" height="69" loading="lazy">
-                <div v-else class="affiche affiche-petite sans-affiche" aria-hidden="true"></div>
+                <p v-if="saison.nb_episodes === 0" class="info">Aucun épisode connu pour l'instant.</p>
+                <ul v-else class="grille-episodes">
+                  <li v-for="e in saison.nb_episodes" :key="e">
+                    <button type="button" class="episode"
+                            :class="'episode-' + etatEpisode(saison.numero, e)"
+                            :disabled="etatEpisode(saison.numero, e) === 'a-venir'"
+                            :aria-pressed="etatEpisode(saison.numero, e) === 'vu'"
+                            :aria-label="`Épisode ${e}` + (etatEpisode(saison.numero, e) === 'a-venir' ? ', pas encore sorti' : '')"
+                            @click="basculer(saison.numero, e)">{{ e }}</button>
+                  </li>
+                </ul>
+              </details>
+            </section>
 
-                <div class="element-texte">
-                  <span class="titre-liste">{{ s.titre }}</span>
-                  <span class="details">{{ progression(s) }}</span>
+            <!-- Retrait de la liste, avec confirmation -->
+            <section class="carte zone-retrait">
+              <button v-if="!confirmationRetrait" type="button" class="lien-danger"
+                      @click="demanderRetrait">Retirer de ma liste</button>
+              <div v-else role="alertdialog" aria-labelledby="titre-retrait" aria-describedby="texte-retrait">
+                <p id="titre-retrait"><strong>Retirer « {{ fiche.serie.titre }} » de votre liste ?</strong></p>
+                <p id="texte-retrait">
+                  {{ perteEpisodes(fiche.vus.size) }}
+                  Pour en garder une trace, choisissez plutôt le statut « Abandonné ».
+                </p>
+                <div class="boutons">
+                  <button type="button" class="bouton bouton-danger" @click="confirmerRetrait">Retirer</button>
+                  <button type="button" class="bouton bouton-discret" @click="annulerRetrait">Garder</button>
                 </div>
+              </div>
+            </section>
 
-                <!-- Coche le prochain épisode sans ouvrir la fiche -->
-                <button v-if="peutCocher(s)" type="button" class="bouton bouton-vu"
-                        :disabled="vusEnCours.has(s.serie_id)"
-                        :aria-label="`Marquer ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} de ${s.titre} comme vu`"
-                        @click="cocher(s)">
-                  {{ vusEnCours.has(s.serie_id) ? '…' : '✓ Vu' }}
-                </button>
+            <!-- Proposition « cocher aussi les épisodes précédents », en bas de l'écran -->
+            <div v-if="invite" class="invite" role="status">
+              <p>
+                Cocher aussi {{ invite.episodes.length === 1
+                  ? "l'épisode précédent non vu"
+                  : 'les ' + invite.episodes.length + ' épisodes précédents non vus' }} ?
+              </p>
+              <div class="boutons">
+                <button type="button" class="bouton" @click="cocherPrecedents">Oui, les cocher</button>
+                <button type="button" class="bouton bouton-discret" @click="refuserInvite">Non</button>
+              </div>
+            </div>
+          </template>
+        </template>
+
+        <!-- ================= Page : Ma liste ================= -->
+        <template v-else>
+          <!--
+            Barre de recherche, toujours en haut. Dès qu'on tape, les résultats
+            TMDB remplacent la liste ; la croix (ou Échap) ramène à la liste.
+          -->
+          <form class="recherche" role="search" @submit.prevent="lancerRecherche">
+            <input v-model="recherche" type="search" class="champ-recherche"
+                   placeholder="Rechercher une série ou un animé…"
+                   aria-label="Rechercher une série ou un animé"
+                   autocomplete="off" enterkeyhint="search" maxlength="100"
+                   @keydown.esc="effacerRecherche">
+            <button v-if="recherche" type="button" class="effacer"
+                    aria-label="Effacer la recherche" @click="effacerRecherche">×</button>
+          </form>
+
+          <!-- Résultats de la recherche -->
+          <section v-if="modeRecherche" class="carte" aria-live="polite">
+            <h2>Résultats de la recherche</h2>
+            <p v-if="rechercheTropCourte" class="info">Tapez au moins 2 caractères.</p>
+            <p v-else-if="rechercheEnCours" class="info">Recherche…</p>
+            <p v-else-if="rechercheFaite && resultats.length === 0" class="info">
+              Aucun résultat pour « {{ rechercheFaite }} ».
+            </p>
+
+            <ul v-if="resultats.length" class="resultats">
+              <li v-for="r in resultats" :key="r.tmdbId" class="resultat">
+                <!-- alt vide : l'image est décorative, le titre est juste à côté -->
+                <img v-if="r.affiche" :src="urlAffiche(r.affiche)" alt=""
+                     class="affiche" width="64" height="96" loading="lazy">
+                <div v-else class="affiche sans-affiche" aria-hidden="true"></div>
+
+                <div class="resultat-texte">
+                  <h3>{{ r.titre }}</h3>
+                  <p class="details">{{ details(r) }}</p>
+                  <p v-if="r.resume" class="resume">{{ r.resume }}</p>
+
+                  <a v-if="idsDansListe.has(r.tmdbId)" class="deja"
+                     :href="'#/serie/' + serieIdParTmdb.get(r.tmdbId)">✓ Dans ma liste · voir la fiche</a>
+                  <button v-else type="button" class="bouton bouton-petit"
+                          :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r)">
+                    {{ ajoutsEnCours.has(r.tmdbId) ? 'Ajout…' : 'Ajouter' }}
+                  </button>
+                </div>
               </li>
             </ul>
-          </details>
-        </section>
+          </section>
+
+          <!--
+            Ma liste, en sections par statut. Chaque section est un bloc
+            « details » : un clic sur son titre la replie ou la déplie.
+            « Terminé » et « Abandonné » sont repliées au départ.
+          -->
+          <section v-else class="carte">
+            <h2>Ma liste</h2>
+            <p v-if="!listeChargee" class="info">Chargement de votre liste…</p>
+            <p v-else-if="liste.length === 0" class="info">
+              Votre liste est vide. Utilisez la recherche ci-dessus pour ajouter
+              une série ou un animé.
+            </p>
+
+            <details v-for="section in sections" :key="section.statut"
+                     class="section" :open="!section.repliee">
+              <summary><h3>{{ section.titre }} ({{ section.series.length }})</h3></summary>
+
+              <ul class="liste">
+                <li v-for="s in section.series" :key="s.serie_id" class="element-liste">
+                  <!-- Toute la ligne (affiche + texte) ouvre la fiche -->
+                  <a :href="'#/serie/' + s.serie_id" class="lien-fiche">
+                    <img v-if="s.affiche_chemin" :src="urlAffiche(s.affiche_chemin, 'w92')"
+                         alt="" class="affiche affiche-petite" width="46" height="69" loading="lazy">
+                    <div v-else class="affiche affiche-petite sans-affiche" aria-hidden="true"></div>
+
+                    <div class="element-texte">
+                      <span class="titre-liste">{{ s.titre }}</span>
+                      <span class="details">{{ progression(s) }}</span>
+                    </div>
+                  </a>
+
+                  <!-- Coche le prochain épisode sans ouvrir la fiche -->
+                  <button v-if="peutCocher(s)" type="button" class="bouton bouton-vu"
+                          :disabled="vusEnCours.has(s.serie_id)"
+                          :aria-label="`Marquer ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} de ${s.titre} comme vu`"
+                          @click="cocher(s)">
+                    {{ vusEnCours.has(s.serie_id) ? '…' : '✓ Vu' }}
+                  </button>
+                </li>
+              </ul>
+            </details>
+          </section>
+        </template>
       </template>
     </main>
   </div>
