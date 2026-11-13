@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
+
+# Secrets locaux des fonctions serveur (jeton TMDB, etc.) : ne jamais publier
+functions/.env
