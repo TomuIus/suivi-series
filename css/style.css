@@ -352,6 +352,25 @@ a.bouton { display: inline-block; text-decoration: none; }
 .resultat-action .bouton { margin-top: 0; }
 .resultat-action .deja { margin: 0; display: inline-block; }
 
+/* Barre de progression (liste et fiche) */
+.progression { display: flex; align-items: center; gap: 0.5rem; margin: 0.2rem 0; }
+.barre {
+  flex: 1;
+  max-width: 12rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--bordure);
+  overflow: hidden;          /* la partie remplie ne dépasse pas les bords arrondis */
+}
+.barre-remplie { display: block; height: 100%; background: var(--accent); }
+.barre-remplie.complete { background: var(--succes); }  /* 100 % : en vert */
+.pourcentage {
+  min-width: 2.75rem;
+  font-size: 0.8rem;
+  color: var(--texte-doux);
+  font-variant-numeric: tabular-nums;  /* chiffres de même largeur : pas de « saut » */
+}
+
 /* Retrait de la liste */
 .zone-retrait p { margin: 0 0 0.5rem; }
 .lien-danger {

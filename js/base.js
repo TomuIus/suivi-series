@@ -184,21 +184,27 @@ export async function lireSuivi(serieId) {
   return data;
 }
 
-// Épisodes cochés d'une série, page par page (un long animé peut dépasser 1 000).
-async function lireEpisodesVus(serieId) {
+// Lit TOUTES les lignes d'une requête, page par page (voir LIGNES_PAR_PAGE).
+// « construire » fabrique la requête à chaque page ; elle doit avoir un ordre
+// stable (order), sinon une ligne pourrait être lue deux fois ou oubliée.
+async function lireParPages(construire) {
   const tous = [];
   for (let debut = 0; ; debut += LIGNES_PAR_PAGE) {
-    const { data, error } = await supabase
-      .from('episodes_vus')
-      .select('saison, episode')
-      .eq('serie_id', serieId)
-      .order('saison')
-      .order('episode')
-      .range(debut, debut + LIGNES_PAR_PAGE - 1);
+    const { data, error } = await construire().range(debut, debut + LIGNES_PAR_PAGE - 1);
     if (error) throw new Error(traduireErreur(error));
     tous.push(...data);
     if (data.length < LIGNES_PAR_PAGE) return tous;
   }
+}
+
+// Épisodes cochés d'une série (un long animé peut dépasser 1 000).
+function lireEpisodesVus(serieId) {
+  return lireParPages(() => supabase
+    .from('episodes_vus')
+    .select('saison, episode')
+    .eq('serie_id', serieId)
+    .order('saison')
+    .order('episode'));
 }
 
 /** Choisit un statut à la main ; null = revenir au statut automatique. */
@@ -217,6 +223,49 @@ export async function changerStatut(serieId, statutManuel) {
 export async function retirerSerie(serieId) {
   const { error } = await supabase.from('suivis').delete().eq('serie_id', serieId);
   if (error) throw new Error(traduireErreur(error));
+}
+
+
+// --- Sauvegarde ---
+
+/**
+ * Toutes les données de l'utilisateur connecté, pour la sauvegarde : ses
+ * séries suivies et, pour chacune, ses épisodes cochés. Chaque série est
+ * repérée par ses identifiants TMDB, IMDb et TVDB (pas par notre identifiant
+ * interne), pour pouvoir la retrouver ailleurs ou la réimporter plus tard.
+ */
+export async function lireDonneesPourExport() {
+  const [suivis, vus] = await Promise.all([
+    lireParPages(() => supabase
+      .from('suivis')
+      .select('serie_id, statut_manuel, ajoute_le, series (tmdb_id, imdb_id, tvdb_id, titre, titre_original)')
+      .order('ajoute_le')
+      .order('serie_id')),
+    lireParPages(() => supabase
+      .from('episodes_vus')
+      .select('serie_id, saison, episode, vu_le')
+      .order('serie_id')
+      .order('saison')
+      .order('episode')),
+  ]);
+
+  // Regroupe les épisodes cochés par série.
+  const vusParSerie = new Map();
+  for (const v of vus) {
+    if (!vusParSerie.has(v.serie_id)) vusParSerie.set(v.serie_id, []);
+    vusParSerie.get(v.serie_id).push({ saison: v.saison, episode: v.episode, vu_le: v.vu_le });
+  }
+
+  return suivis.map((s) => ({
+    tmdb_id: s.series?.tmdb_id ?? null,
+    imdb_id: s.series?.imdb_id ?? null,
+    tvdb_id: s.series?.tvdb_id ?? null,
+    titre: s.series?.titre ?? null,
+    titre_original: s.series?.titre_original ?? null,
+    statut_manuel: s.statut_manuel,   // null = statut automatique
+    ajoute_le: s.ajoute_le,
+    episodes_vus: vusParSerie.get(s.serie_id) ?? [],
+  }));
 }
 
 

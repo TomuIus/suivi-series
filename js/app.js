@@ -18,6 +18,7 @@ import {
   suivreSerie,
   marquerVu,
   annulerVu,
+  lireDonneesPourExport,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche } from './tmdb.js';
 import { utiliserFiche } from './fiche.js';
@@ -115,6 +116,9 @@ createApp({
     const rechercheEnCours = ref(false);
     const ajoutsEnCours = ref(new Set()); // tmdbId des séries en cours d'ajout
     const message = ref(null);            // confirmation : { texte, annuler } ou null
+
+    // --- Sauvegarde ---
+    const exportEnCours = ref(false);
 
     // On affiche les résultats (à la place de la liste) dès qu'il y a du texte.
     const modeRecherche = computed(() => recherche.value.trim().length > 0);
@@ -374,7 +378,66 @@ createApp({
         annuler ? DUREE_ANNULATION : DUREE_MESSAGE);
     }
 
+    // --- Actions : sauvegarde ---
+
+    // Télécharge un fichier JSON avec toute la liste et les épisodes cochés.
+    async function exporter() {
+      if (exportEnCours.value) return;
+      exportEnCours.value = true;
+      erreur.value = '';
+      try {
+        const series = await lireDonneesPourExport();
+        const sauvegarde = {
+          format: 'suivi-series',      // pour reconnaître le fichier lors d'un futur import
+          version: 1,
+          exporte_le: new Date().toISOString(),
+          series,
+        };
+        telecharger(`suivi-series-${dateDuJour()}.json`, JSON.stringify(sauvegarde, null, 2));
+        const nbEpisodes = series.reduce((total, s) => total + s.episodes_vus.length, 0);
+        afficherMessage(`Sauvegarde téléchargée : ${pluriel(series.length, 'série')}, `
+          + `${pluriel(nbEpisodes, 'épisode coché', 'épisodes cochés')}.`);
+      } catch (e) {
+        erreur.value = e.message;
+      } finally {
+        exportEnCours.value = false;
+      }
+    }
+
+    // Fait télécharger un texte comme fichier : on crée un lien invisible vers
+    // le contenu (« Blob ») et on clique dessus.
+    function telecharger(nomFichier, contenu) {
+      const adresse = URL.createObjectURL(new Blob([contenu], { type: 'application/json' }));
+      const lien = document.createElement('a');
+      lien.href = adresse;
+      lien.download = nomFichier;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      setTimeout(() => URL.revokeObjectURL(adresse), 1000); // libère la mémoire
+    }
+
+    // « 2026-11-13 », à l'heure locale (pour le nom du fichier).
+    function dateDuJour() {
+      const d = new Date();
+      const deux = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
+    }
+
+    // « 1 série », « 3 séries »
+    function pluriel(nombre, singulier, formePlurielle = `${singulier}s`) {
+      return `${nombre} ${nombre > 1 ? formePlurielle : singulier}`;
+    }
+
     // --- Aides pour l'affichage ---
+
+    // Pourcentage d'épisodes vus parmi les épisodes déjà sortis (spéciaux exclus,
+    // comme dans la vue « ma_liste »). Arrondi vers le bas : 100 % seulement
+    // quand tout est vu. null s'il n'y a encore aucun épisode sorti.
+    function pourcentage(s) {
+      if (!s || !(s.nb_diffuses > 0)) return null;
+      return Math.floor((100 * Math.min(s.nb_vus, s.nb_diffuses)) / s.nb_diffuses);
+    }
     // Ligne d'informations sous le titre : « 2011 · États-Unis · Titre original »
     function details(r) {
       const morceaux = [];
@@ -442,7 +505,7 @@ createApp({
     // Ce qui est renvoyé ici est utilisable dans le HTML de #app.
     return {
       utilisateur, chargement, email, motDePasse, erreur, envoiEnCours,
-      liste, listeChargee, sections, vusEnCours,
+      liste, listeChargee, sections, vusEnCours, exportEnCours, exporter, pourcentage,
       recherche, resultats, rechercheFaite, rechercheEnCours, ajoutsEnCours, message,
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,

@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=6 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=7 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=6",
-      "./js/base.js": "./js/base.js?v=6",
-      "./js/config.js": "./js/config.js?v=6",
-      "./js/fiche.js": "./js/fiche.js?v=6",
-      "./js/tmdb.js": "./js/tmdb.js?v=6"
+      "./js/app.js": "./js/app.js?v=7",
+      "./js/base.js": "./js/base.js?v=7",
+      "./js/config.js": "./js/config.js?v=7",
+      "./js/fiche.js": "./js/fiche.js?v=7",
+      "./js/tmdb.js": "./js/tmdb.js?v=7"
     }
   }
   </script>
@@ -141,6 +141,15 @@
                     {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
                     · {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
                   </p>
+                  <!-- Barre de progression : épisodes vus parmi les épisodes sortis (sans les spéciaux) -->
+                  <div v-if="pourcentage(fiche.suivi) != null" class="progression">
+                    <span class="barre" role="progressbar" aria-label="Progression"
+                          aria-valuemin="0" aria-valuemax="100" :aria-valuenow="pourcentage(fiche.suivi)">
+                      <span class="barre-remplie" :class="{ complete: pourcentage(fiche.suivi) === 100 }"
+                            :style="{ width: pourcentage(fiche.suivi) + '%' }"></span>
+                    </span>
+                    <span class="pourcentage">{{ pourcentage(fiche.suivi) }}&nbsp;%</span>
+                  </div>
                   <p v-if="fiche.suivi.prochaine_saison != null" class="prochain">
                     Prochain : {{ libelleEpisode(fiche.suivi.prochaine_saison, fiche.suivi.prochain_episode) }}
                     <span v-if="titreProchain" class="titre-prochain">— {{ titreProchain }}</span>
@@ -328,6 +337,15 @@
 
                     <div class="element-texte">
                       <span class="titre-liste">{{ s.titre }}</span>
+                      <!-- Barre de progression (sans les épisodes spéciaux) -->
+                      <span v-if="pourcentage(s) != null" class="progression">
+                        <span class="barre" role="progressbar" :aria-label="`Progression de ${s.titre}`"
+                              aria-valuemin="0" aria-valuemax="100" :aria-valuenow="pourcentage(s)">
+                          <span class="barre-remplie" :class="{ complete: pourcentage(s) === 100 }"
+                                :style="{ width: pourcentage(s) + '%' }"></span>
+                        </span>
+                        <span class="pourcentage">{{ pourcentage(s) }}&nbsp;%</span>
+                      </span>
                       <span class="details">{{ progression(s) }}</span>
                     </div>
                   </a>
@@ -342,6 +360,19 @@
                 </li>
               </ul>
             </details>
+          </section>
+
+          <!-- Sauvegarde (hors recherche) -->
+          <section v-if="!modeRecherche" class="carte">
+            <h2>Sauvegarde</h2>
+            <p class="info aide">
+              Téléchargez une copie de votre liste et de vos épisodes cochés
+              (fichier JSON). L'offre gratuite de Supabase ne fait pas de
+              sauvegarde : pensez-y de temps en temps.
+            </p>
+            <button type="button" class="bouton bouton-discret" :disabled="exportEnCours" @click="exporter">
+              {{ exportEnCours ? 'Préparation…' : 'Exporter mes données' }}
+            </button>
           </section>
         </template>
       </template>
