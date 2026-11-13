@@ -6,24 +6,59 @@
   <!-- Site personnel : on demande aux moteurs de recherche de ne pas l'indexer. -->
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
-  <link rel="stylesheet" href="css/style.css">
+  <!--
+    NUMÉRO DE VERSION DU SITE : « ?v=3 » ci-dessous et dans la carte des imports.
+    À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
+    change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
+    en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
+  -->
+  <link rel="stylesheet" href="css/style.css?v=3">
+
+  <!--
+    Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
+    erreur dans le code…), on affiche un message au lieu d'une page vide.
+    Vue retire l'attribut v-cloak de #app quand il démarre : s'il est encore
+    là quelques secondes après le chargement de la page, c'est un échec.
+  -->
+  <script>
+    var erreursDeDemarrage = [];
+    window.addEventListener('error', function (e) {
+      var fichier = e.target && (e.target.src || e.target.href);
+      erreursDeDemarrage.push(e.message || ('Fichier non chargé : ' + fichier));
+    }, true);
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        var app = document.getElementById('app');
+        if (!app || !app.hasAttribute('v-cloak')) return; // l'application a démarré
+        document.getElementById('secours-detail').textContent =
+          erreursDeDemarrage.join(' | ') || 'aucun détail';
+        document.getElementById('secours').hidden = false;
+      }, 3000);
+    });
+  </script>
 
   <!--
     Carte des imports : indique au navigateur où télécharger « vue » et
-    « @supabase/supabase-js ». Les versions sont figées pour qu'une mise à
-    jour de ces bibliothèques ne casse pas le site sans prévenir.
+    « @supabase/supabase-js » (versions figées pour qu'une mise à jour de ces
+    bibliothèques ne casse pas le site sans prévenir), et ajoute le numéro de
+    version du site à chacun de nos fichiers .js, y compris quand ils
+    s'importent entre eux (« import … from './base.js' »).
   -->
   <script type="importmap">
   {
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
-      "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm"
+      "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
+      "./js/app.js": "./js/app.js?v=3",
+      "./js/base.js": "./js/base.js?v=3",
+      "./js/config.js": "./js/config.js?v=3",
+      "./js/tmdb.js": "./js/tmdb.js?v=3"
     }
   }
   </script>
 
-  <!-- Le code de l'application (chargé une fois la page lue). -->
-  <script type="module" src="js/app.js"></script>
+  <!-- Le code de l'application. Écrit sous forme d'« import » pour passer par la carte ci-dessus. -->
+  <script type="module">import './js/app.js';</script>
 </head>
 <body>
   <!--
@@ -136,6 +171,16 @@
         </section>
       </template>
     </main>
+  </div>
+
+  <!-- Message de secours : affiché seulement si l'application ne démarre pas (voir plus haut). -->
+  <div id="secours" class="secours" role="alert" hidden>
+    <p><strong>Le site n'a pas pu démarrer.</strong></p>
+    <p>
+      Rechargez la page (Ctrl+F5 sur ordinateur). Si le problème continue,
+      notez le message ci-dessous :
+    </p>
+    <p><code id="secours-detail"></code></p>
   </div>
 
   <!--

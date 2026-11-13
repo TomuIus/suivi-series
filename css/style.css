@@ -199,3 +199,12 @@ input:focus-visible,
 }
 .pied p { margin: 0.35rem 0 0; }
 .logo-tmdb { height: 12px; width: auto; vertical-align: middle; }
+
+/* --- Message de secours (si l'application ne démarre pas) --- */
+.secours {
+  max-width: 40rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+.secours code { overflow-wrap: anywhere; color: var(--erreur); }
