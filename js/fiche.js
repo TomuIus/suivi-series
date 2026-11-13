@@ -4,37 +4,53 @@
 // réactives (ref) et les actions d'une partie de l'application. app.js
 // l'appelle dans setup() et rend son contenu utilisable dans le HTML.
 // Avantage : app.js reste lisible, et tout ce qui concerne la fiche est ici.
+//
+// La fiche existe en deux modes :
+//   - série suivie : on lit la base (épisodes cochés, statut…), on peut cocher ;
+//   - aperçu : série pas (encore) dans la liste ; on lit TMDB ou le catalogue,
+//     rien n'est cochable, un bouton permet de l'ajouter à sa liste.
 
 import { ref, computed } from 'vue';
 import {
   chargerFiche,
   lireSuivi,
+  suivreSerie,
   marquerVus,
   annulerVu,
   changerStatut,
   retirerSerie,
 } from './base.js';
-import { importerSerie } from './tmdb.js';
+import { importerSerie, apercuSerie, episodesSaison } from './tmdb.js';
 
-// Au-delà de ce délai, la fiche est remise à jour depuis TMDB quand on
-// l'ouvre (décision 12 : nouveaux épisodes, statut de diffusion…).
+// Au-delà de ce délai, la fiche d'une série du catalogue est remise à jour
+// depuis TMDB quand on l'ouvre (décision 12 : nouveaux épisodes, statut…).
 const DELAI_MISE_A_JOUR = 24 * 60 * 60 * 1000; // 24 h — à revoir après des tests
 
 const SERIES_FINIES = ['Ended', 'Canceled'];
 
 // Clé d'un épisode dans l'ensemble des épisodes vus : « 2-5 » = saison 2, épisode 5.
 const cle = (saison, episode) => `${saison}-${episode}`;
+// Clé d'une saison dans la mémoire des titres : « 1399-2 » = série TMDB 1399, saison 2.
+const cleSaison = (tmdbId, saison) => `${tmdbId}-${saison}`;
+
+// Dates en français : « 29 sept. 2023 ».
+const formatDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * @param erreur        la variable d'erreur de l'application (affichée en haut)
- * @param apresRetrait  fonction appelée avec le titre quand la série a été retirée
+ * @param apresRetrait  appelée avec le titre quand la série a été retirée de la liste
+ * @param apresAjout    appelée avec (identifiant interne, titre) quand la série a été ajoutée
  */
-export function utiliserFiche({ erreur, apresRetrait }) {
-  const fiche = ref(null);         // { serie, saisons, suivi, vus, saisonInitiale } ou null
+export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
+  const fiche = ref(null);         // { serie, saisons, suivi, vus, saisonInitiale, resume } ou null
   const ficheChargee = ref(false);
   const invite = ref(null);        // proposition « cocher les précédents » : { episodes } ou null
   const confirmationRetrait = ref(false);
   const statutEnCours = ref(false);
+  const ajoutEnCours = ref(false);
+  // Titres des épisodes déjà demandés à TMDB, gardés le temps de la visite :
+  // clé de saison → { etat: 'chargement' | 'ok' | 'erreur', episodes: Map(numéro → { titre, date }) }
+  const titres = ref(new Map());
 
   let numeroFiche = 0;  // permet d'ignorer les réponses d'une fiche qu'on a quittée
   let numeroSuivi = 0;  // idem pour la relecture des compteurs
@@ -49,19 +65,34 @@ export function utiliserFiche({ erreur, apresRetrait }) {
     return SERIES_FINIES.includes(fiche.value.serie.statut_diffusion) ? 'termine' : 'a_jour';
   });
 
+  // Titre du prochain épisode, dès que sa saison a été chargée.
+  const titreProchain = computed(() => {
+    const suivi = fiche.value?.suivi;
+    if (!suivi || suivi.prochaine_saison == null) return null;
+    return infosEpisode(suivi.prochaine_saison, suivi.prochain_episode)?.titre ?? null;
+  });
+
   // --- Ouverture et fermeture ---
 
-  async function ouvrirFiche(serieId) {
+  // cible = { serieId } (série du catalogue, suivie ou non) ou { tmdbId } (aperçu)
+  async function ouvrirFiche(cible) {
     const numero = ++numeroFiche;
     fiche.value = null;
     ficheChargee.value = false;
     invite.value = null;
     confirmationRetrait.value = false;
     try {
-      const donnees = await chargerFiche(serieId);
-      if (numero !== numeroFiche) return;
-      fiche.value = preparer(donnees);
-      if (fiche.value) mettreAJourSiAncienne(numero);
+      if (cible.serieId != null) {
+        const donnees = await chargerFiche(cible.serieId);
+        if (numero !== numeroFiche) return;
+        fiche.value = preparer(donnees);
+        if (fiche.value) completerDepuisTmdb(numero);
+      } else {
+        const donnees = await apercuSerie(cible.tmdbId);
+        if (numero !== numeroFiche) return;
+        fiche.value = preparer({ ...donnees, suivi: null, vus: [] });
+      }
+      if (fiche.value) chargerTitres(fiche.value.saisonInitiale);
     } catch (e) {
       if (numero === numeroFiche) erreur.value = e.message;
     } finally {
@@ -76,10 +107,10 @@ export function utiliserFiche({ erreur, apresRetrait }) {
     confirmationRetrait.value = false;
   }
 
-  // Met les données reçues en forme pour l'affichage. Renvoie null si la
-  // série n'existe pas ou n'est pas dans la liste de l'utilisateur.
+  // Met les données reçues en forme pour l'affichage (null si la série n'existe pas).
+  // « suivi » vaut null quand la série n'est pas dans la liste : mode aperçu.
   function preparer({ serie, saisons, suivi, vus }) {
-    if (!serie || !suivi) return null;
+    if (!serie) return null;
     const normales = saisons.filter((s) => s.numero > 0);
     const speciaux = saisons.filter((s) => s.numero === 0);
     return {
@@ -87,18 +118,29 @@ export function utiliserFiche({ erreur, apresRetrait }) {
       suivi,
       saisons: [...normales, ...speciaux],  // épisodes spéciaux en dernier
       vus: new Set(vus.map((v) => cle(v.saison, v.episode))),
-      // Saison ouverte au départ : celle du prochain épisode, sinon la dernière.
-      saisonInitiale: suivi.prochaine_saison ?? normales.at(-1)?.numero ?? 0,
+      // Saison ouverte au départ : pour une série suivie, celle du prochain
+      // épisode (sinon la dernière) ; pour un aperçu, la première.
+      saisonInitiale: suivi
+        ? (suivi.prochaine_saison ?? normales.at(-1)?.numero ?? 0)
+        : (normales[0]?.numero ?? 0),
+      resume: serie.resume ?? null,
     };
   }
 
-  // Si la fiche date de plus de 24 h, on la remet à jour depuis TMDB, en
-  // arrière-plan : la fiche s'affiche tout de suite, puis se corrige.
-  async function mettreAJourSiAncienne(numero) {
+  // Série du catalogue : on complète avec TMDB, en arrière-plan (la fiche
+  // s'affiche tout de suite). Si la fiche date de plus de 24 h, on la remet à
+  // jour dans le catalogue (ce qui donne aussi le résumé) ; sinon on demande
+  // seulement le résumé, sans rien enregistrer.
+  async function completerDepuisTmdb(numero) {
     const { serie } = fiche.value;
-    if (Date.now() - Date.parse(serie.fiche_maj_le) < DELAI_MISE_A_JOUR) return;
+    const ancienne = Date.now() - Date.parse(serie.fiche_maj_le) >= DELAI_MISE_A_JOUR;
     try {
-      await importerSerie(serie.tmdb_id);
+      if (!ancienne) {
+        const apercu = await apercuSerie(serie.tmdb_id);
+        if (numero === numeroFiche && fiche.value) fiche.value.resume = apercu.serie.resume;
+        return;
+      }
+      const { resume } = await importerSerie(serie.tmdb_id);
       const donnees = await chargerFiche(serie.id);
       if (numero !== numeroFiche || !fiche.value) return;
       const nouvelle = preparer(donnees);
@@ -106,10 +148,11 @@ export function utiliserFiche({ erreur, apresRetrait }) {
       // On garde la saison ouverte et les cases cochées entre-temps.
       nouvelle.saisonInitiale = fiche.value.saisonInitiale;
       nouvelle.vus = fiche.value.vus;
+      nouvelle.resume = resume;
       fiche.value = nouvelle;
     } catch (e) {
       // Pas grave : on garde la fiche actuelle. Le détail va dans la console.
-      console.warn('Mise à jour de la fiche depuis TMDB impossible :', e.message);
+      console.warn('Complément de la fiche depuis TMDB impossible :', e.message);
     }
   }
 
@@ -124,6 +167,46 @@ export function utiliserFiche({ erreur, apresRetrait }) {
     } catch (e) {
       console.warn('Relecture des compteurs impossible :', e.message);
     }
+  }
+
+  // --- Titres et dates des épisodes (demandés à TMDB saison par saison) ---
+
+  // Appelée à l'ouverture de la fiche et quand on déplie une saison.
+  async function chargerTitres(saison) {
+    const tmdbId = fiche.value?.serie.tmdb_id;
+    if (tmdbId == null) return;
+    const k = cleSaison(tmdbId, saison);
+    const connu = titres.value.get(k);
+    if (connu && connu.etat !== 'erreur') return; // déjà chargé ou en cours
+    titres.value.set(k, { etat: 'chargement', episodes: new Map() });
+    try {
+      const episodes = await episodesSaison(tmdbId, saison);
+      titres.value.set(k, { etat: 'ok', episodes: new Map(episodes.map((e) => [e.numero, e])) });
+    } catch (e) {
+      titres.value.set(k, { etat: 'erreur', episodes: new Map() });
+      console.warn(`Titres de la saison ${saison} indisponibles :`, e.message);
+    }
+  }
+
+  function infosEpisode(saison, episode) {
+    const tmdbId = fiche.value?.serie.tmdb_id;
+    return titres.value.get(cleSaison(tmdbId, saison))?.episodes.get(episode) ?? null;
+  }
+
+  // Titre affiché : celui de TMDB, sinon « … » pendant le chargement, sinon « Épisode 5 ».
+  function titreEpisode(saison, episode) {
+    const infos = infosEpisode(saison, episode);
+    if (infos?.titre) return infos.titre;
+    const etat = titres.value.get(cleSaison(fiche.value.serie.tmdb_id, saison))?.etat;
+    return etat === 'chargement' ? '…' : `Épisode ${episode}`;
+  }
+
+  // Date de sortie affichée (« 29 sept. 2023 »), ou '' si TMDB ne la donne pas.
+  function dateEpisode(saison, episode) {
+    const date = infosEpisode(saison, episode)?.date;
+    if (!date) return '';
+    const texte = formatDate.format(new Date(`${date}T00:00:00`));
+    return etatEpisode(saison, episode) === 'a-venir' ? `à venir · ${texte}` : texte;
   }
 
   // --- Épisodes ---
@@ -158,7 +241,7 @@ export function utiliserFiche({ erreur, apresRetrait }) {
   // tout de suite ; si le serveur refuse, on revient en arrière.
   async function basculer(saison, episode) {
     const f = fiche.value;
-    if (!f) return;
+    if (!f || !f.suivi) return; // en aperçu, rien n'est cochable
     const k = cle(saison, episode);
     const serieId = f.serie.id;
     erreur.value = '';
@@ -224,11 +307,32 @@ export function utiliserFiche({ erreur, apresRetrait }) {
     invite.value = null;
   }
 
+  // --- Ajout à la liste depuis l'aperçu ---
+
+  async function ajouterALaListe() {
+    const f = fiche.value;
+    if (!f || f.suivi || ajoutEnCours.value) return;
+    ajoutEnCours.value = true;
+    erreur.value = '';
+    try {
+      // Série déjà dans le catalogue : on a son identifiant. Sinon, on l'y copie d'abord.
+      const serie = f.serie.id != null
+        ? { id: f.serie.id, titre: f.serie.titre }
+        : await importerSerie(f.serie.tmdb_id);
+      await suivreSerie(serie.id);
+      apresAjout(serie.id, serie.titre);
+    } catch (e) {
+      erreur.value = e.message;
+    } finally {
+      ajoutEnCours.value = false;
+    }
+  }
+
   // --- Statut choisi à la main ---
 
   async function modifierStatut(valeur) {
     const f = fiche.value;
-    if (!f) return;
+    if (!f || !f.suivi) return;
     statutEnCours.value = true;
     erreur.value = '';
     try {
@@ -265,9 +369,11 @@ export function utiliserFiche({ erreur, apresRetrait }) {
   }
 
   return {
-    fiche, ficheChargee, invite, confirmationRetrait, statutEnCours, statutCalcule,
-    ouvrirFiche, fermerFiche, etatEpisode, nbVusSaison, basculer,
-    cocherPrecedents, refuserInvite, modifierStatut,
+    fiche, ficheChargee, invite, confirmationRetrait, statutEnCours, ajoutEnCours,
+    statutCalcule, titreProchain,
+    ouvrirFiche, fermerFiche, chargerTitres, titreEpisode, dateEpisode,
+    etatEpisode, nbVusSaison, basculer,
+    cocherPrecedents, refuserInvite, ajouterALaListe, modifierStatut,
     demanderRetrait, annulerRetrait, confirmerRetrait,
   };
 }

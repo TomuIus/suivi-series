@@ -23,10 +23,24 @@ export async function rechercherSeries(texte) {
 
 /**
  * Copie (ou met à jour) la fiche TMDB d'une série dans le catalogue du site.
- * Renvoie { id, titre } ; « id » est l'identifiant interne de la série.
+ * Renvoie { id, titre, resume } ; « id » est l'identifiant interne de la série.
  */
 export async function importerSerie(tmdbId) {
   return appelerFonction('tmdb', { action: 'ajouter', tmdbId });
+}
+
+/**
+ * Aperçu d'une série SANS l'ajouter ni l'enregistrer : { serie, saisons },
+ * avec les mêmes noms de champs que dans la base (tmdb_id, titre, …, resume).
+ */
+export async function apercuSerie(tmdbId) {
+  return appelerFonction('tmdb', { action: 'fiche', tmdbId });
+}
+
+/** Titres et dates de sortie des épisodes d'une saison : [{ numero, titre, date }]. */
+export async function episodesSaison(tmdbId, saison) {
+  const { episodes } = await appelerFonction('tmdb', { action: 'saison', tmdbId, saison });
+  return episodes;
 }
 
 /**

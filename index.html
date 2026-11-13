@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=5 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=6 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=6">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=5",
-      "./js/base.js": "./js/base.js?v=5",
-      "./js/config.js": "./js/config.js?v=5",
-      "./js/fiche.js": "./js/fiche.js?v=5",
-      "./js/tmdb.js": "./js/tmdb.js?v=5"
+      "./js/app.js": "./js/app.js?v=6",
+      "./js/base.js": "./js/base.js?v=6",
+      "./js/config.js": "./js/config.js?v=6",
+      "./js/fiche.js": "./js/fiche.js?v=6",
+      "./js/tmdb.js": "./js/tmdb.js?v=6"
     }
   }
   </script>
@@ -124,7 +124,7 @@
           </section>
 
           <template v-else>
-            <!-- En-tête : affiche, titre, progression, statut -->
+            <!-- En-tête : affiche, titre, progression, statut (ou bouton « Ajouter » en aperçu) -->
             <section class="carte fiche-entete">
               <img v-if="fiche.serie.affiche_chemin" :src="urlAffiche(fiche.serie.affiche_chemin, 'w185')"
                    alt="" class="affiche affiche-grande" width="92" height="138">
@@ -134,54 +134,91 @@
                 <h2>{{ fiche.serie.titre }}</h2>
                 <p v-if="fiche.serie.titre_original && fiche.serie.titre_original !== fiche.serie.titre"
                    class="details">{{ fiche.serie.titre_original }}</p>
-                <p class="details">
-                  {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
-                  · {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
-                </p>
-                <p v-if="fiche.suivi.prochaine_saison != null" class="prochain">
-                  Prochain : {{ libelleEpisode(fiche.suivi.prochaine_saison, fiche.suivi.prochain_episode) }}
-                </p>
 
-                <label for="statut" class="etiquette">Statut</label>
-                <select id="statut" class="choix-statut"
-                        :value="fiche.suivi.statut_manuel ?? ''" :disabled="statutEnCours"
-                        @change="modifierStatut($event.target.value)">
-                  <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
-                  <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
-                </select>
+                <!-- Série suivie : progression, prochain épisode, statut -->
+                <template v-if="fiche.suivi">
+                  <p class="details">
+                    {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
+                    · {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
+                  </p>
+                  <p v-if="fiche.suivi.prochaine_saison != null" class="prochain">
+                    Prochain : {{ libelleEpisode(fiche.suivi.prochaine_saison, fiche.suivi.prochain_episode) }}
+                    <span v-if="titreProchain" class="titre-prochain">— {{ titreProchain }}</span>
+                  </p>
+
+                  <label for="statut" class="etiquette">Statut</label>
+                  <select id="statut" class="choix-statut"
+                          :value="fiche.suivi.statut_manuel ?? ''" :disabled="statutEnCours"
+                          @change="modifierStatut($event.target.value)">
+                    <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
+                    <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
+                  </select>
+                </template>
+
+                <!-- Aperçu (série pas dans la liste) : bouton pour l'ajouter -->
+                <template v-else>
+                  <p class="details">
+                    {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
+                    · {{ nombreSaisons(fiche.saisons) }}
+                  </p>
+                  <button type="button" class="bouton" :disabled="ajoutEnCours" @click="ajouterALaListe">
+                    {{ ajoutEnCours ? 'Ajout…' : '+ Ajouter à ma liste' }}
+                  </button>
+                </template>
               </div>
+            </section>
+
+            <!-- Résumé (demandé à TMDB à l'ouverture) -->
+            <section v-if="fiche.resume" class="carte">
+              <h2>Résumé</h2>
+              <p class="resume-fiche">{{ fiche.resume }}</p>
             </section>
 
             <!-- Épisodes, saison par saison (blocs dépliables) -->
             <section class="carte">
               <h2>Épisodes</h2>
-              <p class="info aide">Touchez un épisode pour le cocher ou le décocher.</p>
+              <p class="info aide">
+                {{ fiche.suivi
+                  ? 'Touchez un épisode pour le cocher ou le décocher.'
+                  : 'Ajoutez la série à votre liste pour cocher des épisodes.' }}
+              </p>
 
+              <!-- Déplier une saison charge les titres de ses épisodes (TMDB). -->
               <details v-for="saison in fiche.saisons" :key="saison.numero"
-                       class="section" :open="saison.numero === fiche.saisonInitiale">
+                       class="section" :open="saison.numero === fiche.saisonInitiale"
+                       @toggle="$event.target.open && chargerTitres(saison.numero)">
                 <summary>
                   <h3>
                     {{ saison.numero === 0 ? 'Épisodes spéciaux' : 'Saison ' + saison.numero }}
-                    ({{ nbVusSaison(saison) }} / {{ saison.nb_episodes }})
+                    ({{ fiche.suivi ? nbVusSaison(saison) + ' / ' + saison.nb_episodes : saison.nb_episodes + ' épisodes' }})
                   </h3>
                 </summary>
 
                 <p v-if="saison.nb_episodes === 0" class="info">Aucun épisode connu pour l'instant.</p>
-                <ul v-else class="grille-episodes">
+                <ul v-else class="liste-episodes">
                   <li v-for="e in saison.nb_episodes" :key="e">
+                    <!-- Toute la ligne est un bouton : grande zone d'appui -->
                     <button type="button" class="episode"
                             :class="'episode-' + etatEpisode(saison.numero, e)"
-                            :disabled="etatEpisode(saison.numero, e) === 'a-venir'"
-                            :aria-pressed="etatEpisode(saison.numero, e) === 'vu'"
-                            :aria-label="`Épisode ${e}` + (etatEpisode(saison.numero, e) === 'a-venir' ? ', pas encore sorti' : '')"
-                            @click="basculer(saison.numero, e)">{{ e }}</button>
+                            :disabled="!fiche.suivi || etatEpisode(saison.numero, e) === 'a-venir'"
+                            :aria-pressed="fiche.suivi ? String(etatEpisode(saison.numero, e) === 'vu') : null"
+                            @click="basculer(saison.numero, e)">
+                      <span v-if="fiche.suivi" class="case" aria-hidden="true">
+                        {{ etatEpisode(saison.numero, e) === 'vu' ? '✓' : '' }}
+                      </span>
+                      <span class="numero-episode">{{ e }}</span>
+                      <span class="texte-episode">
+                        <span class="titre-episode">{{ titreEpisode(saison.numero, e) }}</span>
+                        <span v-if="dateEpisode(saison.numero, e)" class="date-episode">{{ dateEpisode(saison.numero, e) }}</span>
+                      </span>
+                    </button>
                   </li>
                 </ul>
               </details>
             </section>
 
             <!-- Retrait de la liste, avec confirmation -->
-            <section class="carte zone-retrait">
+            <section v-if="fiche.suivi" class="carte zone-retrait">
               <button v-if="!confirmationRetrait" type="button" class="lien-danger"
                       @click="demanderRetrait">Retirer de ma liste</button>
               <div v-else role="alertdialog" aria-labelledby="titre-retrait" aria-describedby="texte-retrait">
@@ -239,18 +276,22 @@
 
             <ul v-if="resultats.length" class="resultats">
               <li v-for="r in resultats" :key="r.tmdbId" class="resultat">
-                <!-- alt vide : l'image est décorative, le titre est juste à côté -->
-                <img v-if="r.affiche" :src="urlAffiche(r.affiche)" alt=""
-                     class="affiche" width="64" height="96" loading="lazy">
-                <div v-else class="affiche sans-affiche" aria-hidden="true"></div>
+                <!-- Affiche + texte : lien vers la fiche (ou l'aperçu si pas dans la liste) -->
+                <a :href="lienResultat(r)" class="lien-resultat">
+                  <!-- alt vide : l'image est décorative, le titre est juste à côté -->
+                  <img v-if="r.affiche" :src="urlAffiche(r.affiche)" alt=""
+                       class="affiche" width="64" height="96" loading="lazy">
+                  <div v-else class="affiche sans-affiche" aria-hidden="true"></div>
 
-                <div class="resultat-texte">
-                  <h3>{{ r.titre }}</h3>
-                  <p class="details">{{ details(r) }}</p>
-                  <p v-if="r.resume" class="resume">{{ r.resume }}</p>
+                  <div class="resultat-texte">
+                    <h3>{{ r.titre }}</h3>
+                    <p class="details">{{ details(r) }}</p>
+                    <p v-if="r.resume" class="resume">{{ r.resume }}</p>
+                  </div>
+                </a>
 
-                  <a v-if="idsDansListe.has(r.tmdbId)" class="deja"
-                     :href="'#/serie/' + serieIdParTmdb.get(r.tmdbId)">✓ Dans ma liste · voir la fiche</a>
+                <div class="resultat-action">
+                  <span v-if="idsDansListe.has(r.tmdbId)" class="deja">✓ Dans ma liste</span>
                   <button v-else type="button" class="bouton bouton-petit"
                           :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r)">
                     {{ ajoutsEnCours.has(r.tmdbId) ? 'Ajout…' : 'Ajouter' }}

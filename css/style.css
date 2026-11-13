@@ -258,7 +258,6 @@ input:focus-visible,
   text-decoration: none;
 }
 .lien-fiche:hover .titre-liste { text-decoration: underline; }
-a.deja { display: inline-block; text-decoration: none; }
 a.bouton { display: inline-block; text-decoration: none; }
 
 /* --- Fiche d'une série --- */
@@ -283,37 +282,75 @@ a.bouton { display: inline-block; text-decoration: none; }
 }
 .aide { text-align: left; margin-top: -0.5rem; font-size: 0.9rem; }
 
-/* Grille des épisodes : autant de colonnes que la largeur le permet. */
-.grille-episodes {
+/* Liste des épisodes : une ligne par épisode (case, numéro, titre, date). */
+.liste-episodes {
   list-style: none;
   margin: 0.5rem 0 0.75rem;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
-  gap: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
-.episode {
+.episode {                /* toute la ligne est un bouton */
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   width: 100%;
   min-height: 2.75rem;     /* assez grand pour un appui au doigt */
+  padding: 0.4rem 0.6rem;
   font: inherit;
-  font-weight: 600;
+  text-align: left;
   border: 1px solid var(--bordure);
   border-radius: 8px;
   background: var(--fond);
   color: var(--texte);
   cursor: pointer;
 }
-.episode-vu {             /* épisode vu : rempli de la couleur principale */
+.episode:disabled { cursor: default; }
+.case {                   /* la case à cocher dessinée */
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--bordure);
+  border-radius: 6px;
+  font-weight: 700;
+  line-height: 1;
+}
+.numero-episode { flex: none; min-width: 1.5rem; font-weight: 600; color: var(--texte-doux); }
+.texte-episode { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.titre-episode { overflow-wrap: anywhere; }
+.date-episode { font-size: 0.8rem; color: var(--texte-doux); }
+
+.episode-vu .case {       /* épisode vu : case remplie de la couleur principale */
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-texte);
 }
+.episode-vu .titre-episode { color: var(--texte-doux); }
 .episode-a-venir {        /* pas encore sorti : contour pointillé, non cliquable */
   background: transparent;
   border-style: dashed;
   color: var(--texte-doux);
-  cursor: not-allowed;
 }
+.episode-a-venir .case { border-style: dashed; }
+
+.resume-fiche { margin: 0; white-space: pre-line; }
+.titre-prochain { font-weight: normal; }
+
+/* Résultats de recherche : l'affiche et le texte forment un lien */
+.resultat { flex-direction: column; gap: 0.5rem; }
+.lien-resultat {
+  display: flex;
+  gap: 0.85rem;
+  color: inherit;
+  text-decoration: none;
+}
+.lien-resultat:hover h3 { text-decoration: underline; }
+.resultat-action { padding-left: calc(64px + 0.85rem); }  /* aligné sous le texte */
+.resultat-action .bouton { margin-top: 0; }
+.resultat-action .deja { margin: 0; display: inline-block; }
 
 /* Retrait de la liste */
 .zone-retrait p { margin: 0 0 0.5rem; }
@@ -347,6 +384,6 @@ a.bouton { display: inline-block; text-decoration: none; }
 
 .episode:focus-visible,
 .lien-fiche:focus-visible,
+.lien-resultat:focus-visible,
 .lien-danger:focus-visible,
-.choix-statut:focus-visible,
-a.deja:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.choix-statut:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }

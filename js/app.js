@@ -56,12 +56,18 @@ const LIBELLES_DIFFUSION = {
   'Canceled': 'Annulée',
 };
 
-// Quelle page afficher, d'après l'adresse : « #/serie/42 » = fiche de la
-// série 42 ; toute autre adresse = « Ma liste ». Passer par l'adresse permet
-// au bouton retour du navigateur (ou au geste retour du téléphone) de marcher.
+// Quelle page afficher, d'après l'adresse :
+//   « #/serie/42 »    = fiche de la série 42 du catalogue (identifiant interne) ;
+//   « #/apercu/1399 » = aperçu d'une série TMDB pas encore ajoutée ;
+//   toute autre adresse = « Ma liste ».
+// Passer par l'adresse permet au bouton retour du navigateur (ou au geste
+// retour du téléphone) de marcher.
 function lireRoute() {
-  const trouve = /^#\/serie\/(\d+)$/.exec(location.hash);
-  return trouve ? { page: 'fiche', serieId: Number(trouve[1]) } : { page: 'liste' };
+  let trouve = /^#\/serie\/(\d+)$/.exec(location.hash);
+  if (trouve) return { page: 'fiche', serieId: Number(trouve[1]) };
+  trouve = /^#\/apercu\/(\d+)$/.exec(location.hash);
+  if (trouve) return { page: 'fiche', tmdbId: Number(trouve[1]) };
+  return { page: 'liste' };
 }
 
 // Noms de pays en français à partir des codes de TMDB (« JP » → « Japon »).
@@ -128,6 +134,15 @@ createApp({
         afficherMessage(`« ${titre} » ne fait plus partie de votre liste.`);
         retourListe();
       },
+      // Série ajoutée depuis l'aperçu : on affiche sa fiche « suivie ».
+      // location.replace remplace l'aperçu dans l'historique : le retour
+      // ramène donc aux résultats de recherche, pas à l'aperçu.
+      apresAjout: async (serieId, titre) => {
+        afficherMessage(`« ${titre} » est maintenant dans votre liste.`);
+        await chargerListe();
+        if (route.value.serieId === serieId) ecranFiche.ouvrirFiche({ serieId });
+        else location.replace(`#/serie/${serieId}`);
+      },
     });
 
     // Série interne correspondant à un identifiant TMDB (pour le lien
@@ -167,7 +182,7 @@ createApp({
     watch(utilisateur, (nouveau, ancien) => {
       if (nouveau && nouveau.id !== ancien?.id) {
         chargerListe();
-        if (route.value.page === 'fiche') ecranFiche.ouvrirFiche(route.value.serieId);
+        if (route.value.page === 'fiche') ecranFiche.ouvrirFiche(route.value);
       }
       if (!nouveau) {
         ecranFiche.fermerFiche();
@@ -208,8 +223,14 @@ createApp({
     watch(route, async (r) => {
       if (!utilisateur.value) return;
       if (r.page === 'fiche') {
+        // Aperçu d'une série qu'on suit déjà : on va directement à sa fiche.
+        const dejaSuivie = r.tmdbId != null ? serieIdParTmdb.value.get(r.tmdbId) : undefined;
+        if (dejaSuivie != null) {
+          location.replace(`#/serie/${dejaSuivie}`);
+          return;
+        }
         window.scrollTo(0, 0);
-        ecranFiche.ouvrirFiche(r.serieId);
+        ecranFiche.ouvrirFiche(r);
       } else {
         ecranFiche.fermerFiche();
         await nextTick(); // attendre que la liste soit de nouveau affichée
@@ -394,6 +415,20 @@ createApp({
       return LIBELLES_DIFFUSION[statut] ?? statut ?? 'Statut de diffusion inconnu';
     }
 
+    // « 3 saisons » (sans compter les épisodes spéciaux)
+    function nombreSaisons(saisons) {
+      const n = saisons.filter((s) => s.numero > 0).length;
+      if (n === 0) return 'Aucune saison annoncée';
+      return n === 1 ? '1 saison' : `${n} saisons`;
+    }
+
+    // Lien d'un résultat de recherche : la fiche si la série est dans la
+    // liste, sinon son aperçu.
+    function lienResultat(r) {
+      const serieId = serieIdParTmdb.value.get(r.tmdbId);
+      return serieId != null ? `#/serie/${serieId}` : `#/apercu/${r.tmdbId}`;
+    }
+
     // Phrase de la confirmation de retrait, selon le nombre d'épisodes cochés.
     function perteEpisodes(nombre) {
       if (nombre === 0) return "Aucun épisode n'est coché.";
@@ -412,7 +447,7 @@ createApp({
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
-      route, retourListe, serieIdParTmdb,
+      route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };
