@@ -16,6 +16,8 @@ import {
   seDeconnecter,
   listerSuivis,
   suivreSerie,
+  marquerVu,
+  annulerVu,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche } from './tmdb.js';
 
@@ -23,6 +25,17 @@ import { rechercherSeries, importerSerie, urlAffiche } from './tmdb.js';
 const LONGUEUR_MIN = 2;      // caractères avant de lancer une recherche
 const DELAI_FRAPPE = 500;    // ms d'attente après la dernière touche — à revoir après des tests
 const DUREE_MESSAGE = 5000;  // ms d'affichage d'un message de confirmation
+const DUREE_ANNULATION = 8000; // ms pendant lesquels « Annuler » reste proposé
+
+// Sections de « Ma liste », dans l'ordre d'affichage. Les sections « repliées »
+// sont fermées au départ (on les ouvre d'un clic sur leur titre).
+const SECTIONS = [
+  { statut: 'en_cours',  titre: 'En cours',  repliee: false },
+  { statut: 'a_voir',    titre: 'À voir',    repliee: false },
+  { statut: 'a_jour',    titre: 'À jour',    repliee: false },
+  { statut: 'termine',   titre: 'Terminé',   repliee: true },
+  { statut: 'abandonne', titre: 'Abandonné', repliee: true },
+];
 
 // Noms de pays en français à partir des codes de TMDB (« JP » → « Japon »).
 let nomsDePays = null;
@@ -50,8 +63,17 @@ createApp({
     const envoiEnCours = ref(false);   // vrai pendant la tentative de connexion
 
     // --- Ma liste ---
-    const liste = ref([]);             // suivis de l'utilisateur, avec la fiche de chaque série
+    const liste = ref([]);             // séries suivies (lignes de la vue « ma_liste »)
     const listeChargee = ref(false);
+    const vusEnCours = ref(new Set()); // serie_id des séries dont on coche un épisode
+
+    // La liste découpée en sections ; les sections vides ne sont pas affichées.
+    // L'ordre dans chaque section vient de la base : activité la plus récente d'abord.
+    const sections = computed(() =>
+      SECTIONS
+        .map((section) => ({ ...section, series: liste.value.filter((s) => s.statut === section.statut) }))
+        .filter((section) => section.series.length > 0)
+    );
 
     // --- Recherche ---
     const recherche = ref('');            // texte tapé dans la barre
@@ -59,18 +81,19 @@ createApp({
     const rechercheFaite = ref('');       // texte de la dernière recherche aboutie
     const rechercheEnCours = ref(false);
     const ajoutsEnCours = ref(new Set()); // tmdbId des séries en cours d'ajout
-    const message = ref('');              // message de confirmation ('' = aucun)
+    const message = ref(null);            // confirmation : { texte, annuler } ou null
 
     // On affiche les résultats (à la place de la liste) dès qu'il y a du texte.
     const modeRecherche = computed(() => recherche.value.trim().length > 0);
     const rechercheTropCourte = computed(() => recherche.value.trim().length < LONGUEUR_MIN);
     // Identifiants TMDB des séries déjà suivies, pour afficher « Dans ma liste ».
-    const idsDansListe = computed(() => new Set(liste.value.map((s) => s.series?.tmdb_id)));
+    const idsDansListe = computed(() => new Set(liste.value.map((s) => s.tmdb_id)));
 
     let arreterEcoute = null;
     let minuterieFrappe = null;
     let minuterieMessage = null;
-    let numeroRecherche = 0; // permet d'ignorer la réponse d'une recherche dépassée
+    let numeroRecherche = 0;  // permet d'ignorer la réponse d'une recherche dépassée
+    let numeroChargement = 0; // idem pour le chargement de la liste
 
     // --- Au démarrage : y a-t-il déjà une session ouverte ? ---
     onMounted(async () => {
@@ -100,7 +123,7 @@ createApp({
         liste.value = [];
         listeChargee.value = false;
         recherche.value = '';
-        message.value = '';
+        message.value = null;
       }
     });
 
@@ -145,12 +168,48 @@ createApp({
 
     // --- Actions : liste ---
     async function chargerListe() {
+      const numero = ++numeroChargement;
       try {
-        liste.value = await listerSuivis();
+        const lignes = await listerSuivis();
+        if (numero === numeroChargement) liste.value = lignes; // sinon, réponse dépassée
       } catch (e) {
         erreur.value = e.message;
       } finally {
         listeChargee.value = true;
+      }
+    }
+
+    // Bouton « Vu » : coche le prochain épisode de la série, puis recharge la
+    // liste (la base recalcule le prochain épisode et le statut).
+    async function cocher(s) {
+      if (vusEnCours.value.has(s.serie_id)) return; // évite un double appui
+      const { serie_id: serieId, titre, prochaine_saison: saison, prochain_episode: episode } = s;
+      vusEnCours.value.add(serieId);
+      erreur.value = '';
+      try {
+        await marquerVu(serieId, saison, episode);
+        await chargerListe();
+        afficherMessage(
+          `« ${titre} » : ${libelleEpisode(saison, episode)} vu.`,
+          () => annuler(serieId, titre, saison, episode),
+        );
+      } catch (e) {
+        erreur.value = e.message;
+      } finally {
+        vusEnCours.value.delete(serieId);
+      }
+    }
+
+    // Bouton « Annuler » du message : décoche l'épisode qu'on vient de cocher.
+    async function annuler(serieId, titre, saison, episode) {
+      message.value = null;
+      erreur.value = '';
+      try {
+        await annulerVu(serieId, saison, episode);
+        await chargerListe();
+        afficherMessage(`« ${titre} » : ${libelleEpisode(saison, episode)} n'est plus coché.`);
+      } catch (e) {
+        erreur.value = e.message;
       }
     }
 
@@ -198,10 +257,13 @@ createApp({
       }
     }
 
-    function afficherMessage(texte) {
-      message.value = texte;
+    // Affiche une confirmation ; si « annuler » est fourni, un bouton
+    // « Annuler » l'accompagne, un peu plus longtemps.
+    function afficherMessage(texte, annuler = null) {
+      message.value = { texte, annuler };
       clearTimeout(minuterieMessage);
-      minuterieMessage = setTimeout(() => { message.value = ''; }, DUREE_MESSAGE);
+      minuterieMessage = setTimeout(() => { message.value = null; },
+        annuler ? DUREE_ANNULATION : DUREE_MESSAGE);
     }
 
     // --- Aides pour l'affichage ---
@@ -214,14 +276,37 @@ createApp({
       return morceaux.join(' · ');
     }
 
+    // « S2 · É5 »
+    function libelleEpisode(saison, episode) {
+      return `S${saison} · É${episode}`;
+    }
+
+    // Le bouton « Vu » n'apparaît que s'il y a un épisode diffusé à cocher,
+    // et seulement dans les sections « En cours » et « À voir ».
+    function peutCocher(s) {
+      return s.prochaine_saison != null && (s.statut === 'en_cours' || s.statut === 'a_voir');
+    }
+
+    // Ligne d'informations sous le titre d'une série de la liste.
+    function progression(s) {
+      const compte = `${s.nb_vus} / ${s.nb_diffuses} épisodes vus`;
+      if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
+      if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus · en attente de la suite`;
+      if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
+      if (s.prochaine_saison != null && s.statut !== 'abandonne') {
+        return `Prochain : ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} · ${compte}`;
+      }
+      return compte;
+    }
+
     // Ce qui est renvoyé ici est utilisable dans le HTML de #app.
     return {
       utilisateur, chargement, email, motDePasse, erreur, envoiEnCours,
-      liste, listeChargee,
+      liste, listeChargee, sections, vusEnCours,
       recherche, resultats, rechercheFaite, rechercheEnCours, ajoutsEnCours, message,
       modeRecherche, rechercheTropCourte, idsDansListe,
-      connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter,
-      details, urlAffiche,
+      connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
+      details, urlAffiche, libelleEpisode, peutCocher, progression,
     };
   },
 }).mount('#app');

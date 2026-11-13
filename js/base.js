@@ -75,15 +75,19 @@ export async function appelerFonction(nom, corps) {
 // --- Ma liste ---
 
 /**
- * Renvoie les séries suivies par l'utilisateur connecté, de la plus récente
- * à la plus ancienne, chacune avec sa fiche (titre, affiche…).
- * Les règles RLS garantissent qu'on ne reçoit que ses propres suivis.
+ * Renvoie les séries suivies par l'utilisateur connecté, de l'activité la
+ * plus récente à la plus ancienne. Lit la vue « ma_liste » de la base, qui
+ * calcule pour chaque série : statut, épisodes diffusés et vus, prochain
+ * épisode. Les règles RLS garantissent qu'on ne reçoit que ses propres suivis.
  */
 export async function listerSuivis() {
   const { data, error } = await supabase
-    .from('suivis')
-    .select('serie_id, statut_manuel, ajoute_le, series (tmdb_id, titre, affiche_chemin, statut_diffusion)')
-    .order('ajoute_le', { ascending: false });
+    .from('ma_liste')
+    .select(
+      'serie_id, tmdb_id, titre, affiche_chemin, statut_diffusion, statut_manuel, statut, ' +
+      'nb_diffuses, nb_vus, prochaine_saison, prochain_episode, derniere_activite'
+    )
+    .order('derniere_activite', { ascending: false });
   if (error) throw new Error(traduireErreur(error));
   return data;
 }
@@ -98,6 +102,28 @@ export async function suivreSerie(serieId) {
   if (!error) return true;
   if (error.code === '23505') return false; // 23505 = doublon : déjà dans la liste
   throw new Error(traduireErreur(error));
+}
+
+
+// --- Épisodes vus ---
+
+/** Coche un épisode comme vu. S'il l'était déjà, ce n'est pas une erreur. */
+export async function marquerVu(serieId, saison, episode) {
+  const { error } = await supabase
+    .from('episodes_vus')
+    .insert({ serie_id: serieId, saison, episode });
+  if (error && error.code !== '23505') throw new Error(traduireErreur(error));
+}
+
+/** Décoche un épisode (les règles RLS limitent la suppression à ses propres épisodes). */
+export async function annulerVu(serieId, saison, episode) {
+  const { error } = await supabase
+    .from('episodes_vus')
+    .delete()
+    .eq('serie_id', serieId)
+    .eq('saison', saison)
+    .eq('episode', episode);
+  if (error) throw new Error(traduireErreur(error));
 }
 
 
