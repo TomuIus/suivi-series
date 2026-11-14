@@ -398,6 +398,36 @@ a.bouton { display: inline-block; text-decoration: none; }
 .formulaire-compte { display: flex; flex-direction: column; gap: 0.5rem; }
 .formulaire-compte .aide { margin: 0; }
 
+/* Mon compte : titres de parties et tableau des statistiques */
+.compte-panneau h3 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
+.statistiques {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;  /* chiffres de même largeur, bien alignés */
+}
+.statistiques th,
+.statistiques td {
+  padding: 0.4rem 0.3rem;
+  text-align: right;
+  border-bottom: 1px solid var(--bordure);
+}
+.statistiques thead th { color: var(--texte-doux); font-size: 0.85rem; font-weight: 600; }
+.statistiques th[scope="row"] { text-align: left; font-weight: normal; }
+.statistiques .ligne-forte th,
+.statistiques .ligne-forte td { font-weight: 700; }
+.compte-panneau .aide { margin: 0.4rem 0 0; font-size: 0.85rem; }
+
+/* Texte lu par les lecteurs d'écran mais pas affiché (ici l'étiquette du champ
+   « Nom d'utilisateur », déjà annoncée par le titre juste au-dessus). */
+.cache-visuel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Filtre « Tout · Séries · Animés » : boutons en pastilles */
 .filtres { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.5rem; }
 .filtre {

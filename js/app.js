@@ -165,6 +165,34 @@ createApp({
         .filter((section) => section.series.length > 0)
     );
 
+    // --- Mon compte : statistiques (décision 28) ---
+    // Calculées dans le navigateur à partir de la liste déjà chargée (aucune
+    // requête en plus) ; elles se mettent à jour d'elles-mêmes quand on coche
+    // un épisode. Une ligne par section de « Ma liste » (même regroupement),
+    // trois colonnes : Total, Séries, Animés. Le filtre n'a pas d'effet ici.
+    const statistiques = computed(() => {
+      const groupes = [
+        liste.value,
+        liste.value.filter((s) => !s.est_anime),
+        liste.value.filter((s) => s.est_anime),
+      ];
+      const pourChaque = (calcul) => groupes.map(calcul);
+      return [
+        { libelle: 'Titres dans ma liste', forte: true, valeurs: pourChaque((g) => g.length) },
+        ...SECTIONS.map((section) => ({
+          libelle: section.titre,
+          valeurs: pourChaque((g) => g.filter((s) => section.statuts.includes(s.statut)).length),
+        })),
+        // nb_vus vient de la vue « ma_liste » : épisodes spéciaux non comptés.
+        { libelle: 'Épisodes vus', forte: true, valeurs: pourChaque((g) => g.reduce((n, s) => n + s.nb_vus, 0)) },
+      ];
+    });
+
+    // « 2 400 » plutôt que « 2400 »
+    function nombre(n) {
+      return n.toLocaleString('fr-FR');
+    }
+
     // --- Mon compte (nom d'utilisateur) ---
     const compteOuvert = ref(false);
     const nomSaisi = ref('');
@@ -650,6 +678,7 @@ createApp({
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       compteOuvert, nomSaisi, enregistrementNom, nomAffiche, ouvrirCompte, fermerCompte, enregistrerNom,
+      statistiques, nombre,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };
