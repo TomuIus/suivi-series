@@ -283,6 +283,7 @@ a.bouton { display: inline-block; text-decoration: none; }
 .affiche-grande { width: 92px; height: 138px; }
 .fiche-infos { flex: 1; min-width: 0; }
 .fiche-infos h2 { margin: 0; }
+.fiche-infos .boutons { margin-top: 0.5rem; }  /* boutons d'ajout de l'aperçu */
 .prochain { margin: 0.35rem 0 0; font-weight: 600; }
 .etiquette { display: block; margin-top: 0.75rem; }
 .choix-statut {
@@ -363,7 +364,13 @@ a.bouton { display: inline-block; text-decoration: none; }
   text-decoration: none;
 }
 .lien-resultat:hover h3 { text-decoration: underline; }
-.resultat-action { padding-left: calc(64px + 0.85rem); }  /* aligné sous le texte */
+.resultat-action {
+  padding-left: calc(64px + 0.85rem);  /* aligné sous le texte */
+  display: flex;                       /* « Ajouter » et « Plus tard » côte à côte, */
+  flex-wrap: wrap;                     /* l'un sous l'autre s'il manque de place */
+  align-items: center;
+  gap: 0.5rem;
+}
 .resultat-action .bouton { margin-top: 0; }
 .resultat-action .deja { margin: 0; display: inline-block; }
 

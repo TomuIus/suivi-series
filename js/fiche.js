@@ -40,7 +40,7 @@ const formatDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'sh
 /**
  * @param erreur        la variable d'erreur de l'application (affichée en haut)
  * @param apresRetrait  appelée avec le titre quand la série a été retirée de la liste
- * @param apresAjout    appelée avec (identifiant interne, titre) quand la série a été ajoutée
+ * @param apresAjout    appelée avec (identifiant interne, titre, plusTard) quand la série a été ajoutée
  */
 export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
   const fiche = ref(null);         // { serie, saisons, suivi, vus, saisonInitiale, resume } ou null
@@ -49,7 +49,7 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
   const confirmationRetrait = ref(false);
   const statutEnCours = ref(false);
   const categorieEnCours = ref(false);
-  const ajoutEnCours = ref(false);
+  const ajoutEnCours = ref(null);  // ajout en cours : 'liste' ou 'plus_tard' (bouton appuyé), sinon null
   // Titres des épisodes déjà demandés à TMDB, gardés le temps de la visite :
   // clé de saison → { etat: 'chargement' | 'ok' | 'erreur', episodes: Map(numéro → { titre, date }) }
   const titres = ref(new Map());
@@ -324,22 +324,24 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
 
   // --- Ajout à la liste depuis l'aperçu ---
 
-  async function ajouterALaListe() {
+  // plusTard = true : bouton « Plus tard » (la série va directement dans
+  // cette section, décision 26).
+  async function ajouterALaListe(plusTard = false) {
     const f = fiche.value;
     if (!f || f.suivi || ajoutEnCours.value) return;
-    ajoutEnCours.value = true;
+    ajoutEnCours.value = plusTard ? 'plus_tard' : 'liste';
     erreur.value = '';
     try {
       // Série déjà dans le catalogue : on a son identifiant. Sinon, on l'y copie d'abord.
       const serie = f.serie.id != null
         ? { id: f.serie.id, titre: f.serie.titre }
         : await importerSerie(f.serie.tmdb_id);
-      await suivreSerie(serie.id);
-      apresAjout(serie.id, serie.titre);
+      const nouvelle = await suivreSerie(serie.id, { plusTard });
+      apresAjout(serie.id, serie.titre, plusTard && nouvelle);
     } catch (e) {
       erreur.value = e.message;
     } finally {
-      ajoutEnCours.value = false;
+      ajoutEnCours.value = null;
     }
   }
 

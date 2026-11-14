@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=8 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=9 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="stylesheet" href="css/style.css?v=9">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=8",
-      "./js/base.js": "./js/base.js?v=8",
-      "./js/config.js": "./js/config.js?v=8",
-      "./js/fiche.js": "./js/fiche.js?v=8",
-      "./js/tmdb.js": "./js/tmdb.js?v=8"
+      "./js/app.js": "./js/app.js?v=9",
+      "./js/base.js": "./js/base.js?v=9",
+      "./js/config.js": "./js/config.js?v=9",
+      "./js/fiche.js": "./js/fiche.js?v=9",
+      "./js/tmdb.js": "./js/tmdb.js?v=9"
     }
   }
   </script>
@@ -197,15 +197,21 @@
                   </select>
                 </template>
 
-                <!-- Aperçu (série pas dans la liste) : bouton pour l'ajouter -->
+                <!-- Aperçu (série pas dans la liste) : boutons pour l'ajouter,
+                     au programme ou directement dans « Plus tard » (décision 26) -->
                 <template v-else>
                   <p class="details">
                     {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
                     · {{ nombreSaisons(fiche.saisons) }}
                   </p>
-                  <button type="button" class="bouton" :disabled="ajoutEnCours" @click="ajouterALaListe">
-                    {{ ajoutEnCours ? 'Ajout…' : '+ Ajouter à ma liste' }}
-                  </button>
+                  <div class="boutons">
+                    <button type="button" class="bouton" :disabled="!!ajoutEnCours" @click="ajouterALaListe(false)">
+                      {{ ajoutEnCours === 'liste' ? 'Ajout…' : '+ Ajouter à ma liste' }}
+                    </button>
+                    <button type="button" class="bouton bouton-discret" :disabled="!!ajoutEnCours" @click="ajouterALaListe(true)">
+                      {{ ajoutEnCours === 'plus_tard' ? 'Ajout…' : 'Plus tard' }}
+                    </button>
+                  </div>
                 </template>
               </div>
             </section>
@@ -336,11 +342,17 @@
                 </a>
 
                 <div class="resultat-action">
-                  <span v-if="idsDansListe.has(r.tmdbId)" class="deja">✓ Dans ma liste</span>
-                  <button v-else type="button" class="bouton bouton-petit"
-                          :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r)">
-                    {{ ajoutsEnCours.has(r.tmdbId) ? 'Ajout…' : 'Ajouter' }}
-                  </button>
+                  <span v-if="idsDansListe.has(r.tmdbId)" class="deja">{{ mentionDansListe(r.tmdbId) }}</span>
+                  <template v-else>
+                    <button type="button" class="bouton bouton-petit"
+                            :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r, false)">
+                      {{ ajoutsEnCours.get(r.tmdbId) === 'liste' ? 'Ajout…' : 'Ajouter' }}
+                    </button>
+                    <button type="button" class="bouton bouton-petit bouton-discret"
+                            :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r, true)">
+                      {{ ajoutsEnCours.get(r.tmdbId) === 'plus_tard' ? 'Ajout…' : 'Plus tard' }}
+                    </button>
+                  </template>
                 </div>
               </li>
             </ul>

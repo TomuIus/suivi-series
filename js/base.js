@@ -107,11 +107,15 @@ export async function listerSuivis() {
 
 /**
  * Ajoute une série du catalogue (identifiant interne) à la liste de
- * l'utilisateur connecté. Renvoie false si elle y était déjà.
+ * l'utilisateur connecté. Avec { plusTard: true }, elle va directement dans
+ * « Plus tard » (décision 26). Renvoie false si elle y était déjà (son
+ * statut n'est alors pas modifié).
  */
-export async function suivreSerie(serieId) {
+export async function suivreSerie(serieId, { plusTard = false } = {}) {
   // utilisateur_id n'est pas envoyé : la base le remplit avec auth.uid().
-  const { error } = await supabase.from('suivis').insert({ serie_id: serieId });
+  const ligne = { serie_id: serieId };
+  if (plusTard) ligne.statut_manuel = 'plus_tard';
+  const { error } = await supabase.from('suivis').insert(ligne);
   if (!error) return true;
   if (error.code === '23505') return false; // 23505 = doublon : déjà dans la liste
   throw new Error(traduireErreur(error));

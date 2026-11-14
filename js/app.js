@@ -32,12 +32,15 @@ const DUREE_ANNULATION = 8000; // ms pendant lesquels « Annuler » reste propos
 
 // Sections de « Ma liste », dans l'ordre d'affichage. Les sections « repliées »
 // sont fermées au départ (on les ouvre d'un clic sur leur titre).
+// « Plus tard » (décision 26) : tout en bas, repliée, pour garder de côté les
+// séries qu'on compte voir un jour sans encombrer celles qu'on regarde.
 const SECTIONS = [
-  { statut: 'en_cours',  titre: 'En cours',  repliee: false },
-  { statut: 'a_voir',    titre: 'À voir',    repliee: false },
-  { statut: 'a_jour',    titre: 'À jour',    repliee: false },
-  { statut: 'termine',   titre: 'Terminé',   repliee: true },
-  { statut: 'abandonne', titre: 'Abandonné', repliee: true },
+  { statut: 'en_cours',  titre: 'En cours',   repliee: false },
+  { statut: 'a_voir',    titre: 'À voir',     repliee: false },
+  { statut: 'a_jour',    titre: 'À jour',     repliee: false },
+  { statut: 'termine',   titre: 'Terminé',    repliee: true },
+  { statut: 'abandonne', titre: 'Abandonné',  repliee: true },
+  { statut: 'plus_tard', titre: 'Plus tard',  repliee: true },
 ];
 
 // Filtre « Tout · Séries · Animés » de « Ma liste » (décision 23). Le choix
@@ -69,9 +72,10 @@ function enregistrerFiltre(valeur) {
 const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
 // Libellés affichés pour les statuts (codes de la base) et pour les statuts
-// de diffusion de TMDB.
+// de diffusion de TMDB. L'ordre est celui du choix « Statut » de la fiche.
 const LIBELLES_STATUT = {
   a_voir: 'À voir',
+  plus_tard: 'Plus tard',
   en_cours: 'En cours',
   a_jour: 'À jour',
   termine: 'Terminé',
@@ -130,8 +134,6 @@ createApp({
     const listeChargee = ref(false);
     const vusEnCours = ref(new Set()); // serie_id des séries dont on coche un épisode
 
-    // La liste découpée en sections ; les sections vides ne sont pas affichées.
-    // L'ordre dans chaque section vient de la base : activité la plus récente d'abord.
     // --- Filtre séries / animés ---
     const filtre = ref(lireFiltre());
     watch(filtre, enregistrerFiltre);
@@ -148,6 +150,9 @@ createApp({
       return liste.value;
     });
 
+    // La liste (filtrée) découpée en sections ; les sections vides ne sont pas
+    // affichées. L'ordre dans chaque section vient de la base : activité la
+    // plus récente d'abord.
     const sections = computed(() =>
       SECTIONS
         .map((section) => ({ ...section, series: listeFiltree.value.filter((s) => s.statut === section.statut) }))
@@ -167,7 +172,7 @@ createApp({
     const resultats = ref([]);            // résultats TMDB affichés
     const rechercheFaite = ref('');       // texte de la dernière recherche aboutie
     const rechercheEnCours = ref(false);
-    const ajoutsEnCours = ref(new Set()); // tmdbId des séries en cours d'ajout
+    const ajoutsEnCours = ref(new Map()); // tmdbId → 'liste' ou 'plus_tard' (bouton appuyé)
     const message = ref(null);            // confirmation : { texte, annuler } ou null
 
     // --- Sauvegarde ---
@@ -194,8 +199,8 @@ createApp({
       // Série ajoutée depuis l'aperçu : on affiche sa fiche « suivie ».
       // location.replace remplace l'aperçu dans l'historique : le retour
       // ramène donc aux résultats de recherche, pas à l'aperçu.
-      apresAjout: async (serieId, titre) => {
-        afficherMessage(`« ${titre} » est maintenant dans votre liste.`);
+      apresAjout: async (serieId, titre, plusTard) => {
+        afficherMessage(messageAjout(titre, true, plusTard));
         await chargerListe();
         if (route.value.serieId === serieId) ecranFiche.ouvrirFiche({ serieId });
         else location.replace(`#/serie/${serieId}`);
@@ -205,6 +210,12 @@ createApp({
     // Série interne correspondant à un identifiant TMDB (pour le lien
     // « voir la fiche » dans les résultats de recherche).
     const serieIdParTmdb = computed(() => new Map(liste.value.map((s) => [s.tmdb_id, s.serie_id])));
+    const statutParTmdb = computed(() => new Map(liste.value.map((s) => [s.tmdb_id, s.statut])));
+
+    // Mention d'un résultat de recherche déjà dans la liste.
+    function mentionDansListe(tmdbId) {
+      return statutParTmdb.value.get(tmdbId) === 'plus_tard' ? '✓ Dans « Plus tard »' : '✓ Dans ma liste';
+    }
 
     let arreterEcoute = null;
     let minuterieFrappe = null;
@@ -423,23 +434,31 @@ createApp({
       recherche.value = ''; // le « watch » ci-dessus remet la recherche à zéro
     }
 
-    async function ajouter(resultat) {
+    // Boutons « Ajouter » (plusTard = false) et « Plus tard » (plusTard = true)
+    // d'un résultat de recherche.
+    async function ajouter(resultat, plusTard = false) {
       const id = resultat.tmdbId;
       if (ajoutsEnCours.value.has(id)) return; // évite un double clic
-      ajoutsEnCours.value.add(id);
+      ajoutsEnCours.value.set(id, plusTard ? 'plus_tard' : 'liste');
       erreur.value = '';
       try {
-        const serie = await importerSerie(id);          // 1. fiche copiée dans le catalogue
-        const nouvelle = await suivreSerie(serie.id);   // 2. série ajoutée à MA liste
+        const serie = await importerSerie(id);                        // 1. fiche copiée dans le catalogue
+        const nouvelle = await suivreSerie(serie.id, { plusTard });   // 2. série ajoutée à MA liste
         await chargerListe();
-        afficherMessage(nouvelle
-          ? `« ${serie.titre} » est maintenant dans votre liste.`
-          : `« ${serie.titre} » était déjà dans votre liste.`);
+        afficherMessage(messageAjout(serie.titre, nouvelle, plusTard));
       } catch (e) {
         erreur.value = e.message;
       } finally {
         ajoutsEnCours.value.delete(id);
       }
+    }
+
+    // Texte de confirmation après un ajout.
+    function messageAjout(titre, nouvelle, plusTard) {
+      if (!nouvelle) return `« ${titre} » était déjà dans votre liste.`;
+      return plusTard
+        ? `« ${titre} » est maintenant dans « Plus tard ».`
+        : `« ${titre} » est maintenant dans votre liste.`;
     }
 
     // Affiche une confirmation ; si « annuler » est fourni, un bouton
@@ -567,6 +586,7 @@ createApp({
       if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
       if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus · en attente de la suite`;
       if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
+      if (s.statut === 'plus_tard') return compte; // pas de « Prochain » : mise de côté
       if (s.prochaine_saison != null && s.statut !== 'abandonne') {
         return `Prochain : ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} · ${compte}`;
       }
@@ -613,7 +633,7 @@ createApp({
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
-      route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons,
+      route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       compteOuvert, nomSaisi, enregistrementNom, nomAffiche, ouvrirCompte, fermerCompte, enregistrerNom,
