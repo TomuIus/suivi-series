@@ -18,6 +18,7 @@ import {
   marquerVus,
   annulerVu,
   changerStatut,
+  changerCategorie,
   retirerSerie,
 } from './base.js';
 import { importerSerie, apercuSerie, episodesSaison } from './tmdb.js';
@@ -47,6 +48,7 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
   const invite = ref(null);        // proposition « cocher les précédents » : { episodes } ou null
   const confirmationRetrait = ref(false);
   const statutEnCours = ref(false);
+  const categorieEnCours = ref(false);
   const ajoutEnCours = ref(false);
   // Titres des épisodes déjà demandés à TMDB, gardés le temps de la visite :
   // clé de saison → { etat: 'chargement' | 'ok' | 'erreur', episodes: Map(numéro → { titre, date }) }
@@ -63,6 +65,17 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
     if (suivi.nb_vus === 0) return 'a_voir';
     if (suivi.nb_vus < suivi.nb_diffuses) return 'en_cours';
     return SERIES_FINIES.includes(fiche.value.serie.statut_diffusion) ? 'termine' : 'a_jour';
+  });
+
+  // Classement automatique (TMDB) : affiché à côté de « Automatique » dans le
+  // choix de la catégorie.
+  const categorieCalculee = computed(() => (fiche.value?.serie.est_anime ? 'anime' : 'serie'));
+
+  // La série est-elle un animé ? (correction de l'utilisateur, sinon classement automatique)
+  const estAnimeFiche = computed(() => {
+    const f = fiche.value;
+    if (!f) return false;
+    return f.suivi ? f.suivi.est_anime : f.serie.est_anime === true;
   });
 
   // Titre du prochain épisode, dès que sa saison a été chargée.
@@ -128,12 +141,14 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
   }
 
   // Série du catalogue : on complète avec TMDB, en arrière-plan (la fiche
-  // s'affiche tout de suite). Si la fiche date de plus de 24 h, on la remet à
-  // jour dans le catalogue (ce qui donne aussi le résumé) ; sinon on demande
-  // seulement le résumé, sans rien enregistrer.
+  // s'affiche tout de suite). Si la fiche date de plus de 24 h, ou n'a pas
+  // encore de classement série / animé, on la remet à jour dans le catalogue
+  // (ce qui donne aussi le résumé) ; sinon on demande seulement le résumé,
+  // sans rien enregistrer.
   async function completerDepuisTmdb(numero) {
     const { serie } = fiche.value;
-    const ancienne = Date.now() - Date.parse(serie.fiche_maj_le) >= DELAI_MISE_A_JOUR;
+    const ancienne = Date.now() - Date.parse(serie.fiche_maj_le) >= DELAI_MISE_A_JOUR
+      || serie.est_anime == null;
     try {
       if (!ancienne) {
         const apercu = await apercuSerie(serie.tmdb_id);
@@ -345,6 +360,23 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
     }
   }
 
+  // --- Catégorie corrigée à la main (série ou animé) ---
+
+  async function modifierCategorie(valeur) {
+    const f = fiche.value;
+    if (!f || !f.suivi) return;
+    categorieEnCours.value = true;
+    erreur.value = '';
+    try {
+      await changerCategorie(f.serie.id, valeur || null); // '' → automatique
+      await actualiserSuivi(f.serie.id);
+    } catch (e) {
+      erreur.value = e.message;
+    } finally {
+      categorieEnCours.value = false;
+    }
+  }
+
   // --- Retrait de la liste (avec confirmation, décision 16) ---
 
   function demanderRetrait() {
@@ -369,11 +401,11 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
   }
 
   return {
-    fiche, ficheChargee, invite, confirmationRetrait, statutEnCours, ajoutEnCours,
-    statutCalcule, titreProchain,
+    fiche, ficheChargee, invite, confirmationRetrait, statutEnCours, categorieEnCours, ajoutEnCours,
+    statutCalcule, categorieCalculee, estAnimeFiche, titreProchain,
     ouvrirFiche, fermerFiche, chargerTitres, titreEpisode, dateEpisode,
     etatEpisode, nbVusSaison, basculer,
-    cocherPrecedents, refuserInvite, ajouterALaListe, modifierStatut,
+    cocherPrecedents, refuserInvite, ajouterALaListe, modifierStatut, modifierCategorie,
     demanderRetrait, annulerRetrait, confirmerRetrait,
   };
 }

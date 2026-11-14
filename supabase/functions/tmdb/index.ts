@@ -10,7 +10,7 @@
 //
 // Le site l'appelle en POST avec un corps JSON, sous l'une de ces formes :
 //   { "action": "rechercher", "texte": "game of thrones" }
-//       → { "resultats": [ { tmdbId, titre, titreOriginal, annee, affiche, resume, pays } ] }
+//       → { "resultats": [ { tmdbId, titre, titreOriginal, annee, affiche, resume, pays, anime } ] }
 //   { "action": "ajouter", "tmdbId": 1399 }
 //       → copie (ou met à jour) la fiche dans le catalogue
 //       → { "id": <identifiant interne de la série>, "titre": "...", "resume": "..." }
@@ -43,6 +43,14 @@ const LONGUEUR_MAX_RECHERCHE = 100 // caractères
 const DELAI_MAX_TMDB = 10_000 // millisecondes — à revoir après des tests
 const ENTIER_MAX_POSTGRES = 2_147_483_647 // la colonne series.tmdb_id est un « int »
 const SAISON_MAX = 1000 // garde-fou pour le numéro de saison demandé
+const GENRE_ANIMATION = 16 // identifiant du genre « Animation » chez TMDB
+
+// Classement automatique « animé » (décision 24) : TMDB n'a pas de genre
+// « Anime » ; on retient le genre Animation ET le japonais comme langue
+// d'origine. L'utilisateur peut corriger série par série dans le site.
+function estAnime(genres: number[], langueOriginale: string | undefined): boolean {
+  return genres.includes(GENRE_ANIMATION) && langueOriginale === 'ja'
+}
 
 // SUPABASE_SECRET_KEYS contient un objet JSON du type { "default": "sb_secret_..." }.
 function lireCleSecrete(): string {
@@ -212,6 +220,8 @@ interface ResultatRechercheTmdb {
   id: number
   name?: string
   original_name?: string
+  original_language?: string
+  genre_ids?: number[]
   first_air_date?: string
   poster_path?: string | null
   overview?: string
@@ -222,6 +232,8 @@ interface FicheTmdb {
   id: number
   name?: string
   original_name?: string
+  original_language?: string
+  genres?: { id: number; name?: string }[]
   overview?: string
   poster_path?: string | null
   status?: string
@@ -252,6 +264,7 @@ function versLigneSerie(fiche: FicheTmdb) {
     statut_diffusion: fiche.status || null,
     derniere_saison_diffusee: fiche.last_episode_to_air?.season_number ?? null,
     dernier_episode_diffuse: fiche.last_episode_to_air?.episode_number ?? null,
+    est_anime: estAnime((fiche.genres ?? []).map((g) => g.id), fiche.original_language),
   }
 }
 
@@ -285,7 +298,8 @@ async function rechercher(texte: string) {
     annee: Number.parseInt(r.first_air_date ?? '', 10) || null, // « 2011-04-17 » → 2011
     affiche: r.poster_path || null, // chemin seul ; le site construit l'adresse de l'image
     resume: r.overview || null,
-    pays: r.origin_country ?? [], // ex. ["JP"] : utile plus tard pour repérer les animés
+    pays: r.origin_country ?? [], // ex. ["JP"]
+    anime: estAnime(r.genre_ids ?? [], r.original_language),
   }))
 }
 

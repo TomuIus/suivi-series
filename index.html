@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=7 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=8 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=8">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=7",
-      "./js/base.js": "./js/base.js?v=7",
-      "./js/config.js": "./js/config.js?v=7",
-      "./js/fiche.js": "./js/fiche.js?v=7",
-      "./js/tmdb.js": "./js/tmdb.js?v=7"
+      "./js/app.js": "./js/app.js?v=8",
+      "./js/base.js": "./js/base.js?v=8",
+      "./js/config.js": "./js/config.js?v=8",
+      "./js/fiche.js": "./js/fiche.js?v=8",
+      "./js/tmdb.js": "./js/tmdb.js?v=8"
     }
   }
   </script>
@@ -74,7 +74,9 @@
     <header class="entete">
       <h1>Suivi de séries</h1>
       <div v-if="utilisateur" class="compte">
-        <span class="compte-email">{{ utilisateur.email }}</span>
+        <!-- Nom d'utilisateur (sinon l'e-mail) : un clic ouvre « Mon compte » -->
+        <button type="button" class="nom-compte" :title="'Connecté avec ' + utilisateur.email"
+                @click="ouvrirCompte">{{ nomAffiche }}</button>
         <button type="button" class="bouton bouton-discret" @click="deconnexion">
           Se déconnecter
         </button>
@@ -83,6 +85,24 @@
 
     <main>
       <p v-if="erreur" class="erreur" role="alert">{{ erreur }}</p>
+
+      <!-- Mon compte : changer le nom d'utilisateur -->
+      <section v-if="utilisateur && compteOuvert" class="carte compte-panneau">
+        <h2>Mon compte</h2>
+        <p class="details">Connecté avec {{ utilisateur.email }}</p>
+        <form class="formulaire-compte" @submit.prevent="enregistrerNom">
+          <label for="nom-utilisateur">Nom d'utilisateur</label>
+          <input id="nom-utilisateur" v-model="nomSaisi" type="text" :maxlength="longueurMaxNom"
+                 autocomplete="nickname" placeholder="Votre nom ou pseudo">
+          <p class="info aide">Affiché en haut à la place de l'e-mail. Laissez vide pour réafficher l'e-mail.</p>
+          <div class="boutons">
+            <button type="submit" class="bouton" :disabled="enregistrementNom">
+              {{ enregistrementNom ? 'Enregistrement…' : 'Enregistrer' }}
+            </button>
+            <button type="button" class="bouton bouton-discret" @click="fermerCompte">Annuler</button>
+          </div>
+        </form>
+      </section>
 
       <p v-if="chargement" class="info">Chargement…</p>
 
@@ -131,7 +151,10 @@
               <div v-else class="affiche affiche-grande sans-affiche" aria-hidden="true"></div>
 
               <div class="fiche-infos">
-                <h2>{{ fiche.serie.titre }}</h2>
+                <h2>
+                  {{ fiche.serie.titre }}
+                  <span v-if="estAnimeFiche" class="etiquette-anime">Animé</span>
+                </h2>
                 <p v-if="fiche.serie.titre_original && fiche.serie.titre_original !== fiche.serie.titre"
                    class="details">{{ fiche.serie.titre_original }}</p>
 
@@ -161,6 +184,16 @@
                           @change="modifierStatut($event.target.value)">
                     <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
                     <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
+                  </select>
+
+                  <!-- Correction du classement série / animé (propre à votre compte) -->
+                  <label for="categorie" class="etiquette">Catégorie</label>
+                  <select id="categorie" class="choix-statut"
+                          :value="fiche.suivi.categorie_manuelle ?? ''" :disabled="categorieEnCours"
+                          @change="modifierCategorie($event.target.value)">
+                    <option value="">Automatique ({{ categorieCalculee === 'anime' ? 'Animé' : 'Série' }})</option>
+                    <option value="serie">Série</option>
+                    <option value="anime">Animé</option>
                   </select>
                 </template>
 
@@ -293,7 +326,10 @@
                   <div v-else class="affiche sans-affiche" aria-hidden="true"></div>
 
                   <div class="resultat-texte">
-                    <h3>{{ r.titre }}</h3>
+                    <h3>
+                      {{ r.titre }}
+                      <span v-if="r.anime" class="etiquette-anime">Animé</span>
+                    </h3>
                     <p class="details">{{ details(r) }}</p>
                     <p v-if="r.resume" class="resume">{{ r.resume }}</p>
                   </div>
@@ -323,6 +359,17 @@
               une série ou un animé.
             </p>
 
+            <!-- Filtre « Tout · Séries · Animés » (le choix est retenu) -->
+            <div v-if="liste.length > 0" class="filtres" role="group" aria-label="Afficher">
+              <button v-for="f in filtres" :key="f.valeur" type="button" class="filtre"
+                      :aria-pressed="String(filtre === f.valeur)" @click="filtre = f.valeur">
+                {{ f.libelle }} ({{ comptes[f.valeur] }})
+              </button>
+            </div>
+            <p v-if="liste.length > 0 && listeFiltree.length === 0" class="info">
+              {{ filtre === 'animes' ? 'Aucun animé dans votre liste.' : 'Aucune série dans votre liste.' }}
+            </p>
+
             <details v-for="section in sections" :key="section.statut"
                      class="section" :open="!section.repliee">
               <summary><h3>{{ section.titre }} ({{ section.series.length }})</h3></summary>
@@ -336,7 +383,11 @@
                     <div v-else class="affiche affiche-petite sans-affiche" aria-hidden="true"></div>
 
                     <div class="element-texte">
-                      <span class="titre-liste">{{ s.titre }}</span>
+                      <span class="titre-liste">
+                        {{ s.titre }}
+                        <!-- Étiquette utile seulement quand tout est affiché -->
+                        <span v-if="s.est_anime && filtre === 'tout'" class="etiquette-anime">Animé</span>
+                      </span>
                       <!-- Barre de progression (sans les épisodes spéciaux) -->
                       <span v-if="pourcentage(s) != null" class="progression">
                         <span class="barre" role="progressbar" :aria-label="`Progression de ${s.titre}`"

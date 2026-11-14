@@ -14,6 +14,7 @@ import {
   surChangementDeConnexion,
   seConnecter,
   seDeconnecter,
+  changerNomUtilisateur,
   listerSuivis,
   suivreSerie,
   marquerVu,
@@ -38,6 +39,34 @@ const SECTIONS = [
   { statut: 'termine',   titre: 'Terminé',   repliee: true },
   { statut: 'abandonne', titre: 'Abandonné', repliee: true },
 ];
+
+// Filtre « Tout · Séries · Animés » de « Ma liste » (décision 23). Le choix
+// est retenu dans le navigateur (localStorage) d'une visite à l'autre.
+const FILTRES = [
+  { valeur: 'tout',   libelle: 'Tout' },
+  { valeur: 'series', libelle: 'Séries' },
+  { valeur: 'animes', libelle: 'Animés' },
+];
+const CLE_FILTRE = 'suivi-series.filtre';
+
+function lireFiltre() {
+  try {
+    const valeur = localStorage.getItem(CLE_FILTRE);
+    return FILTRES.some((f) => f.valeur === valeur) ? valeur : 'tout';
+  } catch {
+    return 'tout'; // stockage indisponible (navigation privée…)
+  }
+}
+
+function enregistrerFiltre(valeur) {
+  try {
+    localStorage.setItem(CLE_FILTRE, valeur);
+  } catch {
+    // Pas grave : le choix ne sera simplement pas retenu.
+  }
+}
+
+const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
 // Libellés affichés pour les statuts (codes de la base) et pour les statuts
 // de diffusion de TMDB.
@@ -103,11 +132,35 @@ createApp({
 
     // La liste découpée en sections ; les sections vides ne sont pas affichées.
     // L'ordre dans chaque section vient de la base : activité la plus récente d'abord.
+    // --- Filtre séries / animés ---
+    const filtre = ref(lireFiltre());
+    watch(filtre, enregistrerFiltre);
+
+    // Nombre de séries dans chaque filtre, affiché sur les boutons.
+    const comptes = computed(() => {
+      const animes = liste.value.filter((s) => s.est_anime).length;
+      return { tout: liste.value.length, series: liste.value.length - animes, animes };
+    });
+
+    const listeFiltree = computed(() => {
+      if (filtre.value === 'animes') return liste.value.filter((s) => s.est_anime);
+      if (filtre.value === 'series') return liste.value.filter((s) => !s.est_anime);
+      return liste.value;
+    });
+
     const sections = computed(() =>
       SECTIONS
-        .map((section) => ({ ...section, series: liste.value.filter((s) => s.statut === section.statut) }))
+        .map((section) => ({ ...section, series: listeFiltree.value.filter((s) => s.statut === section.statut) }))
         .filter((section) => section.series.length > 0)
     );
+
+    // --- Mon compte (nom d'utilisateur) ---
+    const compteOuvert = ref(false);
+    const nomSaisi = ref('');
+    const enregistrementNom = ref(false);
+    // Nom affiché en haut : le nom d'utilisateur s'il existe, sinon l'e-mail.
+    const nomAffiche = computed(() =>
+      utilisateur.value?.user_metadata?.nom_utilisateur || utilisateur.value?.email || '');
 
     // --- Recherche ---
     const recherche = ref('');            // texte tapé dans la barre
@@ -284,11 +337,31 @@ createApp({
       try {
         const lignes = await listerSuivis();
         if (numero === numeroChargement) liste.value = lignes; // sinon, réponse dépassée
+        completerClassement(lignes);
       } catch (e) {
         erreur.value = e.message;
       } finally {
         listeChargee.value = true;
       }
+    }
+
+    // Les séries ajoutées avant la séparation séries / animés n'ont pas encore
+    // de classement automatique (anime_detecte vide) : on fait remettre leur
+    // fiche à jour par la fonction serveur, une par une, en arrière-plan, une
+    // seule fois par visite. Ensuite, on recharge la liste.
+    let classementLance = false;
+    async function completerClassement(lignes) {
+      const aClasser = lignes.filter((s) => s.anime_detecte == null);
+      if (classementLance || aClasser.length === 0) return;
+      classementLance = true;
+      for (const s of aClasser) {
+        try {
+          await importerSerie(s.tmdb_id);
+        } catch (e) {
+          console.warn(`Classement de « ${s.titre} » impossible :`, e.message);
+        }
+      }
+      chargerListe();
     }
 
     // Bouton « Vu » : coche le prochain épisode de la série, puis recharge la
@@ -376,6 +449,36 @@ createApp({
       clearTimeout(minuterieMessage);
       minuterieMessage = setTimeout(() => { message.value = null; },
         annuler ? DUREE_ANNULATION : DUREE_MESSAGE);
+    }
+
+    // --- Actions : mon compte ---
+
+    function ouvrirCompte() {
+      nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
+      compteOuvert.value = true;
+    }
+
+    function fermerCompte() {
+      compteOuvert.value = false;
+    }
+
+    async function enregistrerNom() {
+      const nom = nomSaisi.value.trim();
+      if (nom.length > LONGUEUR_MAX_NOM) {
+        erreur.value = `Le nom doit faire au plus ${LONGUEUR_MAX_NOM} caractères.`;
+        return;
+      }
+      enregistrementNom.value = true;
+      erreur.value = '';
+      try {
+        utilisateur.value = await changerNomUtilisateur(nom);
+        compteOuvert.value = false;
+        afficherMessage(nom ? `Vous vous appelez maintenant « ${nom} ».` : 'Nom retiré : votre e-mail est de nouveau affiché.');
+      } catch (e) {
+        erreur.value = e.message;
+      } finally {
+        enregistrementNom.value = false;
+      }
     }
 
     // --- Actions : sauvegarde ---
@@ -512,6 +615,9 @@ createApp({
       details, urlAffiche, libelleEpisode, peutCocher, progression,
       route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels,
+      filtres: FILTRES, filtre, comptes, listeFiltree,
+      compteOuvert, nomSaisi, enregistrementNom, nomAffiche, ouvrirCompte, fermerCompte, enregistrerNom,
+      longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };
   },

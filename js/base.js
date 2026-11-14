@@ -39,6 +39,18 @@ export async function seConnecter(email, motDePasse) {
   return data.user;
 }
 
+/**
+ * Enregistre le nom d'utilisateur (affiché à la place de l'e-mail) dans les
+ * informations du compte Supabase (« user_metadata »), sans table à créer.
+ * null ou '' = plus de nom (l'e-mail est de nouveau affiché).
+ * Renvoie l'utilisateur mis à jour.
+ */
+export async function changerNomUtilisateur(nom) {
+  const { data, error } = await supabase.auth.updateUser({ data: { nom_utilisateur: nom || null } });
+  if (error) throw new Error(traduireErreur(error));
+  return data.user;
+}
+
 /** Déconnexion. */
 export async function seDeconnecter() {
   const { error } = await supabase.auth.signOut();
@@ -85,7 +97,8 @@ export async function listerSuivis() {
     .from('ma_liste')
     .select(
       'serie_id, tmdb_id, titre, affiche_chemin, statut_diffusion, statut_manuel, statut, ' +
-      'nb_diffuses, nb_vus, prochaine_saison, prochain_episode, derniere_activite'
+      'nb_diffuses, nb_vus, prochaine_saison, prochain_episode, derniere_activite, ' +
+      'categorie_manuelle, anime_detecte, est_anime'
     )
     .order('derniere_activite', { ascending: false });
   if (error) throw new Error(traduireErreur(error));
@@ -148,7 +161,8 @@ const LIGNES_PAR_PAGE = 1000;
 
 // Colonnes de la vue « ma_liste » utiles à la fiche.
 const COLONNES_SUIVI =
-  'serie_id, statut, statut_manuel, nb_diffuses, nb_vus, prochaine_saison, prochain_episode';
+  'serie_id, statut, statut_manuel, nb_diffuses, nb_vus, prochaine_saison, prochain_episode, ' +
+  'categorie_manuelle, est_anime';
 
 /**
  * Tout ce qu'il faut pour afficher la fiche d'une série :
@@ -160,7 +174,7 @@ export async function chargerFiche(serieId) {
     supabase
       .from('series')
       .select('id, tmdb_id, titre, titre_original, affiche_chemin, statut_diffusion, ' +
-              'derniere_saison_diffusee, dernier_episode_diffuse, fiche_maj_le')
+              'derniere_saison_diffusee, dernier_episode_diffuse, fiche_maj_le, est_anime')
       .eq('id', serieId)
       .maybeSingle(),
     supabase.from('saisons').select('numero, nb_episodes').eq('serie_id', serieId).order('numero'),
@@ -217,6 +231,18 @@ export async function changerStatut(serieId, statutManuel) {
 }
 
 /**
+ * Corrige à la main le classement d'une série : 'serie' ou 'anime' ;
+ * null = revenir au classement automatique.
+ */
+export async function changerCategorie(serieId, categorie) {
+  const { error } = await supabase
+    .from('suivis')
+    .update({ categorie_manuelle: categorie })
+    .eq('serie_id', serieId);
+  if (error) throw new Error(traduireErreur(error));
+}
+
+/**
  * Retire une série de la liste. Ses épisodes cochés sont effacés avec elle
  * (« on delete cascade » dans la base, décision 16).
  */
@@ -238,7 +264,8 @@ export async function lireDonneesPourExport() {
   const [suivis, vus] = await Promise.all([
     lireParPages(() => supabase
       .from('suivis')
-      .select('serie_id, statut_manuel, ajoute_le, series (tmdb_id, imdb_id, tvdb_id, titre, titre_original)')
+      .select('serie_id, statut_manuel, categorie_manuelle, ajoute_le, ' +
+              'series (tmdb_id, imdb_id, tvdb_id, titre, titre_original)')
       .order('ajoute_le')
       .order('serie_id')),
     lireParPages(() => supabase
@@ -262,7 +289,8 @@ export async function lireDonneesPourExport() {
     tvdb_id: s.series?.tvdb_id ?? null,
     titre: s.series?.titre ?? null,
     titre_original: s.series?.titre_original ?? null,
-    statut_manuel: s.statut_manuel,   // null = statut automatique
+    statut_manuel: s.statut_manuel,             // null = statut automatique
+    categorie_manuelle: s.categorie_manuelle,   // null = classement automatique
     ajoute_le: s.ajoute_le,
     episodes_vus: vusParSerie.get(s.serie_id) ?? [],
   }));
