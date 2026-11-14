@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=13 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=14 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=13">
+  <link rel="stylesheet" href="css/style.css?v=14">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=13",
-      "./js/base.js": "./js/base.js?v=13",
-      "./js/config.js": "./js/config.js?v=13",
-      "./js/fiche.js": "./js/fiche.js?v=13",
-      "./js/tmdb.js": "./js/tmdb.js?v=13"
+      "./js/app.js": "./js/app.js?v=14",
+      "./js/base.js": "./js/base.js?v=14",
+      "./js/config.js": "./js/config.js?v=14",
+      "./js/fiche.js": "./js/fiche.js?v=14",
+      "./js/tmdb.js": "./js/tmdb.js?v=14"
     }
   }
   </script>
@@ -308,7 +308,7 @@
               </tbody>
             </table>
             <p class="info aide">
-              Épisodes vus et temps passé : sans les épisodes spéciaux.
+              Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.
               Temps passé estimé d'après la durée moyenne des épisodes de chaque saison (TMDB).
               <template v-if="episodesSansDuree > 0">
                 Durée inconnue pour {{ nombre(episodesSansDuree) }} épisode{{ episodesSansDuree > 1 ? 's' : '' }} vu{{ episodesSansDuree > 1 ? 's' : '' }}, non compté{{ episodesSansDuree > 1 ? 's' : '' }}.

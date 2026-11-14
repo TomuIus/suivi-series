@@ -301,13 +301,15 @@ function dureeMoyenne(durees: unknown[]): number | null {
 // le « temps passé ». TMDB range la durée épisode par épisode : on demande
 // le détail des saisons, par paquets de 20 dans une même requête
 // (« append_to_response »), donc 1 requête pour 1 à 20 saisons, 2 pour 21 à 40…
-// Saison sans aucune durée connue : on prend l'estimation de la série
-// (moyenne des autres saisons, sinon durée indiquée pour la série, sinon
-// durée du dernier épisode sorti). Les spéciaux (saison 0) ne sont pas
-// demandés : ils ne comptent pas dans le temps passé.
+// Les spéciaux (saison 0) ont aussi leur moyenne : ils comptent dans le temps
+// passé quand ils sont cochés (décision 32). Elle n'entre pas dans
+// l'estimation de la série (un film classé en spécial la fausserait).
+// Saison sans aucune durée connue (spéciaux compris) : on prend l'estimation
+// de la série (moyenne des saisons normales, sinon durée indiquée pour la
+// série, sinon durée du dernier épisode sorti).
 async function lireDurees(tmdbId: number, fiche: FicheTmdb, numeros: number[]) {
   const parSaison = new Map<number, number | null>()
-  const aDemander = numeros.filter((n) => n >= 1)
+  const aDemander = numeros.filter((n) => n >= 0)
   for (let debut = 0; debut < aDemander.length; debut += SAISONS_PAR_REQUETE) {
     const lot = aDemander.slice(debut, debut + SAISONS_PAR_REQUETE)
     const donnees = (await appelerTmdb(`/tv/${tmdbId}`, {
@@ -317,7 +319,9 @@ async function lireDurees(tmdbId: number, fiche: FicheTmdb, numeros: number[]) {
       parSaison.set(n, dureeMoyenne((donnees[`season/${n}`]?.episodes ?? []).map((e) => e.runtime)))
     }
   }
-  const connues = [...parSaison.values()].filter((d): d is number => d !== null)
+  const connues = [...parSaison]
+    .filter(([n, d]) => n >= 1 && d !== null)
+    .map(([, d]) => d as number)
   const estimation = dureeMoyenne(connues)
     ?? dureeMoyenne(fiche.episode_run_time ?? [])
     ?? dureeMoyenne([fiche.last_episode_to_air?.runtime])

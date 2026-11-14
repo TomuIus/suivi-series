@@ -186,9 +186,10 @@ createApp({
         ligne('Titres dans ma liste', (g) => g.length, nombre, true),
         ...SECTIONS.map((section) =>
           ligne(section.titre, (g) => g.filter((s) => section.statuts.includes(s.statut)).length)),
-        // nb_vus et minutes_vues viennent de la vue « ma_liste » : épisodes
-        // spéciaux non comptés.
-        ligne('Épisodes vus', (g) => somme(g, 'nb_vus'), nombre, true),
+        // Viennent de la vue « ma_liste ». Épisodes spéciaux : comptés ici
+        // s'ils sont cochés (décision 32), mais jamais pour les statuts ni la
+        // barre de progression (nb_vus les ignore).
+        ligne('Épisodes vus', (g) => somme(g, 'nb_vus') + somme(g, 'nb_speciaux_vus'), nombre, true),
         ligne('Temps passé', (g) => somme(g, 'minutes_vues'), dureeApprox, true),
       ];
     });

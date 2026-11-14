@@ -99,7 +99,7 @@ export async function listerSuivis() {
       'serie_id, tmdb_id, titre, affiche_chemin, statut_diffusion, statut_manuel, statut, ' +
       'nb_diffuses, nb_vus, prochaine_saison, prochain_episode, derniere_activite, ' +
       'categorie_manuelle, anime_detecte, est_anime, ' +
-      'minutes_vues, nb_vus_sans_duree, durees_a_calculer'
+      'minutes_vues, nb_vus_sans_duree, durees_a_calculer, nb_speciaux_vus'
     )
     .order('derniere_activite', { ascending: false });
   if (error) throw new Error(traduireErreur(error));
