@@ -333,6 +333,17 @@
                 </button>
               </div>
             </form>
+
+            <!-- Sauvegarde (déplacée ici depuis « Ma liste », décision 30) -->
+            <h3>Sauvegarde</h3>
+            <p class="info aide">
+              Téléchargez une copie de votre liste et de vos épisodes cochés
+              (fichier JSON). L'offre gratuite de Supabase ne fait pas de
+              sauvegarde : pensez-y de temps en temps.
+            </p>
+            <button type="button" class="bouton bouton-discret" :disabled="exportEnCours" @click="exporter">
+              {{ exportEnCours ? 'Préparation…' : 'Exporter mes données' }}
+            </button>
           </section>
         </template>
 
@@ -465,18 +476,6 @@
             </details>
           </section>
 
-          <!-- Sauvegarde (hors recherche) -->
-          <section v-if="!modeRecherche" class="carte">
-            <h2>Sauvegarde</h2>
-            <p class="info aide">
-              Téléchargez une copie de votre liste et de vos épisodes cochés
-              (fichier JSON). L'offre gratuite de Supabase ne fait pas de
-              sauvegarde : pensez-y de temps en temps.
-            </p>
-            <button type="button" class="bouton bouton-discret" :disabled="exportEnCours" @click="exporter">
-              {{ exportEnCours ? 'Préparation…' : 'Exporter mes données' }}
-            </button>
-          </section>
         </template>
       </template>
     </main>
