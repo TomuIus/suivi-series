@@ -30,17 +30,19 @@ const DELAI_FRAPPE = 500;    // ms d'attente après la dernière touche — à r
 const DUREE_MESSAGE = 5000;  // ms d'affichage d'un message de confirmation
 const DUREE_ANNULATION = 8000; // ms pendant lesquels « Annuler » reste proposé
 
-// Sections de « Ma liste », dans l'ordre d'affichage. Les sections « repliées »
-// sont fermées au départ (on les ouvre d'un clic sur leur titre).
+// Sections de « Ma liste », dans l'ordre d'affichage, avec les statuts de la
+// base que chacune regroupe. Les sections « repliées » sont fermées au départ
+// (on les ouvre d'un clic sur leur titre).
+// « En cours » regroupe aussi « À voir » (décision 27) : la base garde la
+// différence (commencée ou non), seul l'affichage les réunit.
 // « Plus tard » (décision 26) : tout en bas, repliée, pour garder de côté les
 // séries qu'on compte voir un jour sans encombrer celles qu'on regarde.
 const SECTIONS = [
-  { statut: 'en_cours',  titre: 'En cours',   repliee: false },
-  { statut: 'a_voir',    titre: 'À voir',     repliee: false },
-  { statut: 'a_jour',    titre: 'À jour',     repliee: false },
-  { statut: 'termine',   titre: 'Terminé',    repliee: true },
-  { statut: 'abandonne', titre: 'Abandonné',  repliee: true },
-  { statut: 'plus_tard', titre: 'Plus tard',  repliee: true },
+  { cle: 'en_cours',  statuts: ['en_cours', 'a_voir'], titre: 'En cours',  repliee: false },
+  { cle: 'a_jour',    statuts: ['a_jour'],             titre: 'À jour',    repliee: false },
+  { cle: 'termine',   statuts: ['termine'],            titre: 'Terminé',   repliee: true },
+  { cle: 'abandonne', statuts: ['abandonne'],          titre: 'Abandonné', repliee: true },
+  { cle: 'plus_tard', statuts: ['plus_tard'],          titre: 'Plus tard', repliee: true },
 ];
 
 // Filtre « Tout · Séries · Animés » de « Ma liste » (décision 23). Le choix
@@ -72,15 +74,19 @@ function enregistrerFiltre(valeur) {
 const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
 // Libellés affichés pour les statuts (codes de la base) et pour les statuts
-// de diffusion de TMDB. L'ordre est celui du choix « Statut » de la fiche.
+// de diffusion de TMDB. « a_voir » (pas encore commencée) s'affiche
+// « En cours » depuis la décision 27.
 const LIBELLES_STATUT = {
-  a_voir: 'À voir',
-  plus_tard: 'Plus tard',
+  a_voir: 'En cours',
   en_cours: 'En cours',
+  plus_tard: 'Plus tard',
   a_jour: 'À jour',
   termine: 'Terminé',
   abandonne: 'Abandonné',
 };
+// Choix proposés dans le menu « Statut » de la fiche, dans cet ordre
+// (« À voir » n'y est plus : il est réuni avec « En cours »).
+const STATUTS_MANUELS = ['en_cours', 'plus_tard', 'a_jour', 'termine', 'abandonne'];
 const LIBELLES_DIFFUSION = {
   'Returning Series': 'En diffusion',
   'In Production': 'En production',
@@ -155,7 +161,7 @@ createApp({
     // plus récente d'abord.
     const sections = computed(() =>
       SECTIONS
-        .map((section) => ({ ...section, series: listeFiltree.value.filter((s) => s.statut === section.statut) }))
+        .map((section) => ({ ...section, series: listeFiltree.value.filter((s) => section.statuts.includes(s.statut)) }))
         .filter((section) => section.series.length > 0)
     );
 
@@ -575,7 +581,7 @@ createApp({
     }
 
     // Le bouton « Vu » n'apparaît que s'il y a un épisode diffusé à cocher,
-    // et seulement dans les sections « En cours » et « À voir ».
+    // et seulement dans la section « En cours » (statuts en_cours et a_voir).
     function peutCocher(s) {
       return s.prochaine_saison != null && (s.statut === 'en_cours' || s.statut === 'a_voir');
     }
@@ -622,8 +628,15 @@ createApp({
       return `Les ${nombre} épisodes cochés seront effacés.`;
     }
 
-    const statutsManuels = Object.entries(LIBELLES_STATUT)
-      .map(([valeur, libelle]) => ({ valeur, libelle }));
+    const statutsManuels = STATUTS_MANUELS
+      .map((valeur) => ({ valeur, libelle: LIBELLES_STATUT[valeur] }));
+
+    // Valeur affichée dans le menu « Statut » : un ancien statut manuel
+    // « À voir » apparaît comme « En cours » (même section depuis la décision 27).
+    function valeurStatutManuel(suivi) {
+      const valeur = suivi.statut_manuel ?? '';
+      return valeur === 'a_voir' ? 'en_cours' : valeur;
+    }
 
     // Ce qui est renvoyé ici est utilisable dans le HTML de #app.
     return {
@@ -634,7 +647,7 @@ createApp({
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
       route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
-      libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels,
+      libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       compteOuvert, nomSaisi, enregistrementNom, nomAffiche, ouvrirCompte, fermerCompte, enregistrerNom,
       longueurMaxNom: LONGUEUR_MAX_NOM,

@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=9 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=10 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=9",
-      "./js/base.js": "./js/base.js?v=9",
-      "./js/config.js": "./js/config.js?v=9",
-      "./js/fiche.js": "./js/fiche.js?v=9",
-      "./js/tmdb.js": "./js/tmdb.js?v=9"
+      "./js/app.js": "./js/app.js?v=10",
+      "./js/base.js": "./js/base.js?v=10",
+      "./js/config.js": "./js/config.js?v=10",
+      "./js/fiche.js": "./js/fiche.js?v=10",
+      "./js/tmdb.js": "./js/tmdb.js?v=10"
     }
   }
   </script>
@@ -180,7 +180,7 @@
 
                   <label for="statut" class="etiquette">Statut</label>
                   <select id="statut" class="choix-statut"
-                          :value="fiche.suivi.statut_manuel ?? ''" :disabled="statutEnCours"
+                          :value="valeurStatutManuel(fiche.suivi)" :disabled="statutEnCours"
                           @change="modifierStatut($event.target.value)">
                     <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
                     <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
@@ -361,7 +361,8 @@
           <!--
             Ma liste, en sections par statut. Chaque section est un bloc
             « details » : un clic sur son titre la replie ou la déplie.
-            « Terminé » et « Abandonné » sont repliées au départ.
+            « En cours » regroupe aussi les séries pas encore commencées.
+            « Terminé », « Abandonné » et « Plus tard » sont repliées au départ.
           -->
           <section v-else class="carte">
             <h2>Ma liste</h2>
@@ -382,7 +383,7 @@
               {{ filtre === 'animes' ? 'Aucun animé dans votre liste.' : 'Aucune série dans votre liste.' }}
             </p>
 
-            <details v-for="section in sections" :key="section.statut"
+            <details v-for="section in sections" :key="section.cle"
                      class="section" :open="!section.repliee">
               <summary><h3>{{ section.titre }} ({{ section.series.length }})</h3></summary>
 
