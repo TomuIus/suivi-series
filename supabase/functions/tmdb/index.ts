@@ -12,7 +12,8 @@
 //   { "action": "rechercher", "texte": "game of thrones" }
 //       → { "resultats": [ { tmdbId, titre, titreOriginal, annee, affiche, resume, pays, anime } ] }
 //   { "action": "ajouter", "tmdbId": 1399 }
-//       → copie (ou met à jour) la fiche dans le catalogue
+//       → copie (ou met à jour) la fiche dans le catalogue, avec la durée
+//         moyenne des épisodes de chaque saison (décision 31)
 //       → { "id": <identifiant interne de la série>, "titre": "...", "resume": "..." }
 //   { "action": "fiche", "tmdbId": 1399 }
 //       → aperçu d'une série, SANS rien enregistrer (série pas encore ajoutée)
@@ -44,6 +45,8 @@ const DELAI_MAX_TMDB = 10_000 // millisecondes — à revoir après des tests
 const ENTIER_MAX_POSTGRES = 2_147_483_647 // la colonne series.tmdb_id est un « int »
 const SAISON_MAX = 1000 // garde-fou pour le numéro de saison demandé
 const GENRE_ANIMATION = 16 // identifiant du genre « Animation » chez TMDB
+const SAISONS_PAR_REQUETE = 20 // TMDB limite « append_to_response » à 20 éléments
+const DUREE_MAX = 600 // minutes : au-delà, durée jugée aberrante (même limite que la base)
 
 // Classement automatique « animé » (décision 24) : TMDB n'a pas de genre
 // « Anime » ; on retient le genre Animation ET le japonais comme langue
@@ -237,13 +240,14 @@ interface FicheTmdb {
   overview?: string
   poster_path?: string | null
   status?: string
-  last_episode_to_air?: { season_number?: number; episode_number?: number } | null
+  episode_run_time?: number[] // durée « de la série », souvent vide chez TMDB
+  last_episode_to_air?: { season_number?: number; episode_number?: number; runtime?: number | null } | null
   seasons?: { season_number?: number; episode_count?: number }[]
   external_ids?: { imdb_id?: string | null; tvdb_id?: number | null }
 }
 
 interface SaisonTmdb {
-  episodes?: { episode_number?: number; name?: string; air_date?: string | null }[]
+  episodes?: { episode_number?: number; name?: string; air_date?: string | null; runtime?: number | null }[]
 }
 
 // Une seule requête TMDB : la fiche + ses identifiants externes (IMDb, TVDB).
@@ -283,6 +287,44 @@ function versSaisons(fiche: FicheTmdb) {
   return [...parNumero.values()].sort((a, b) => a.numero - b.numero)
 }
 
+// Moyenne arrondie (en minutes) des durées valables, ou null s'il n'y en a aucune.
+function dureeMoyenne(durees: unknown[]): number | null {
+  const valables = durees.filter(
+    (d): d is number => typeof d === 'number' && Number.isFinite(d) && d > 0 && d < DUREE_MAX,
+  )
+  if (valables.length === 0) return null
+  const moyenne = Math.round(valables.reduce((total, d) => total + d, 0) / valables.length)
+  return moyenne > 0 && moyenne < DUREE_MAX ? moyenne : null
+}
+
+// Durée moyenne des épisodes, saison par saison (décision 31), pour estimer
+// le « temps passé ». TMDB range la durée épisode par épisode : on demande
+// le détail des saisons, par paquets de 20 dans une même requête
+// (« append_to_response »), donc 1 requête pour 1 à 20 saisons, 2 pour 21 à 40…
+// Saison sans aucune durée connue : on prend l'estimation de la série
+// (moyenne des autres saisons, sinon durée indiquée pour la série, sinon
+// durée du dernier épisode sorti). Les spéciaux (saison 0) ne sont pas
+// demandés : ils ne comptent pas dans le temps passé.
+async function lireDurees(tmdbId: number, fiche: FicheTmdb, numeros: number[]) {
+  const parSaison = new Map<number, number | null>()
+  const aDemander = numeros.filter((n) => n >= 1)
+  for (let debut = 0; debut < aDemander.length; debut += SAISONS_PAR_REQUETE) {
+    const lot = aDemander.slice(debut, debut + SAISONS_PAR_REQUETE)
+    const donnees = (await appelerTmdb(`/tv/${tmdbId}`, {
+      append_to_response: lot.map((n) => `season/${n}`).join(','),
+    })) as Record<string, SaisonTmdb | undefined>
+    for (const n of lot) {
+      parSaison.set(n, dureeMoyenne((donnees[`season/${n}`]?.episodes ?? []).map((e) => e.runtime)))
+    }
+  }
+  const connues = [...parSaison.values()].filter((d): d is number => d !== null)
+  const estimation = dureeMoyenne(connues)
+    ?? dureeMoyenne(fiche.episode_run_time ?? [])
+    ?? dureeMoyenne([fiche.last_episode_to_air?.runtime])
+  for (const [n, d] of parSaison) if (d === null) parSaison.set(n, estimation)
+  return parSaison
+}
+
 // Action « rechercher » : on renvoie une liste allégée, rien n'est enregistré.
 async function rechercher(texte: string) {
   const donnees = (await appelerTmdb('/search/tv', {
@@ -307,12 +349,26 @@ async function rechercher(texte: string) {
 // Le site crée ensuite lui-même le « suivi » de l'utilisateur avec l'id renvoyé.
 async function ajouter(admin: SupabaseClient, tmdbId: number) {
   const fiche = await lireFicheTmdb(tmdbId)
+  const maintenant = new Date().toISOString()
+
+  // Durées des épisodes : un échec (TMDB saturé…) ne doit pas empêcher
+  // l'ajout de la série. On n'enregistre alors pas de durées (les anciennes
+  // sont gardées) et durees_maj_le reste inchangé : le site redemandera.
+  let durees: Map<number, number | null> | null = null
+  try {
+    durees = await lireDurees(tmdbId, fiche, versSaisons(fiche).map((s) => s.numero))
+  } catch (erreur) {
+    console.error('Durées des épisodes indisponibles :', erreur)
+  }
 
   // « upsert » = insérer, ou mettre à jour si ce tmdb_id existe déjà.
   // ajoutee_le n'est pas envoyé : il garde sa date de première insertion.
   const { data: serie, error: erreurSerie } = await admin
     .from('series')
-    .upsert({ ...versLigneSerie(fiche), fiche_maj_le: new Date().toISOString() }, { onConflict: 'tmdb_id' })
+    .upsert(
+      { ...versLigneSerie(fiche), fiche_maj_le: maintenant, ...(durees ? { durees_maj_le: maintenant } : {}) },
+      { onConflict: 'tmdb_id' },
+    )
     .select('id, titre')
     .single()
 
@@ -321,7 +377,11 @@ async function ajouter(admin: SupabaseClient, tmdbId: number) {
     throw new ErreurHttp(500, 'Impossible d\'enregistrer la série.')
   }
 
-  const saisons = versSaisons(fiche).map((s) => ({ serie_id: serie.id, ...s }))
+  const saisons = versSaisons(fiche).map((s) => ({
+    serie_id: serie.id,
+    ...s,
+    ...(durees ? { duree_moyenne: durees.get(s.numero) ?? null } : {}),
+  }))
   if (saisons.length > 0) {
     const { error } = await admin.from('saisons').upsert(saisons, { onConflict: 'serie_id,numero' })
     if (error) {

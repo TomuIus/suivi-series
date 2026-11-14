@@ -416,6 +416,7 @@ a.bouton { display: inline-block; text-decoration: none; }
 }
 .statistiques thead th { color: var(--texte-doux); font-size: 0.85rem; font-weight: 600; }
 .statistiques th[scope="row"] { text-align: left; font-weight: normal; }
+.statistiques td { white-space: nowrap; }  /* « ≈ 15 h » reste sur une ligne */
 .statistiques .ligne-forte th,
 .statistiques .ligne-forte td { font-weight: 700; }
 .page-compte .aide { margin: 0.4rem 0 0; font-size: 0.85rem; }

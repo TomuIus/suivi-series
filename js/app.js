@@ -178,21 +178,34 @@ createApp({
         liste.value.filter((s) => !s.est_anime),
         liste.value.filter((s) => s.est_anime),
       ];
-      const pourChaque = (calcul) => groupes.map(calcul);
+      // Chaque ligne : un libellé et trois textes déjà mis en forme.
+      const ligne = (libelle, calcul, format = nombre, forte = false) =>
+        ({ libelle, forte, textes: groupes.map((g) => format(calcul(g))) });
+      const somme = (g, champ) => g.reduce((n, s) => n + (s[champ] ?? 0), 0);
       return [
-        { libelle: 'Titres dans ma liste', forte: true, valeurs: pourChaque((g) => g.length) },
-        ...SECTIONS.map((section) => ({
-          libelle: section.titre,
-          valeurs: pourChaque((g) => g.filter((s) => section.statuts.includes(s.statut)).length),
-        })),
-        // nb_vus vient de la vue « ma_liste » : épisodes spéciaux non comptés.
-        { libelle: 'Épisodes vus', forte: true, valeurs: pourChaque((g) => g.reduce((n, s) => n + s.nb_vus, 0)) },
+        ligne('Titres dans ma liste', (g) => g.length, nombre, true),
+        ...SECTIONS.map((section) =>
+          ligne(section.titre, (g) => g.filter((s) => section.statuts.includes(s.statut)).length)),
+        // nb_vus et minutes_vues viennent de la vue « ma_liste » : épisodes
+        // spéciaux non comptés.
+        ligne('Épisodes vus', (g) => somme(g, 'nb_vus'), nombre, true),
+        ligne('Temps passé', (g) => somme(g, 'minutes_vues'), dureeApprox, true),
       ];
     });
+
+    // Épisodes vus sans durée connue (non comptés dans le temps passé).
+    const episodesSansDuree = computed(() => liste.value.reduce((n, s) => n + (s.nb_vus_sans_duree ?? 0), 0));
 
     // « 2 400 » plutôt que « 2400 »
     function nombre(n) {
       return n.toLocaleString('fr-FR');
+    }
+
+    // Temps passé : « 0 h », « ≈ 45 min », « ≈ 312 h » (estimation, décision 31).
+    function dureeApprox(minutes) {
+      if (!minutes) return '0 h';
+      if (minutes < 60) return `≈ ${minutes} min`;
+      return `≈ ${nombre(Math.round(minutes / 60))} h`;
     }
 
     // --- Paramètres (nom d'utilisateur) ---
@@ -344,6 +357,8 @@ createApp({
       } else if (r.page === 'profil' || r.page === 'parametres') {
         ecranFiche.fermerFiche();
         window.scrollTo(0, 0);
+        // Profil : statistiques à jour (une fiche a pu changer des épisodes).
+        if (r.page === 'profil') chargerListe();
         // Paramètres : le champ part du nom actuel.
         if (r.page === 'parametres') nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
       } else {
@@ -410,20 +425,22 @@ createApp({
       }
     }
 
-    // Les séries ajoutées avant la séparation séries / animés n'ont pas encore
-    // de classement automatique (anime_detecte vide) : on fait remettre leur
-    // fiche à jour par la fonction serveur, une par une, en arrière-plan, une
-    // seule fois par visite. Ensuite, on recharge la liste.
+    // Les séries ajoutées avant certains changements n'ont pas encore toutes
+    // leurs informations : classement série / animé (anime_detecte vide,
+    // décision 24) ou durée des épisodes (durees_a_calculer, décision 31).
+    // On fait remettre leur fiche à jour par la fonction serveur, une par
+    // une, en arrière-plan, une seule fois par visite. Ensuite, on recharge
+    // la liste.
     let classementLance = false;
     async function completerClassement(lignes) {
-      const aClasser = lignes.filter((s) => s.anime_detecte == null);
+      const aClasser = lignes.filter((s) => s.anime_detecte == null || s.durees_a_calculer);
       if (classementLance || aClasser.length === 0) return;
       classementLance = true;
       for (const s of aClasser) {
         try {
           await importerSerie(s.tmdb_id);
         } catch (e) {
-          console.warn(`Classement de « ${s.titre} » impossible :`, e.message);
+          console.warn(`Mise à jour de « ${s.titre} » impossible :`, e.message);
         }
       }
       chargerListe();
@@ -689,7 +706,7 @@ createApp({
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
-      statistiques, nombre,
+      statistiques, episodesSansDuree, nombre,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };
