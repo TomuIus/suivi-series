@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=11 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=12 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=12">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=11",
-      "./js/base.js": "./js/base.js?v=11",
-      "./js/config.js": "./js/config.js?v=11",
-      "./js/fiche.js": "./js/fiche.js?v=11",
-      "./js/tmdb.js": "./js/tmdb.js?v=11"
+      "./js/app.js": "./js/app.js?v=12",
+      "./js/base.js": "./js/base.js?v=12",
+      "./js/config.js": "./js/config.js?v=12",
+      "./js/fiche.js": "./js/fiche.js?v=12",
+      "./js/tmdb.js": "./js/tmdb.js?v=12"
     }
   }
   </script>
@@ -74,9 +74,8 @@
     <header class="entete">
       <h1>Suivi de séries</h1>
       <div v-if="utilisateur" class="compte">
-        <!-- Nom d'utilisateur (sinon l'e-mail) : un clic ouvre « Mon compte » -->
-        <button type="button" class="nom-compte" :title="'Connecté avec ' + utilisateur.email"
-                @click="ouvrirCompte">{{ nomAffiche }}</button>
+        <!-- Nom d'utilisateur (sinon l'e-mail) : un clic ouvre la page « Profil » -->
+        <a href="#/profil" class="nom-compte" :title="'Connecté avec ' + utilisateur.email">{{ nomAffiche }}</a>
         <button type="button" class="bouton bouton-discret" @click="deconnexion">
           Se déconnecter
         </button>
@@ -85,46 +84,6 @@
 
     <main>
       <p v-if="erreur" class="erreur" role="alert">{{ erreur }}</p>
-
-      <!-- Mon compte : statistiques (décision 28) et nom d'utilisateur -->
-      <section v-if="utilisateur && compteOuvert" class="carte compte-panneau">
-        <h2>Mon compte</h2>
-        <p class="details">Connecté avec {{ utilisateur.email }}</p>
-
-        <h3>Statistiques</h3>
-        <p v-if="!listeChargee" class="info">Chargement…</p>
-        <table v-else class="statistiques">
-          <thead>
-            <tr>
-              <td></td>
-              <th scope="col">Total</th>
-              <th scope="col">Séries</th>
-              <th scope="col">Animés</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="ligne in statistiques" :key="ligne.libelle" :class="{ 'ligne-forte': ligne.forte }">
-              <th scope="row">{{ ligne.libelle }}</th>
-              <td v-for="(valeur, i) in ligne.valeurs" :key="i">{{ nombre(valeur) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="info aide">Épisodes vus : sans les épisodes spéciaux.</p>
-
-        <h3>Nom d'utilisateur</h3>
-        <form class="formulaire-compte" @submit.prevent="enregistrerNom">
-          <label for="nom-utilisateur" class="cache-visuel">Nom d'utilisateur</label>
-          <input id="nom-utilisateur" v-model="nomSaisi" type="text" :maxlength="longueurMaxNom"
-                 autocomplete="nickname" placeholder="Votre nom ou pseudo">
-          <p class="info aide">Affiché en haut à la place de l'e-mail. Laissez vide pour réafficher l'e-mail.</p>
-          <div class="boutons">
-            <button type="submit" class="bouton" :disabled="enregistrementNom">
-              {{ enregistrementNom ? 'Enregistrement…' : 'Enregistrer' }}
-            </button>
-            <button type="button" class="bouton bouton-discret" @click="fermerCompte">Fermer</button>
-          </div>
-        </form>
-      </section>
 
       <p v-if="chargement" class="info">Chargement…</p>
 
@@ -317,6 +276,64 @@
               </div>
             </div>
           </template>
+        </template>
+
+        <!-- ================= Page : profil (décision 29) ================= -->
+        <template v-else-if="route.page === 'profil'">
+          <nav class="retour barre-retour">
+            <a href="#/" class="bouton bouton-discret" @click.prevent="retourListe">← Accueil</a>
+            <a href="#/parametres" class="bouton bouton-discret">⚙ Paramètres</a>
+          </nav>
+
+          <section class="carte page-compte">
+            <h2>{{ nomAffiche }}</h2>
+
+            <!-- Statistiques (décision 28) -->
+            <h3>Statistiques</h3>
+            <p v-if="!listeChargee" class="info">Chargement…</p>
+            <table v-else class="statistiques">
+              <thead>
+                <tr>
+                  <td></td>
+                  <th scope="col">Total</th>
+                  <th scope="col">Séries</th>
+                  <th scope="col">Animés</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="ligne in statistiques" :key="ligne.libelle" :class="{ 'ligne-forte': ligne.forte }">
+                  <th scope="row">{{ ligne.libelle }}</th>
+                  <td v-for="(valeur, i) in ligne.valeurs" :key="i">{{ nombre(valeur) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="info aide">Épisodes vus : sans les épisodes spéciaux.</p>
+          </section>
+        </template>
+
+        <!-- ================= Page : paramètres (décision 29) ================= -->
+        <template v-else-if="route.page === 'parametres'">
+          <nav class="retour">
+            <a href="#/profil" class="bouton bouton-discret" @click.prevent="retourProfil">← Profil</a>
+          </nav>
+
+          <section class="carte page-compte">
+            <h2>Paramètres</h2>
+            <p class="details">Connecté avec {{ utilisateur.email }}</p>
+
+            <h3>Nom d'utilisateur</h3>
+            <form class="formulaire-compte" @submit.prevent="enregistrerNom">
+              <label for="nom-utilisateur" class="cache-visuel">Nom d'utilisateur</label>
+              <input id="nom-utilisateur" v-model="nomSaisi" type="text" :maxlength="longueurMaxNom"
+                     autocomplete="nickname" placeholder="Votre nom ou pseudo">
+              <p class="info aide">Affiché en haut à la place de l'e-mail. Laissez vide pour réafficher l'e-mail.</p>
+              <div class="boutons">
+                <button type="submit" class="bouton" :disabled="enregistrementNom">
+                  {{ enregistrementNom ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+              </div>
+            </form>
+          </section>
         </template>
 
         <!-- ================= Page : Ma liste ================= -->

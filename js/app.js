@@ -107,6 +107,8 @@ function lireRoute() {
   if (trouve) return { page: 'fiche', serieId: Number(trouve[1]) };
   trouve = /^#\/apercu\/(\d+)$/.exec(location.hash);
   if (trouve) return { page: 'fiche', tmdbId: Number(trouve[1]) };
+  if (location.hash === '#/profil') return { page: 'profil' };          // décision 29
+  if (location.hash === '#/parametres') return { page: 'parametres' };
   return { page: 'liste' };
 }
 
@@ -165,7 +167,7 @@ createApp({
         .filter((section) => section.series.length > 0)
     );
 
-    // --- Mon compte : statistiques (décision 28) ---
+    // --- Profil : statistiques (décision 28) ---
     // Calculées dans le navigateur à partir de la liste déjà chargée (aucune
     // requête en plus) ; elles se mettent à jour d'elles-mêmes quand on coche
     // un épisode. Une ligne par section de « Ma liste » (même regroupement),
@@ -193,8 +195,7 @@ createApp({
       return n.toLocaleString('fr-FR');
     }
 
-    // --- Mon compte (nom d'utilisateur) ---
-    const compteOuvert = ref(false);
+    // --- Paramètres (nom d'utilisateur) ---
     const nomSaisi = ref('');
     const enregistrementNom = ref(false);
     // Nom affiché en haut : le nom d'utilisateur s'il existe, sinon l'e-mail.
@@ -220,7 +221,8 @@ createApp({
 
     // --- Navigation entre « Ma liste » et les fiches ---
     const route = ref(lireRoute());
-    let depuisLaListe = false; // la fiche a-t-elle été ouverte depuis la liste ?
+    let depuisLaListe = false; // la page actuelle a-t-elle été ouverte depuis la liste ?
+    let pagePrecedente = null; // page affichée juste avant (pour les boutons de retour)
     let positionListe = 0;     // défilement de la liste, pour y revenir au même endroit
 
     // --- Fiche d'une série (voir fiche.js) ---
@@ -285,6 +287,7 @@ createApp({
       if (nouveau && nouveau.id !== ancien?.id) {
         chargerListe();
         if (route.value.page === 'fiche') ecranFiche.ouvrirFiche(route.value);
+        if (route.value.page === 'parametres') nomSaisi.value = nouveau.user_metadata?.nom_utilisateur ?? '';
       }
       if (!nouveau) {
         ecranFiche.fermerFiche();
@@ -314,10 +317,15 @@ createApp({
     function surChangementAdresse() {
       const avant = route.value;
       const apres = lireRoute();
-      if (avant.page === 'liste' && apres.page === 'fiche') {
+      if (avant.page === 'liste' && apres.page !== 'liste') {
         depuisLaListe = true;
         positionListe = window.scrollY; // on note où on en était dans la liste
+      } else if (apres.page !== avant.page) {
+        // On est passé par une autre page (ex. fiche → profil) : revenir en
+        // arrière ne ramènerait plus à la liste.
+        depuisLaListe = false;
       }
+      pagePrecedente = avant.page;
       route.value = apres;
     }
 
@@ -333,6 +341,11 @@ createApp({
         }
         window.scrollTo(0, 0);
         ecranFiche.ouvrirFiche(r);
+      } else if (r.page === 'profil' || r.page === 'parametres') {
+        ecranFiche.fermerFiche();
+        window.scrollTo(0, 0);
+        // Paramètres : le champ part du nom actuel.
+        if (r.page === 'parametres') nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
       } else {
         ecranFiche.fermerFiche();
         await nextTick(); // attendre que la liste soit de nouveau affichée
@@ -341,8 +354,9 @@ createApp({
       }
     });
 
-    // Bouton « ← Ma liste » : comme le bouton retour si l'on vient de la liste
-    // (on retrouve la liste à la même position), sinon on va à la liste.
+    // Boutons « ← Ma liste » (fiche) et « ← Accueil » (profil) : comme le
+    // bouton retour si l'on vient de la liste (on la retrouve à la même
+    // position), sinon on va à la liste.
     function retourListe() {
       if (depuisLaListe) {
         depuisLaListe = false;
@@ -350,6 +364,12 @@ createApp({
       } else {
         location.hash = '#/';
       }
+    }
+
+    // Bouton « ← Profil » (paramètres) : même principe.
+    function retourProfil() {
+      if (pagePrecedente === 'profil') history.back();
+      else location.hash = '#/profil';
     }
 
     // --- Actions : connexion ---
@@ -506,15 +526,6 @@ createApp({
 
     // --- Actions : mon compte ---
 
-    function ouvrirCompte() {
-      nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
-      compteOuvert.value = true;
-    }
-
-    function fermerCompte() {
-      compteOuvert.value = false;
-    }
-
     async function enregistrerNom() {
       const nom = nomSaisi.value.trim();
       if (nom.length > LONGUEUR_MAX_NOM) {
@@ -525,7 +536,7 @@ createApp({
       erreur.value = '';
       try {
         utilisateur.value = await changerNomUtilisateur(nom);
-        compteOuvert.value = false;
+        nomSaisi.value = nom;
         afficherMessage(nom ? `Vous vous appelez maintenant « ${nom} ».` : 'Nom retiré : votre e-mail est de nouveau affiché.');
       } catch (e) {
         erreur.value = e.message;
@@ -677,7 +688,7 @@ createApp({
       route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
-      compteOuvert, nomSaisi, enregistrementNom, nomAffiche, ouvrirCompte, fermerCompte, enregistrerNom,
+      nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
       statistiques, nombre,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
