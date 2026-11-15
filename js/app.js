@@ -71,6 +71,13 @@ function enregistrerFiltre(valeur) {
   }
 }
 
+// Garde les titres correspondant à un filtre ('tout', 'series' ou 'animes').
+function filtrerTitres(titres, valeur) {
+  if (valeur === 'animes') return titres.filter((s) => s.est_anime);
+  if (valeur === 'series') return titres.filter((s) => !s.est_anime);
+  return titres;
+}
+
 const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
 // Points et niveaux (décision 33). Valeurs à revoir après des tests.
@@ -174,11 +181,7 @@ createApp({
       return { tout: liste.value.length, series: liste.value.length - animes, animes };
     });
 
-    const listeFiltree = computed(() => {
-      if (filtre.value === 'animes') return liste.value.filter((s) => s.est_anime);
-      if (filtre.value === 'series') return liste.value.filter((s) => !s.est_anime);
-      return liste.value;
-    });
+    const listeFiltree = computed(() => filtrerTitres(liste.value, filtre.value));
 
     // La liste (filtrée) découpée en sections ; les sections vides ne sont pas
     // affichées. L'ordre dans chaque section vient de la base : activité la
@@ -210,35 +213,41 @@ createApp({
       };
     });
 
-    // --- Profil : statistiques (décision 28) ---
+    // --- Profil : statistiques (décisions 28 et 34) ---
     // Calculées dans le navigateur à partir de la liste déjà chargée (aucune
     // requête en plus) ; elles se mettent à jour d'elles-mêmes quand on coche
-    // un épisode. Une ligne par section de « Ma liste » (même regroupement),
-    // trois colonnes : Total, Séries, Animés. Le filtre n'a pas d'effet ici.
+    // un épisode. Disposition (décision 34) : un filtre « Tout · Séries ·
+    // Animés », quatre chiffres clés, puis le nombre de titres par statut
+    // (mêmes regroupements que les sections de « Ma liste »).
+    // Ce filtre est propre au profil : il ne change pas celui de « Ma liste »
+    // et n'est pas retenu (on retrouve « Tout » en revenant sur le profil).
+    // Le niveau, affiché au-dessus, ne dépend pas du filtre.
+    const filtreStats = ref('tout');
+
     const statistiques = computed(() => {
-      const groupes = [
-        liste.value,
-        liste.value.filter((s) => !s.est_anime),
-        liste.value.filter((s) => s.est_anime),
-      ];
-      // Chaque ligne : un libellé et trois textes déjà mis en forme.
-      const ligne = (libelle, calcul, format = nombre, forte = false) =>
-        ({ libelle, forte, textes: groupes.map((g) => format(calcul(g))) });
-      const somme = (g, champ) => g.reduce((n, s) => n + (s[champ] ?? 0), 0);
-      return [
-        ligne('Titres dans ma liste', (g) => g.length, nombre, true),
-        ...SECTIONS.map((section) =>
-          ligne(section.titre, (g) => g.filter((s) => section.statuts.includes(s.statut)).length)),
+      const titres = filtrerTitres(liste.value, filtreStats.value);
+      const somme = (champ) => titres.reduce((n, s) => n + (s[champ] ?? 0), 0);
+      const parStatut = SECTIONS.map((section) => ({
+        cle: section.cle,
+        libelle: section.titre,
+        nombre: titres.filter((s) => section.statuts.includes(s.statut)).length,
+      }));
+      const termines = parStatut.find((l) => l.cle === 'termine').nombre;
+      return {
         // Viennent de la vue « ma_liste ». Épisodes spéciaux : comptés ici
         // s'ils sont cochés (décision 32), mais jamais pour les statuts ni la
         // barre de progression (nb_vus les ignore).
-        ligne('Épisodes vus', (g) => somme(g, 'nb_vus') + somme(g, 'nb_speciaux_vus'), nombre, true),
-        ligne('Temps passé', (g) => somme(g, 'minutes_vues'), dureeApprox, true),
-      ];
+        chiffres: [
+          { libelle: 'Épisodes vus', texte: nombre(somme('nb_vus') + somme('nb_speciaux_vus')) },
+          { libelle: 'Temps passé', texte: dureeApprox(somme('minutes_vues')) },
+          { libelle: 'Titres', texte: nombre(titres.length) },
+          { libelle: 'Terminés', texte: nombre(termines) },
+        ],
+        parStatut,
+        // Épisodes vus sans durée connue (non comptés dans le temps passé).
+        sansDuree: somme('nb_vus_sans_duree'),
+      };
     });
-
-    // Épisodes vus sans durée connue (non comptés dans le temps passé).
-    const episodesSansDuree = computed(() => liste.value.reduce((n, s) => n + (s.nb_vus_sans_duree ?? 0), 0));
 
     // « 2 400 » plutôt que « 2400 »
     function nombre(n) {
@@ -750,7 +759,7 @@ createApp({
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
-      statistiques, episodesSansDuree, nombre, niveau,
+      filtreStats, statistiques, nombre, niveau,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };

@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=15 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=16 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=15">
+  <link rel="stylesheet" href="css/style.css?v=16">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=15",
-      "./js/base.js": "./js/base.js?v=15",
-      "./js/config.js": "./js/config.js?v=15",
-      "./js/fiche.js": "./js/fiche.js?v=15",
-      "./js/tmdb.js": "./js/tmdb.js?v=15"
+      "./js/app.js": "./js/app.js?v=16",
+      "./js/base.js": "./js/base.js?v=16",
+      "./js/config.js": "./js/config.js?v=16",
+      "./js/fiche.js": "./js/fiche.js?v=16",
+      "./js/tmdb.js": "./js/tmdb.js?v=16"
     }
   }
   </script>
@@ -74,8 +74,18 @@
     <header class="entete">
       <h1>Suivi de séries</h1>
       <div v-if="utilisateur" class="compte">
-        <!-- Nom d'utilisateur (sinon l'e-mail) : un clic ouvre la page « Profil » -->
-        <a href="#/profil" class="nom-compte" :title="'Connecté avec ' + utilisateur.email">{{ nomAffiche }}</a>
+        <!-- Nom d'utilisateur (sinon l'e-mail) et, dessous, le niveau avec sa
+             barre (décision 34) : un clic ouvre la page « Profil ». La barre est
+             décorative ici (« aria-hidden ») ; le détail est sur le profil. -->
+        <a href="#/profil" class="lien-profil" :title="'Connecté avec ' + utilisateur.email">
+          <span class="nom-compte">{{ nomAffiche }}</span>
+          <span v-if="listeChargee" class="mini-niveau">
+            Niveau {{ niveau.niveau }}
+            <span class="barre" aria-hidden="true">
+              <span class="barre-remplie" :style="{ width: niveau.pourcentage + '%' }"></span>
+            </span>
+          </span>
+        </a>
         <button type="button" class="bouton bouton-discret" @click="deconnexion">
           Se déconnecter
         </button>
@@ -304,32 +314,42 @@
               <p class="info aide">1 point par épisode vu (spéciaux cochés compris), +20 par série terminée.</p>
             </div>
 
-            <!-- Statistiques (décision 28) -->
+            <!-- Statistiques (décisions 28 et 34) : filtre, chiffres clés, par statut -->
             <h3>Statistiques</h3>
             <p v-if="!listeChargee" class="info">Chargement…</p>
-            <table v-else class="statistiques">
-              <thead>
-                <tr>
-                  <td></td>
-                  <th scope="col">Total</th>
-                  <th scope="col">Séries</th>
-                  <th scope="col">Animés</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="ligne in statistiques" :key="ligne.libelle" :class="{ 'ligne-forte': ligne.forte }">
-                  <th scope="row">{{ ligne.libelle }}</th>
-                  <td v-for="(texte, i) in ligne.textes" :key="i">{{ texte }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="info aide">
-              Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.
-              Temps passé estimé d'après la durée moyenne des épisodes de chaque saison (TMDB).
-              <template v-if="episodesSansDuree > 0">
-                Durée inconnue pour {{ nombre(episodesSansDuree) }} épisode{{ episodesSansDuree > 1 ? 's' : '' }} vu{{ episodesSansDuree > 1 ? 's' : '' }}, non compté{{ episodesSansDuree > 1 ? 's' : '' }}.
-              </template>
-            </p>
+            <template v-else>
+              <!-- Filtre propre au profil (celui de « Ma liste » ne change rien ici) -->
+              <div class="filtres" role="group" aria-label="Statistiques pour">
+                <button v-for="f in filtres" :key="f.valeur" type="button" class="filtre"
+                        :aria-pressed="String(filtreStats === f.valeur)" @click="filtreStats = f.valeur">
+                  {{ f.libelle }}
+                </button>
+              </div>
+
+              <!-- Quatre chiffres clés en tuiles (2 × 2 sur téléphone) -->
+              <dl class="chiffres">
+                <div v-for="c in statistiques.chiffres" :key="c.libelle" class="chiffre">
+                  <dt>{{ c.libelle }}</dt>
+                  <dd>{{ c.texte }}</dd>
+                </div>
+              </dl>
+
+              <h4 class="sous-titre">Par statut</h4>
+              <dl class="par-statut">
+                <div v-for="l in statistiques.parStatut" :key="l.cle">
+                  <dt>{{ l.libelle }}</dt>
+                  <dd>{{ nombre(l.nombre) }}</dd>
+                </div>
+              </dl>
+
+              <p class="info aide">
+                Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.
+                Temps passé estimé d'après la durée moyenne des épisodes de chaque saison (TMDB).
+                <template v-if="statistiques.sansDuree > 0">
+                  Durée inconnue pour {{ nombre(statistiques.sansDuree) }} épisode{{ statistiques.sansDuree > 1 ? 's' : '' }} vu{{ statistiques.sansDuree > 1 ? 's' : '' }}, non compté{{ statistiques.sansDuree > 1 ? 's' : '' }}.
+                </template>
+              </p>
+            </template>
           </section>
         </template>
 

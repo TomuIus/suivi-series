@@ -56,23 +56,29 @@ body {
 }
 .entete h1 { font-size: 1.25rem; margin: 0; }
 .compte { display: flex; align-items: center; gap: 0.75rem; }
-.nom-compte {             /* nom (ou e-mail) cliquable : ouvre la page « Profil » */
-  display: inline-block;
-  font: inherit;
-  font-size: 0.9rem;
+/* Nom (ou e-mail) et niveau, cliquables ensemble : ouvrent la page « Profil »
+   (décision 34). Le niveau et sa petite barre sont sous le nom. */
+.lien-profil {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
   max-width: 14rem;
-  padding: 0.25rem 0;
-  border: none;
-  background: none;
+  padding: 0.2rem 0;
   color: var(--texte-doux);
+  text-decoration: none;
+}
+.lien-profil:hover { color: var(--texte); }
+.nom-compte {
+  font-size: 0.9rem;
   text-decoration: underline dotted;
   text-underline-offset: 3px;
-  overflow: hidden;
+  overflow: hidden;           /* un nom trop long finit par « … » */
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
 }
-.nom-compte:hover { color: var(--texte); }
+.mini-niveau { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; white-space: nowrap; }
+.mini-niveau .barre { flex: none; width: 4.5rem; height: 0.35rem; }
 
 /* --- Contenu --- */
 main { max-width: 40rem; margin: 0 auto; padding: 1rem; }
@@ -403,23 +409,47 @@ a.bouton { display: inline-block; text-decoration: none; }
 .barre-retour .bouton { margin-top: 0; }
 .page-compte h2 { overflow-wrap: anywhere; }  /* un e-mail long ne déborde pas */
 .page-compte h3 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
-.statistiques {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;  /* chiffres de même largeur, bien alignés */
+.page-compte .aide { margin: 0.4rem 0 0; font-size: 0.85rem; }
+
+/* Profil : chiffres clés en tuiles (décision 34) — 2 colonnes sur téléphone,
+   4 sur un écran assez large */
+.chiffres {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
 }
-.statistiques th,
-.statistiques td {
+@media (min-width: 40rem) {
+  .chiffres { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.chiffre {
+  display: flex;
+  flex-direction: column-reverse;  /* nombre affiché au-dessus de son libellé (lu après lui) */
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+}
+.chiffre dt { font-size: 0.8rem; color: var(--texte-doux); }
+.chiffre dd {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;  /* chiffres de même largeur */
+  white-space: nowrap;                 /* « ≈ 15 h » reste sur une ligne */
+}
+
+/* Profil : nombre de titres par statut, une ligne chacun */
+.sous-titre { margin: 1rem 0 0.25rem; font-size: 0.9rem; font-weight: 600; color: var(--texte-doux); }
+.par-statut { margin: 0; }
+.par-statut div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.4rem 0.3rem;
-  text-align: right;
   border-bottom: 1px solid var(--bordure);
 }
-.statistiques thead th { color: var(--texte-doux); font-size: 0.85rem; font-weight: 600; }
-.statistiques th[scope="row"] { text-align: left; font-weight: normal; }
-.statistiques td { white-space: nowrap; }  /* « ≈ 15 h » reste sur une ligne */
-.statistiques .ligne-forte th,
-.statistiques .ligne-forte td { font-weight: 700; }
-.page-compte .aide { margin: 0.4rem 0 0; font-size: 0.85rem; }
+.par-statut dd { margin: 0; font-variant-numeric: tabular-nums; }
 
 /* Profil : niveau et barre vers le niveau suivant (décision 33) */
 .niveau { margin-top: 0.75rem; }
@@ -508,4 +538,4 @@ a.bouton { display: inline-block; text-decoration: none; }
 .lien-danger:focus-visible,
 .choix-statut:focus-visible,
 .filtre:focus-visible,
-.nom-compte:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.lien-profil:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
