@@ -13,6 +13,14 @@
   --succes: #1e7a3c;
   --bordure: #d9dde5;
   --rayon: 10px;
+  /* Couleurs des statuts dans l'anneau du Profil (décision 35). Palette
+     vérifiée avec l'outil de contrôle des palettes : parts voisines bien
+     distinctes, daltonisme compris, sur le fond clair comme sur le sombre. */
+  --statut-en_cours: #2a78d6;
+  --statut-a_jour: #eb6834;
+  --statut-termine: #1baf7a;
+  --statut-abandonne: #eda100;
+  --statut-plus_tard: #e87ba4;
   color-scheme: light dark;
 }
 
@@ -27,6 +35,11 @@
     --erreur: #f2a19b;
     --succes: #7fd69a;
     --bordure: #333a45;
+    --statut-en_cours: #3987e5;
+    --statut-a_jour: #d95926;
+    --statut-termine: #199e70;
+    --statut-abandonne: #c98500;
+    --statut-plus_tard: #d55181;
   }
 }
 
@@ -77,8 +90,9 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mini-niveau { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; white-space: nowrap; }
-.mini-niveau .barre { flex: none; width: 4.5rem; height: 0.35rem; }
+/* « Niveau N » puis, dessous, la barre, aussi large que le nom (4,5 rem au moins) */
+.mini-niveau { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.75rem; white-space: nowrap; }
+.mini-niveau .barre { flex: none; width: 100%; min-width: 4.5rem; max-width: none; height: 0.35rem; }
 
 /* --- Contenu --- */
 main { max-width: 40rem; margin: 0 auto; padding: 1rem; }
@@ -439,8 +453,18 @@ a.bouton { display: inline-block; text-decoration: none; }
   white-space: nowrap;                 /* « ≈ 15 h » reste sur une ligne */
 }
 
-/* Profil : nombre de titres par statut, une ligne chacun */
+/* Profil : nombre de titres par statut — anneau à gauche, légende à droite
+   (la légende passe dessous si la place manque) (décision 35) */
 .sous-titre { margin: 1rem 0 0.25rem; font-size: 0.9rem; font-weight: 600; color: var(--texte-doux); }
+.repartition { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; }
+.anneau { flex: none; width: 8rem; height: 8rem; }
+.anneau circle { fill: none; stroke-width: 18; }
+.anneau-vide { stroke: var(--bordure); }  /* aucun titre : anneau gris */
+.anneau-total { font-size: 24px; font-weight: 700; fill: var(--texte); text-anchor: middle; }
+.anneau-unite { font-size: 11px; fill: var(--texte-doux); text-anchor: middle; }
+.repartition .par-statut { flex: 1; min-width: 8.5rem; }  /* tient à côté de l'anneau dès 375 px */
+.par-statut dt { display: flex; align-items: center; gap: 0.5rem; }
+.pastille { flex: none; width: 0.7rem; height: 0.7rem; border-radius: 2px; }
 .par-statut { margin: 0; }
 .par-statut div {
   display: flex;

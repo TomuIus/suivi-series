@@ -80,6 +80,11 @@ function filtrerTitres(titres, valeur) {
 
 const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
+// Anneau « Par statut » du Profil (décision 35), en unités du dessin SVG
+// (carré de 120 × 120, centre en 60, 60).
+const RAYON_ANNEAU = 44;
+const ECART_ANNEAU = 2;  // espace laissé entre deux parts
+
 // Points et niveaux (décision 33). Valeurs à revoir après des tests.
 const POINTS_PAR_EPISODE = 1;    // par épisode coché, spéciaux compris
 const BONUS_SERIE_TERMINEE = 20; // par série au statut « Terminé »
@@ -233,6 +238,31 @@ createApp({
         nombre: titres.filter((s) => section.statuts.includes(s.statut)).length,
       }));
       const termines = parStatut.find((l) => l.cle === 'termine').nombre;
+
+      // Parts de l'anneau (décision 35). Chaque part est un cercle dont on
+      // ne trace qu'un morceau du contour : « trait » = longueur tracée puis
+      // longueur laissée vide (stroke-dasharray), « decalage » = où le
+      // morceau commence (stroke-dashoffset). Les statuts à 0 n'ont pas de
+      // part ; un petit écart sépare les parts quand il y en a plusieurs.
+      const circonference = 2 * Math.PI * RAYON_ANNEAU;
+      const avecTitres = parStatut.filter((l) => l.nombre > 0);
+      const ecart = avecTitres.length > 1 ? ECART_ANNEAU : 0;
+      let debut = 0;
+      const parts = avecTitres.map((l) => {
+        const longueur = (circonference * l.nombre) / titres.length;
+        const tracee = Math.max(longueur - ecart, 0);
+        const part = {
+          cle: l.cle,
+          libelle: l.libelle,
+          nombre: l.nombre,
+          pourcentage: Math.round((100 * l.nombre) / titres.length),
+          trait: `${tracee} ${circonference - tracee}`,
+          decalage: -debut,
+        };
+        debut += longueur;
+        return part;
+      });
+
       return {
         // Viennent de la vue « ma_liste ». Épisodes spéciaux : comptés ici
         // s'ils sont cochés (décision 32), mais jamais pour les statuts ni la
@@ -244,6 +274,8 @@ createApp({
           { libelle: 'Terminés', texte: nombre(termines) },
         ],
         parStatut,
+        parts,
+        total: titres.length,
         // Épisodes vus sans durée connue (non comptés dans le temps passé).
         sansDuree: somme('nb_vus_sans_duree'),
       };

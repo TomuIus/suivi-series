@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=16 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=17 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=16">
+  <link rel="stylesheet" href="css/style.css?v=17">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=16",
-      "./js/base.js": "./js/base.js?v=16",
-      "./js/config.js": "./js/config.js?v=16",
-      "./js/fiche.js": "./js/fiche.js?v=16",
-      "./js/tmdb.js": "./js/tmdb.js?v=16"
+      "./js/app.js": "./js/app.js?v=17",
+      "./js/base.js": "./js/base.js?v=17",
+      "./js/config.js": "./js/config.js?v=17",
+      "./js/fiche.js": "./js/fiche.js?v=17",
+      "./js/tmdb.js": "./js/tmdb.js?v=17"
     }
   }
   </script>
@@ -334,13 +334,32 @@
                 </div>
               </dl>
 
+              <!-- Par statut (décision 35) : anneau + légende. L'anneau est un
+                   dessin (« aria-hidden ») ; la légende donne les mêmes nombres
+                   en texte. Survol d'une part : son nom, son nombre et son %. -->
               <h4 class="sous-titre">Par statut</h4>
-              <dl class="par-statut">
-                <div v-for="l in statistiques.parStatut" :key="l.cle">
-                  <dt>{{ l.libelle }}</dt>
-                  <dd>{{ nombre(l.nombre) }}</dd>
-                </div>
-              </dl>
+              <div class="repartition">
+                <svg class="anneau" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle v-if="statistiques.total === 0" class="anneau-vide" cx="60" cy="60" r="44" />
+                  <circle v-for="p in statistiques.parts" :key="p.cle" cx="60" cy="60" r="44"
+                          :style="{ stroke: 'var(--statut-' + p.cle + ')' }"
+                          :stroke-dasharray="p.trait" :stroke-dashoffset="p.decalage"
+                          transform="rotate(-90 60 60)">
+                    <title>{{ p.libelle }} : {{ nombre(p.nombre) }} ({{ p.pourcentage }} %)</title>
+                  </circle>
+                  <text x="60" y="62" class="anneau-total">{{ nombre(statistiques.total) }}</text>
+                  <text x="60" y="79" class="anneau-unite">titre{{ statistiques.total > 1 ? 's' : '' }}</text>
+                </svg>
+                <dl class="par-statut">
+                  <div v-for="l in statistiques.parStatut" :key="l.cle">
+                    <dt>
+                      <span class="pastille" :style="{ background: 'var(--statut-' + l.cle + ')' }" aria-hidden="true"></span>
+                      {{ l.libelle }}
+                    </dt>
+                    <dd>{{ nombre(l.nombre) }}</dd>
+                  </div>
+                </dl>
+              </div>
 
               <p class="info aide">
                 Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.
