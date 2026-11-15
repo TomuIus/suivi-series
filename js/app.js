@@ -85,23 +85,35 @@ const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 const RAYON_ANNEAU = 44;
 const ECART_ANNEAU = 2;  // espace laissé entre deux parts
 
-// Points et niveaux (décision 33). Valeurs à revoir après des tests.
+// Points et niveaux (décisions 33 et 36). Valeurs à revoir après des tests.
 const POINTS_PAR_EPISODE = 1;    // par épisode coché, spéciaux compris
 const BONUS_SERIE_TERMINEE = 20; // par série au statut « Terminé »
-const PALIER_NIVEAU = 50;        // chaque niveau demande 50 points de plus que le précédent
+// Coût d'un niveau (décision 36, option C) : chaque niveau coûte 10 points de
+// plus que le précédent (10, 20, 30…), mais jamais plus de 100.
+const PALIER_NIVEAU = 10;
+const COUT_MAX_NIVEAU = 100;
+// Nombre de niveaux dont le coût augmente encore (ici 10 : du niveau 1 au 11).
+const NIVEAUX_CROISSANTS = Math.floor(COUT_MAX_NIVEAU / PALIER_NIVEAU);
 
 // Points nécessaires, au total, pour atteindre le niveau n (n ≥ 1) :
-// niveau 1 = 0, niveau 2 = 50, niveau 3 = 50 + 100 = 150, niveau 4 = 300…
-// C'est la somme 50 + 100 + … + 50 × (n − 1) = 25 × n × (n − 1).
+// niveau 1 = 0, niveau 2 = 10, niveau 3 = 10 + 20 = 30… niveau 11 = 550 ;
+// ensuite 100 de plus par niveau (niveau 12 = 650, niveau 13 = 750…).
+// Tant que le coût augmente : 10 + 20 + … + 10 × (n − 1) = 5 × n × (n − 1).
 function seuilNiveau(n) {
-  return (PALIER_NIVEAU / 2) * n * (n - 1);
+  if (n - 1 <= NIVEAUX_CROISSANTS) return (PALIER_NIVEAU / 2) * n * (n - 1);
+  const debutPalierFixe = (PALIER_NIVEAU / 2) * NIVEAUX_CROISSANTS * (NIVEAUX_CROISSANTS + 1);
+  return debutPalierFixe + COUT_MAX_NIVEAU * (n - 1 - NIVEAUX_CROISSANTS);
 }
 
 // Niveau atteint avec un nombre de points : le plus grand n dont le seuil
-// ne dépasse pas les points (formule du second degré, puis vérification pour
-// écarter toute erreur d'arrondi).
+// ne dépasse pas les points. Formule du second degré dans la partie où le
+// coût augmente, simple division ensuite, puis vérification pour écarter
+// toute erreur d'arrondi.
 function niveauPour(points) {
-  let n = Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * points) / PALIER_NIVEAU)) / 2));
+  const niveauPlafond = NIVEAUX_CROISSANTS + 1;
+  let n = points >= seuilNiveau(niveauPlafond)
+    ? niveauPlafond + Math.floor((points - seuilNiveau(niveauPlafond)) / COUT_MAX_NIVEAU)
+    : Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * points) / PALIER_NIVEAU)) / 2));
   while (seuilNiveau(n + 1) <= points) n++;
   while (n > 1 && seuilNiveau(n) > points) n--;
   return n;
@@ -232,11 +244,15 @@ createApp({
     const statistiques = computed(() => {
       const titres = filtrerTitres(liste.value, filtreStats.value);
       const somme = (champ) => titres.reduce((n, s) => n + (s[champ] ?? 0), 0);
-      const parStatut = SECTIONS.map((section) => ({
-        cle: section.cle,
-        libelle: section.titre,
-        nombre: titres.filter((s) => section.statuts.includes(s.statut)).length,
-      }));
+      const compter = (section) => titres.filter((s) => section.statuts.includes(s.statut)).length;
+      // « Plus tard » n'apparaît pas dans l'anneau ni dans sa légende
+      // (décision 36) : ce sont des séries mises de côté, pas regardées.
+      // Leur nombre est indiqué à part, sous l'anneau.
+      const parStatut = SECTIONS
+        .filter((section) => section.cle !== 'plus_tard')
+        .map((section) => ({ cle: section.cle, libelle: section.titre, nombre: compter(section) }));
+      const plusTard = compter(SECTIONS.find((section) => section.cle === 'plus_tard'));
+      const totalAnneau = titres.length - plusTard;
       const termines = parStatut.find((l) => l.cle === 'termine').nombre;
 
       // Parts de l'anneau (décision 35). Chaque part est un cercle dont on
@@ -249,13 +265,13 @@ createApp({
       const ecart = avecTitres.length > 1 ? ECART_ANNEAU : 0;
       let debut = 0;
       const parts = avecTitres.map((l) => {
-        const longueur = (circonference * l.nombre) / titres.length;
+        const longueur = (circonference * l.nombre) / totalAnneau;
         const tracee = Math.max(longueur - ecart, 0);
         const part = {
           cle: l.cle,
           libelle: l.libelle,
           nombre: l.nombre,
-          pourcentage: Math.round((100 * l.nombre) / titres.length),
+          pourcentage: Math.round((100 * l.nombre) / totalAnneau),
           trait: `${tracee} ${circonference - tracee}`,
           decalage: -debut,
         };
@@ -275,7 +291,8 @@ createApp({
         ],
         parStatut,
         parts,
-        total: titres.length,
+        total: totalAnneau,   // nombre affiché au centre de l'anneau (sans « Plus tard »)
+        plusTard,
         // Épisodes vus sans durée connue (non comptés dans le temps passé).
         sansDuree: somme('nb_vus_sans_duree'),
       };
@@ -338,6 +355,18 @@ createApp({
         await chargerListe();
         if (route.value.serieId === serieId) ecranFiche.ouvrirFiche({ serieId });
         else location.replace(`#/serie/${serieId}`);
+      },
+      // Message avec « Annuler » (ex. épisodes cochés en passant une série à
+      // « Terminé », décision 36). Le message disparaît dès l'appui, pour
+      // éviter d'annuler deux fois ; la liste est ensuite relue (niveau en
+      // haut de la page, et liste si on y est revenu entre-temps).
+      afficherAnnulable: (texte, annuler) => {
+        afficherMessage(texte, async () => {
+          message.value = null;
+          const confirmation = await annuler();
+          if (confirmation) afficherMessage(confirmation);
+          chargerListe();
+        });
       },
     });
 

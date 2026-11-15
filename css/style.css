@@ -84,15 +84,26 @@ body {
 .lien-profil:hover { color: var(--texte); }
 .nom-compte {
   font-size: 0.9rem;
+  text-align: center;         /* centré, comme le niveau et sa barre dessous (décision 36) */
   text-decoration: underline dotted;
   text-underline-offset: 3px;
   overflow: hidden;           /* un nom trop long finit par « … » */
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* « Niveau N » puis, dessous, la barre, aussi large que le nom (4,5 rem au moins) */
-.mini-niveau { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.75rem; white-space: nowrap; }
-.mini-niveau .barre { flex: none; width: 100%; min-width: 4.5rem; max-width: none; height: 0.35rem; }
+/* « Niveau N » puis, dessous, la barre, de la largeur du texte « Niveau N »,
+   le tout centré sous le nom (décision 36). « align-self: center » : le bloc
+   ne prend que la largeur de son texte au lieu de toute celle du nom ; la
+   barre (100 %) prend donc la largeur du texte. */
+.mini-niveau {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.mini-niveau .barre { flex: none; width: 100%; min-width: 0; max-width: none; height: 0.35rem; }
 
 /* --- Contenu --- */
 main { max-width: 40rem; margin: 0 auto; padding: 1rem; }

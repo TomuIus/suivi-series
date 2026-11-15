@@ -17,6 +17,7 @@ import {
   suivreSerie,
   marquerVus,
   annulerVu,
+  annulerVus,
   changerStatut,
   changerCategorie,
   retirerSerie,
@@ -28,6 +29,10 @@ import { importerSerie, apercuSerie, episodesSaison } from './tmdb.js';
 const DELAI_MISE_A_JOUR = 24 * 60 * 60 * 1000; // 24 h — à revoir après des tests
 
 const SERIES_FINIES = ['Ended', 'Canceled'];
+
+// Statuts qui veulent dire « j'ai tout vu » : les choisir à la main coche tous
+// les épisodes déjà sortis, sauf les spéciaux (décision 36).
+const STATUTS_TOUT_VU = ['a_jour', 'termine'];
 
 // Clé d'un épisode dans l'ensemble des épisodes vus : « 2-5 » = saison 2, épisode 5.
 const cle = (saison, episode) => `${saison}-${episode}`;
@@ -41,8 +46,9 @@ const formatDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'sh
  * @param erreur        la variable d'erreur de l'application (affichée en haut)
  * @param apresRetrait  appelée avec le titre quand la série a été retirée de la liste
  * @param apresAjout    appelée avec (identifiant interne, titre, plusTard) quand la série a été ajoutée
+ * @param afficherAnnulable  affiche un message (texte) avec un bouton « Annuler » qui appelle annuler()
  */
-export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
+export function utiliserFiche({ erreur, apresRetrait, apresAjout, afficherAnnulable }) {
   const fiche = ref(null);         // { serie, saisons, suivi, vus, saisonInitiale, resume } ou null
   const ficheChargee = ref(false);
   const invite = ref(null);        // proposition « cocher les précédents » : { episodes } ou null
@@ -347,19 +353,84 @@ export function utiliserFiche({ erreur, apresRetrait, apresAjout }) {
 
   // --- Statut choisi à la main ---
 
+  // Passer une série à « Terminé » ou « À jour » coche aussi tous les
+  // épisodes déjà sortis qui ne l'étaient pas, sauf les spéciaux (décision 36).
+  // Le statut est changé d'abord : ainsi, une série « Plus tard » passe bien
+  // à « Terminé » (le déclencheur de la base qui la sort de « Plus tard »
+  // quand on coche ne s'applique plus). Un message propose ensuite
+  // « Annuler » pendant 8 s : épisodes décochés et ancien statut remis.
   async function modifierStatut(valeur) {
     const f = fiche.value;
     if (!f || !f.suivi) return;
+    const nouveau = valeur || null;                // '' → automatique
+    const ancien = f.suivi.statut_manuel ?? null;
+    // Liste établie avant tout envoi, sur la fiche affichée à ce moment-là.
+    const aCocher = STATUTS_TOUT_VU.includes(nouveau) ? episodesNonVus() : [];
     statutEnCours.value = true;
     erreur.value = '';
     try {
-      await changerStatut(f.serie.id, valeur || null); // '' → automatique
+      await changerStatut(f.serie.id, nouveau);
+      if (aCocher.length > 0) await cocherTout(f, aCocher, ancien);
       await actualiserSuivi(f.serie.id);
     } catch (e) {
       erreur.value = e.message;
     } finally {
       statutEnCours.value = false;
     }
+  }
+
+  // Épisodes déjà sortis, hors spéciaux, pas encore cochés.
+  function episodesNonVus() {
+    const manquants = [];
+    for (const s of fiche.value.saisons) {
+      if (s.numero === 0) continue;
+      for (let e = 1; e <= s.nb_episodes; e++) {
+        if (estDiffuse(s.numero, e) && !fiche.value.vus.has(cle(s.numero, e))) {
+          manquants.push({ saison: s.numero, episode: e });
+        }
+      }
+    }
+    return manquants;
+  }
+
+  async function cocherTout(f, episodes, ancienStatut) {
+    invite.value = null; // la proposition « cocher les précédents » n'a plus lieu d'être
+    const cles = episodes.map(({ saison, episode }) => cle(saison, episode));
+    cles.forEach((k) => f.vus.add(k));
+    try {
+      await marquerVus(f.serie.id, episodes);
+    } catch (e) {
+      cles.forEach((k) => f.vus.delete(k));
+      throw e;
+    }
+    const n = episodes.length;
+    afficherAnnulable(
+      `« ${f.serie.titre} » : ${n === 1 ? '1 épisode coché' : `${n} épisodes cochés`}.`,
+      () => annulerToutCocher(f, episodes, ancienStatut),
+    );
+  }
+
+  // Bouton « Annuler » du message : on décoche les épisodes qu'on vient de
+  // cocher (et seulement eux) et on remet le statut d'avant. Renvoie le texte
+  // de confirmation à afficher (rien en cas d'erreur).
+  async function annulerToutCocher(f, episodes, ancienStatut) {
+    erreur.value = '';
+    const serieId = f.serie.id;
+    try {
+      await annulerVus(serieId, episodes);
+      await changerStatut(serieId, ancienStatut);
+    } catch (e) {
+      erreur.value = e.message;
+      return null;
+    }
+    // On met à jour la fiche d'origine et, si on a rouvert la même série
+    // entre-temps, la fiche affichée.
+    const cles = episodes.map(({ saison, episode }) => cle(saison, episode));
+    for (const cible of new Set([f, fiche.value])) {
+      if (cible?.serie.id === serieId) cles.forEach((k) => cible.vus.delete(k));
+    }
+    await actualiserSuivi(serieId);
+    return `« ${f.serie.titre} » : épisodes décochés et statut remis comme avant.`;
   }
 
   // --- Catégorie corrigée à la main (série ou animé) ---

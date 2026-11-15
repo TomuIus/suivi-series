@@ -7,12 +7,12 @@
   <meta name="robots" content="noindex">
   <title>Suivi de séries</title>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=17 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=18 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=17">
+  <link rel="stylesheet" href="css/style.css?v=18">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -49,11 +49,11 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=17",
-      "./js/base.js": "./js/base.js?v=17",
-      "./js/config.js": "./js/config.js?v=17",
-      "./js/fiche.js": "./js/fiche.js?v=17",
-      "./js/tmdb.js": "./js/tmdb.js?v=17"
+      "./js/app.js": "./js/app.js?v=18",
+      "./js/base.js": "./js/base.js?v=18",
+      "./js/config.js": "./js/config.js?v=18",
+      "./js/fiche.js": "./js/fiche.js?v=18",
+      "./js/tmdb.js": "./js/tmdb.js?v=18"
     }
   }
   </script>
@@ -311,7 +311,10 @@
                 {{ nombre(niveau.points) }} point{{ niveau.points > 1 ? 's' : '' }}
                 · encore {{ nombre(niveau.manquants) }} pour le niveau {{ niveau.niveau + 1 }}
               </p>
-              <p class="info aide">1 point par épisode vu (spéciaux cochés compris), +20 par série terminée.</p>
+              <p class="info aide">
+                1 point par épisode vu (spéciaux cochés compris), +20 par série terminée.
+                Chaque niveau demande 10 points de plus que le précédent, 100 au maximum.
+              </p>
             </div>
 
             <!-- Statistiques (décisions 28 et 34) : filtre, chiffres clés, par statut -->
@@ -360,6 +363,11 @@
                   </div>
                 </dl>
               </div>
+              <!-- « Plus tard » est hors de l'anneau (décision 36) : son nombre est rappelé ici -->
+              <p v-if="statistiques.plusTard > 0" class="info aide">
+                + {{ nombre(statistiques.plusTard) }} titre{{ statistiques.plusTard > 1 ? 's' : '' }}
+                en « Plus tard », hors diagramme.
+              </p>
 
               <p class="info aide">
                 Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.

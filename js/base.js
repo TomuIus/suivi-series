@@ -157,6 +157,46 @@ export async function annulerVu(serieId, saison, episode) {
   if (error) throw new Error(traduireErreur(error));
 }
 
+/**
+ * Décoche plusieurs épisodes d'un coup (liste de { saison, episode }), par
+ * exemple pour annuler un « tout cocher » (décision 36). Les épisodes qui se
+ * suivent dans une même saison partent ensemble : une requête « saison 1,
+ * épisodes 1 à 12 » plutôt que douze. Les autres épisodes ne sont pas touchés.
+ */
+export async function annulerVus(serieId, episodes) {
+  const suites = suitesConsecutives(episodes);
+  // 10 requêtes à la fois au plus, pour ne pas surcharger le serveur.
+  for (let i = 0; i < suites.length; i += 10) {
+    const reponses = await Promise.all(suites.slice(i, i + 10).map(({ saison, debut, fin }) =>
+      supabase
+        .from('episodes_vus')
+        .delete()
+        .eq('serie_id', serieId)
+        .eq('saison', saison)
+        .gte('episode', debut)
+        .lte('episode', fin)));
+    for (const { error } of reponses) {
+      if (error) throw new Error(traduireErreur(error));
+    }
+  }
+}
+
+// Regroupe des épisodes en suites sans trou, saison par saison :
+// 1x1, 1x2, 1x3, 1x5 → { saison 1, de 1 à 3 } et { saison 1, de 5 à 5 }.
+function suitesConsecutives(episodes) {
+  const tries = [...episodes].sort((a, b) => a.saison - b.saison || a.episode - b.episode);
+  const suites = [];
+  for (const { saison, episode } of tries) {
+    const derniere = suites.at(-1);
+    if (derniere && derniere.saison === saison && episode <= derniere.fin + 1) {
+      derniere.fin = Math.max(derniere.fin, episode); // suite qui continue (ou doublon)
+    } else {
+      suites.push({ saison, debut: episode, fin: episode });
+    }
+  }
+  return suites;
+}
+
 
 // --- Fiche d'une série ---
 
