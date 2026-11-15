@@ -73,6 +73,28 @@ function enregistrerFiltre(valeur) {
 
 const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 
+// Points et niveaux (décision 33). Valeurs à revoir après des tests.
+const POINTS_PAR_EPISODE = 1;    // par épisode coché, spéciaux compris
+const BONUS_SERIE_TERMINEE = 20; // par série au statut « Terminé »
+const PALIER_NIVEAU = 50;        // chaque niveau demande 50 points de plus que le précédent
+
+// Points nécessaires, au total, pour atteindre le niveau n (n ≥ 1) :
+// niveau 1 = 0, niveau 2 = 50, niveau 3 = 50 + 100 = 150, niveau 4 = 300…
+// C'est la somme 50 + 100 + … + 50 × (n − 1) = 25 × n × (n − 1).
+function seuilNiveau(n) {
+  return (PALIER_NIVEAU / 2) * n * (n - 1);
+}
+
+// Niveau atteint avec un nombre de points : le plus grand n dont le seuil
+// ne dépasse pas les points (formule du second degré, puis vérification pour
+// écarter toute erreur d'arrondi).
+function niveauPour(points) {
+  let n = Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * points) / PALIER_NIVEAU)) / 2));
+  while (seuilNiveau(n + 1) <= points) n++;
+  while (n > 1 && seuilNiveau(n) > points) n--;
+  return n;
+}
+
 // Libellés affichés pour les statuts (codes de la base) et pour les statuts
 // de diffusion de TMDB. « a_voir » (pas encore commencée) s'affiche
 // « En cours » depuis la décision 27.
@@ -166,6 +188,27 @@ createApp({
         .map((section) => ({ ...section, series: listeFiltree.value.filter((s) => section.statuts.includes(s.statut)) }))
         .filter((section) => section.series.length > 0)
     );
+
+    // --- Profil : points et niveau (décision 33) ---
+    // Calculés, comme les statistiques, à partir de la liste déjà chargée :
+    // rien n'est enregistré, les points suivent ce qui est coché (décocher un
+    // épisode retire son point). Le bonus vaut pour toute série au statut
+    // « Terminé », automatique ou choisi à la main.
+    const niveau = computed(() => {
+      const points = liste.value.reduce((total, s) =>
+        total
+        + POINTS_PAR_EPISODE * ((s.nb_vus ?? 0) + (s.nb_speciaux_vus ?? 0))
+        + (s.statut === 'termine' ? BONUS_SERIE_TERMINEE : 0), 0);
+      const n = niveauPour(points);
+      const debut = seuilNiveau(n);
+      const suivant = seuilNiveau(n + 1);
+      return {
+        points,
+        niveau: n,
+        manquants: suivant - points,
+        pourcentage: Math.floor((100 * (points - debut)) / (suivant - debut)),
+      };
+    });
 
     // --- Profil : statistiques (décision 28) ---
     // Calculées dans le navigateur à partir de la liste déjà chargée (aucune
@@ -707,7 +750,7 @@ createApp({
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
-      statistiques, episodesSansDuree, nombre,
+      statistiques, episodesSansDuree, nombre, niveau,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };

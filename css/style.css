@@ -421,6 +421,12 @@ a.bouton { display: inline-block; text-decoration: none; }
 .statistiques .ligne-forte td { font-weight: 700; }
 .page-compte .aide { margin: 0.4rem 0 0; font-size: 0.85rem; }
 
+/* Profil : niveau et barre vers le niveau suivant (décision 33) */
+.niveau { margin-top: 0.75rem; }
+.niveau-titre { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 700; }
+.niveau .barre { max-width: none; height: 0.65rem; }  /* barre sur toute la largeur */
+.niveau .details { margin: 0.25rem 0 0; }
+
 /* Texte lu par les lecteurs d'écran mais pas affiché (ici l'étiquette du champ
    « Nom d'utilisateur », déjà annoncée par le titre juste au-dessus). */
 .cache-visuel {
