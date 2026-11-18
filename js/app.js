@@ -769,9 +769,9 @@ createApp({
       return morceaux.join(' · ');
     }
 
-    // « S2.E5 »
+    // « S2·E5 » (point médian, sans espaces : demande de l'utilisateur)
     function libelleEpisode(saison, episode) {
-      return `S${saison}.E${episode}`;
+      return `S${saison}·E${episode}`;
     }
 
     // Le bouton « Vu » n'apparaît que s'il y a un épisode diffusé à cocher,
@@ -826,9 +826,9 @@ createApp({
     }
 
     // Ligne d'informations sous le titre d'une série de la liste. Exemple
-    // demandé par l'utilisateur : « Prochain : S1.E6 "Ste Lisa Blues" | 5/808 épisodes vus ».
+    // demandé par l'utilisateur : « Prochain : S1·E6 "Ste Lisa Blues" | 5 / 808 épisodes vus ».
     function progression(s) {
-      const compte = `${s.nb_vus}/${s.nb_diffuses} épisodes vus`;
+      const compte = `${s.nb_vus} / ${s.nb_diffuses} épisodes vus`;
       if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
       if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus · en attente de la suite`;
       if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
