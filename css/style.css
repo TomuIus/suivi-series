@@ -508,6 +508,19 @@ a.bouton { display: inline-block; text-decoration: none; }
 .niveau .barre { max-width: none; height: 0.65rem; }  /* barre sur toute la largeur */
 .niveau .details { margin: 0.25rem 0 0; }
 
+/* --- Illustrations de Tilou (décision 39) ---
+   Canapé au-dessus du formulaire de connexion ; Tilou au pop-corn à côté du
+   message de liste vide et du nom dans le Profil. Tailles choisies par Claude,
+   à revoir après des tests. */
+.illustration { display: block; }
+.illustration-canape { width: 10rem; height: auto; align-self: center; margin-bottom: 0.25rem; }
+.liste-vide { display: flex; align-items: center; gap: 1rem; }
+.liste-vide .info { margin: 0; text-align: left; }
+.illustration-liste { width: auto; height: 9rem; flex-shrink: 0; }
+.profil-haut { display: flex; align-items: center; gap: 1rem; }
+.profil-texte { flex: 1; min-width: 0; }
+.illustration-profil { width: auto; height: 7rem; flex-shrink: 0; }
+
 /* Texte lu par les lecteurs d'écran mais pas affiché (ici l'étiquette du champ
    « Nom d'utilisateur », déjà annoncée par le titre juste au-dessus). */
 .cache-visuel {
