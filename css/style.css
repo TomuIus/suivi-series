@@ -77,7 +77,9 @@ body {
 /* Logo : Tilou au pop-corn + le mot « Canapilou » dessiné (voir index.html).
    Tailles choisies par Claude, à revoir après des tests. La largeur du mot suit
    les proportions de son dessin (4461 × 936, soit 4,766 fois sa hauteur). */
-.logo { display: flex; align-items: center; gap: 0.4rem; margin: 0; }
+.logo { margin: 0; }
+/* Le logo est un lien vers l'accueil (décision 38) */
+.lien-accueil { display: flex; align-items: center; gap: 0.4rem; text-decoration: none; border-radius: 6px; }
 .logo-tilou { display: block; width: auto; height: 2.75rem; }
 .logo-mot { display: block; height: 1.5rem; width: calc(1.5rem * 4.766); }
 .logo-mot .debut { fill: var(--logo-debut); }

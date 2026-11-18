@@ -21,7 +21,7 @@ import {
   annulerVu,
   lireDonneesPourExport,
 } from './base.js';
-import { rechercherSeries, importerSerie, urlAffiche } from './tmdb.js';
+import { rechercherSeries, importerSerie, urlAffiche, episodesSaison } from './tmdb.js';
 import { utiliserFiche } from './fiche.js';
 
 // Réglages de la recherche
@@ -29,6 +29,10 @@ const LONGUEUR_MIN = 2;      // caractères avant de lancer une recherche
 const DELAI_FRAPPE = 500;    // ms d'attente après la dernière touche — à revoir après des tests
 const DUREE_MESSAGE = 5000;  // ms d'affichage d'un message de confirmation
 const DUREE_ANNULATION = 8000; // ms pendant lesquels « Annuler » reste proposé
+
+// Titres des prochains épisodes dans « Ma liste » : nombre de saisons demandées
+// à TMDB en même temps (choix de Claude, à revoir après des tests).
+const TITRES_SIMULTANES = 4;
 
 // Sections de « Ma liste », dans l'ordre d'affichage, avec les statuts de la
 // base que chacune regroupe. Les sections « repliées » sont fermées au départ
@@ -187,6 +191,13 @@ createApp({
     const liste = ref([]);             // séries suivies (lignes de la vue « ma_liste »)
     const listeChargee = ref(false);
     const vusEnCours = ref(new Set()); // serie_id des séries dont on coche un épisode
+
+    // Titres des épisodes, saison par saison, pour afficher le titre du
+    // prochain épisode dans la liste (décision 38). Demandés à TMDB et gardés
+    // en mémoire le temps de la visite seulement : rien n'est enregistré
+    // (décision 12). Clé « tmdbId-saison » → { etat, titres: Map(numéro → titre) }.
+    const titresSaisons = ref(new Map());
+    watch(liste, (lignes) => chargerTitresProchains(lignes));
 
     // --- Filtre séries / animés ---
     const filtre = ref(lireFiltre());
@@ -420,6 +431,7 @@ createApp({
         ecranFiche.fermerFiche();
         liste.value = [];
         listeChargee.value = false;
+        titresSaisons.value = new Map();
         recherche.value = '';
         message.value = null;
       }
@@ -492,6 +504,18 @@ createApp({
         history.back();
       } else {
         location.hash = '#/';
+      }
+    }
+
+    // Logo de l'en-tête (décision 38) : ramène à l'accueil. Depuis une autre
+    // page, même principe que « ← Accueil » ; sur l'accueil, il efface la
+    // recherche et remonte en haut de la liste (choix de Claude, à revoir).
+    function allerAccueil() {
+      if (route.value.page === 'liste') {
+        effacerRecherche();
+        window.scrollTo(0, 0);
+      } else {
+        retourListe();
       }
     }
 
@@ -745,9 +769,9 @@ createApp({
       return morceaux.join(' · ');
     }
 
-    // « S2 · É5 »
+    // « S2.E5 »
     function libelleEpisode(saison, episode) {
-      return `S${saison} · É${episode}`;
+      return `S${saison}.E${episode}`;
     }
 
     // Le bouton « Vu » n'apparaît que s'il y a un épisode diffusé à cocher,
@@ -756,15 +780,63 @@ createApp({
       return s.prochaine_saison != null && (s.statut === 'en_cours' || s.statut === 'a_voir');
     }
 
-    // Ligne d'informations sous le titre d'une série de la liste.
+    // Titres des prochains épisodes (décision 38) : pour chaque série de la
+    // section « En cours », on demande à TMDB les titres de la saison de son
+    // prochain épisode, si on ne les a pas déjà. Quelques saisons à la fois ;
+    // en cas d'échec, on réessaiera au prochain chargement de la liste.
+    // Après « ✓ Vu », le prochain épisode est souvent dans la même saison :
+    // son titre est alors déjà connu.
+    async function chargerTitresProchains(lignes) {
+      const aCharger = [];
+      for (const s of lignes) {
+        if (!peutCocher(s)) continue;
+        const cle = cleTitres(s.tmdb_id, s.prochaine_saison);
+        const connu = titresSaisons.value.get(cle);
+        if (connu && connu.etat !== 'erreur') continue; // déjà chargé ou en cours
+        titresSaisons.value.set(cle, { etat: 'chargement', titres: new Map() });
+        aCharger.push({ cle, tmdbId: s.tmdb_id, saison: s.prochaine_saison, titre: s.titre });
+      }
+      let suivant = 0;
+      async function travailleur() {
+        while (suivant < aCharger.length) {
+          const { cle, tmdbId, saison, titre } = aCharger[suivant++];
+          try {
+            const episodes = await episodesSaison(tmdbId, saison);
+            titresSaisons.value.set(cle, { etat: 'ok', titres: new Map(episodes.map((e) => [e.numero, e.titre])) });
+          } catch (e) {
+            titresSaisons.value.set(cle, { etat: 'erreur', titres: new Map() });
+            console.warn(`Titres de la saison ${saison} de « ${titre} » indisponibles :`, e.message);
+          }
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(TITRES_SIMULTANES, aCharger.length) }, travailleur));
+    }
+
+    function cleTitres(tmdbId, saison) {
+      return `${tmdbId}-${saison}`;
+    }
+
+    // Titre du prochain épisode, s'il est connu. Un titre générique
+    // (« Épisode 6 », quand TMDB n'a pas de vrai titre) n'apporterait rien
+    // à côté de « E6 » : on ne l'affiche pas.
+    function titreProchainListe(s) {
+      const titre = titresSaisons.value.get(cleTitres(s.tmdb_id, s.prochaine_saison))?.titres.get(s.prochain_episode);
+      if (!titre || /^[ÉE]pisode\s*\d+$/i.test(titre.trim())) return null;
+      return titre;
+    }
+
+    // Ligne d'informations sous le titre d'une série de la liste. Exemple
+    // demandé par l'utilisateur : « Prochain : S1.E6 "Ste Lisa Blues" | 5/808 épisodes vus ».
     function progression(s) {
-      const compte = `${s.nb_vus} / ${s.nb_diffuses} épisodes vus`;
+      const compte = `${s.nb_vus}/${s.nb_diffuses} épisodes vus`;
       if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
       if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus · en attente de la suite`;
       if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
       if (s.statut === 'plus_tard') return compte; // pas de « Prochain » : mise de côté
       if (s.prochaine_saison != null && s.statut !== 'abandonne') {
-        return `Prochain : ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} · ${compte}`;
+        const titre = titreProchainListe(s);
+        const episode = libelleEpisode(s.prochaine_saison, s.prochain_episode) + (titre ? ` "${titre}"` : '');
+        return `Prochain : ${episode} | ${compte}`;
       }
       return compte;
     }
@@ -816,7 +888,7 @@ createApp({
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
-      route, retourListe, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
+      route, retourListe, allerAccueil, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
