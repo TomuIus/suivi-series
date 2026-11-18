@@ -327,7 +327,17 @@ a.bouton { display: inline-block; text-decoration: none; }
 .retour { margin-bottom: 1rem; }
 .carte + .carte { margin-top: 1rem; }
 
-.fiche-entete { display: flex; gap: 1rem; align-items: flex-start; }
+/* En-tête de la fiche : affiche à gauche, titres et informations à droite,
+   menus « Statut » et « Catégorie » sous les informations. Sur téléphone,
+   les menus passent sous l'affiche, sur toute la largeur : dans la colonne
+   de droite, le texte du menu était coupé (décision 41). */
+.fiche-entete { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 1rem; align-items: start; }
+.fiche-entete > .affiche { grid-row: 1 / span 2; }
+.fiche-reglages { grid-column: 2; }
+@media (max-width: 30rem) {
+  .fiche-entete > .affiche { grid-row: auto; }
+  .fiche-reglages { grid-column: 1 / -1; }
+}
 .affiche-grande { width: 92px; height: 138px; }
 .fiche-infos { flex: 1; min-width: 0; }
 .fiche-infos h2 { margin: 0; }

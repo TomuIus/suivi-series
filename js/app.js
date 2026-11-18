@@ -1027,7 +1027,7 @@ createApp({
     function progression(s) {
       const compte = `${s.nb_vus} / ${s.nb_diffuses} épisodes vus`;
       if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
-      if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus · en attente de la suite`;
+      if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus | en attente de la suite`;
       if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
       if (s.statut === 'plus_tard') return compte; // pas de « Prochain » : mise de côté
       if (s.prochaine_saison != null && s.statut !== 'abandonne') {

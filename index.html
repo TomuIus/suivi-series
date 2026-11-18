@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=23 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=24 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=23">
+  <link rel="stylesheet" href="css/style.css?v=24">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,12 +52,12 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=23",
-      "./js/base.js": "./js/base.js?v=23",
-      "./js/config.js": "./js/config.js?v=23",
-      "./js/fiche.js": "./js/fiche.js?v=23",
-      "./js/import.js": "./js/import.js?v=23",
-      "./js/tmdb.js": "./js/tmdb.js?v=23"
+      "./js/app.js": "./js/app.js?v=24",
+      "./js/base.js": "./js/base.js?v=24",
+      "./js/config.js": "./js/config.js?v=24",
+      "./js/fiche.js": "./js/fiche.js?v=24",
+      "./js/import.js": "./js/import.js?v=24",
+      "./js/tmdb.js": "./js/tmdb.js?v=24"
     }
   }
   </script>
@@ -169,11 +169,11 @@
                 <p v-if="fiche.serie.titre_original && fiche.serie.titre_original !== fiche.serie.titre"
                    class="details">{{ fiche.serie.titre_original }}</p>
 
-                <!-- Série suivie : progression, prochain épisode, statut -->
+                <!-- Série suivie : progression, prochain épisode (statut et catégorie : plus bas) -->
                 <template v-if="fiche.suivi">
                   <p class="details">
                     {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
-                    · {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
+                    | {{ fiche.suivi.nb_vus }} / {{ fiche.suivi.nb_diffuses }} épisodes vus
                   </p>
                   <!-- Barre de progression : épisodes vus parmi les épisodes sortis (sans les spéciaux) -->
                   <div v-if="pourcentage(fiche.suivi) != null" class="progression">
@@ -186,26 +186,8 @@
                   </div>
                   <p v-if="fiche.suivi.prochaine_saison != null" class="prochain">
                     Prochain : {{ libelleEpisode(fiche.suivi.prochaine_saison, fiche.suivi.prochain_episode) }}
-                    <span v-if="titreProchain" class="titre-prochain">— {{ titreProchain }}</span>
+                    <span v-if="titreProchain" class="titre-prochain">"{{ titreProchain }}"</span>
                   </p>
-
-                  <label for="statut" class="etiquette">Statut</label>
-                  <select id="statut" class="choix-statut"
-                          :value="valeurStatutManuel(fiche.suivi)" :disabled="statutEnCours"
-                          @change="modifierStatut($event.target.value)">
-                    <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
-                    <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
-                  </select>
-
-                  <!-- Correction du classement série / animé (propre à votre compte) -->
-                  <label for="categorie" class="etiquette">Catégorie</label>
-                  <select id="categorie" class="choix-statut"
-                          :value="fiche.suivi.categorie_manuelle ?? ''" :disabled="categorieEnCours"
-                          @change="modifierCategorie($event.target.value)">
-                    <option value="">Automatique ({{ categorieCalculee === 'anime' ? 'Animé' : 'Série' }})</option>
-                    <option value="serie">Série</option>
-                    <option value="anime">Animé</option>
-                  </select>
                 </template>
 
                 <!-- Aperçu (série pas dans la liste) : boutons pour l'ajouter,
@@ -213,7 +195,7 @@
                 <template v-else>
                   <p class="details">
                     {{ libelleDiffusion(fiche.serie.statut_diffusion) }}
-                    · {{ nombreSaisons(fiche.saisons) }}
+                    | {{ nombreSaisons(fiche.saisons) }}
                   </p>
                   <div class="boutons">
                     <button type="button" class="bouton" :disabled="!!ajoutEnCours" @click="ajouterALaListe(false)">
@@ -224,6 +206,29 @@
                     </button>
                   </div>
                 </template>
+              </div>
+
+              <!-- Choix du statut et de la catégorie d'une série suivie. Bloc à part
+                   pour pouvoir passer sous l'affiche sur téléphone, où la colonne de
+                   droite est trop étroite (le texte du menu était coupé). -->
+              <div v-if="fiche.suivi" class="fiche-reglages">
+                <label for="statut" class="etiquette">Statut</label>
+                <select id="statut" class="choix-statut"
+                        :value="valeurStatutManuel(fiche.suivi)" :disabled="statutEnCours"
+                        @change="modifierStatut($event.target.value)">
+                  <option value="">Automatique ({{ libelleStatut(statutCalcule) }})</option>
+                  <option v-for="s in statutsManuels" :key="s.valeur" :value="s.valeur">{{ s.libelle }}</option>
+                </select>
+
+                <!-- Correction du classement série / animé (propre à votre compte) -->
+                <label for="categorie" class="etiquette">Catégorie</label>
+                <select id="categorie" class="choix-statut"
+                        :value="fiche.suivi.categorie_manuelle ?? ''" :disabled="categorieEnCours"
+                        @change="modifierCategorie($event.target.value)">
+                  <option value="">Automatique ({{ categorieCalculee === 'anime' ? 'Animé' : 'Série' }})</option>
+                  <option value="serie">Série</option>
+                  <option value="anime">Animé</option>
+                </select>
               </div>
             </section>
 
