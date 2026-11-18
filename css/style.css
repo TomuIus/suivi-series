@@ -21,6 +21,11 @@
   --statut-termine: #1baf7a;
   --statut-abandonne: #eda100;
   --statut-plus_tard: #e87ba4;
+  /* Couleurs du mot « Canapilou » dans le logo : « Canap » framboise, « ilou »
+     rose (la signature commune aux projets). Contraste avec le fond de l'en-tête :
+     10,6:1 et 5,9:1 en clair, 11,0:1 et 7,3:1 en sombre. */
+  --logo-debut: #7a1043;
+  --logo-fin: #c2185b;
   color-scheme: light dark;
 }
 
@@ -40,6 +45,8 @@
     --statut-termine: #199e70;
     --statut-abandonne: #c98500;
     --statut-plus_tard: #d55181;
+    --logo-debut: #ffc9e0;
+    --logo-fin: #ff8ac4;
   }
 }
 
@@ -67,7 +74,14 @@ body {
   background: var(--carte);
   border-bottom: 1px solid var(--bordure);
 }
-.entete h1 { font-size: 1.25rem; margin: 0; }
+/* Logo : Tilou au pop-corn + le mot « Canapilou » dessiné (voir index.html).
+   Tailles choisies par Claude, à revoir après des tests. La largeur du mot suit
+   les proportions de son dessin (4461 × 936, soit 4,766 fois sa hauteur). */
+.logo { display: flex; align-items: center; gap: 0.4rem; margin: 0; }
+.logo-tilou { display: block; width: auto; height: 2.75rem; }
+.logo-mot { display: block; height: 1.5rem; width: calc(1.5rem * 4.766); }
+.logo-mot .debut { fill: var(--logo-debut); }
+.logo-mot .fin { fill: var(--logo-fin); }
 .compte { display: flex; align-items: center; gap: 0.75rem; }
 /* Nom (ou e-mail) et niveau, cliquables ensemble : ouvrent la page « Profil »
    (décision 34). Le niveau et sa petite barre sont sous le nom. */
