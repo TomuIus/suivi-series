@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=22 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=23 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=22">
+  <link rel="stylesheet" href="css/style.css?v=23">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,11 +52,12 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=22",
-      "./js/base.js": "./js/base.js?v=22",
-      "./js/config.js": "./js/config.js?v=22",
-      "./js/fiche.js": "./js/fiche.js?v=22",
-      "./js/tmdb.js": "./js/tmdb.js?v=22"
+      "./js/app.js": "./js/app.js?v=23",
+      "./js/base.js": "./js/base.js?v=23",
+      "./js/config.js": "./js/config.js?v=23",
+      "./js/fiche.js": "./js/fiche.js?v=23",
+      "./js/import.js": "./js/import.js?v=23",
+      "./js/tmdb.js": "./js/tmdb.js?v=23"
     }
   }
   </script>
@@ -438,6 +439,82 @@
             <button type="button" class="bouton bouton-discret" :disabled="exportEnCours" @click="exporter">
               {{ exportEnCours ? 'Préparation…' : 'Exporter mes données' }}
             </button>
+
+            <!-- Import d'une sauvegarde (décision 40). Le champ « fichier » est
+                 caché ; c'est son étiquette, présentée comme un bouton, qu'on clique. -->
+            <p class="info aide">
+              Pour restaurer une sauvegarde, choisissez un fichier exporté depuis cette page.
+              Rien ne change avant votre confirmation.
+            </p>
+            <label v-if="!importEtat || ['fini', 'erreur', 'refuse'].includes(importEtat.etape)"
+                   class="bouton bouton-discret bouton-fichier">
+              Importer une sauvegarde
+              <input type="file" accept=".json,application/json" class="cache-visuel"
+                     @change="choisirFichierImport">
+            </label>
+
+            <div v-if="importEtat" class="import" aria-live="polite">
+              <p v-if="importEtat.etape === 'lecture'" class="info">
+                Lecture de « {{ importEtat.nomFichier }} »…
+              </p>
+
+              <!-- Résumé du fichier, puis choix (seulement si la liste n'est pas vide) -->
+              <template v-else-if="importEtat.etape === 'choix'">
+                <p><strong>{{ textesImport.resume }}</strong></p>
+                <p v-if="textesImport.ignorees" class="info aide">{{ textesImport.ignorees }}</p>
+                <template v-if="importEtat.actuelles.length === 0">
+                  <p>Votre liste est vide : tout sera importé.</p>
+                  <div class="boutons">
+                    <button type="button" class="bouton" @click="lancerImport('ajout')">Importer</button>
+                    <button type="button" class="bouton bouton-discret" @click="fermerImport">Annuler</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <p>{{ textesImport.listeActuelle }}</p>
+                  <div class="choix-import">
+                    <button type="button" class="bouton" :disabled="textesImport.ajoutVide"
+                            @click="choisirModeImport('ajout')">Ajouter à ma liste</button>
+                    <p class="info aide">{{ textesImport.ajout }}</p>
+                    <button type="button" class="bouton bouton-danger"
+                            @click="choisirModeImport('remplacement')">Remplacer toute ma liste</button>
+                    <p class="info aide">{{ textesImport.remplacement }}</p>
+                  </div>
+                  <button type="button" class="bouton bouton-discret" @click="fermerImport">Annuler</button>
+                </template>
+              </template>
+
+              <!-- Remplacement : confirmation de plus -->
+              <div v-else-if="importEtat.etape === 'confirmation'" role="alertdialog"
+                   aria-labelledby="titre-remplacement" aria-describedby="texte-remplacement">
+                <p id="titre-remplacement"><strong>Remplacer toute votre liste ?</strong></p>
+                <p id="texte-remplacement">{{ textesImport.confirmation }}</p>
+                <div class="boutons">
+                  <button type="button" class="bouton bouton-danger" @click="lancerImport('remplacement')">Oui, remplacer</button>
+                  <button type="button" class="bouton bouton-discret" @click="retourChoixImport">Retour</button>
+                </div>
+              </div>
+
+              <p v-else-if="importEtat.etape === 'en_cours'" class="info">
+                Import en cours, restez sur cette page : {{ importEtat.progression }}
+              </p>
+
+              <template v-else-if="importEtat.etape === 'fini'">
+                <p><strong>{{ textesImport.bilan }}</strong></p>
+                <p v-if="textesImport.introuvables" class="info aide">{{ textesImport.introuvables }}</p>
+                <button type="button" class="bouton bouton-discret" @click="fermerImport">Fermer</button>
+              </template>
+
+              <template v-else-if="importEtat.etape === 'refuse'">
+                <p class="erreur">« {{ importEtat.nomFichier }} » : {{ importEtat.message }}</p>
+                <button type="button" class="bouton bouton-discret" @click="fermerImport">Fermer</button>
+              </template>
+
+              <template v-else-if="importEtat.etape === 'erreur'">
+                <p class="erreur">L'import s'est arrêté : {{ importEtat.message }}</p>
+                <p class="info aide">{{ textesImport.apresErreur }}</p>
+                <button type="button" class="bouton bouton-discret" @click="fermerImport">Fermer</button>
+              </template>
+            </div>
           </section>
         </template>
 

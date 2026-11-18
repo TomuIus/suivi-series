@@ -19,9 +19,15 @@ import {
   suivreSerie,
   marquerVu,
   annulerVu,
+  changerStatut,
   lireDonneesPourExport,
+  idsCatalogue,
+  suivreSeriesImportees,
+  cocherEpisodesImportes,
+  viderListe,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche, episodesSaison } from './tmdb.js';
+import { lireSauvegarde, planifierImport, TAILLE_MAX } from './import.js';
 import { utiliserFiche } from './fiche.js';
 
 // Réglages de la recherche
@@ -339,6 +345,13 @@ createApp({
     // --- Sauvegarde ---
     const exportEnCours = ref(false);
 
+    // --- Import d'une sauvegarde (décision 40) ---
+    // null, ou l'état de l'import en cours de préparation ou d'exécution :
+    // { etape, nomFichier, sauvegarde, actuelles, plans, progression, bilan, message }.
+    // Étapes : 'lecture' → 'choix' → ('confirmation' pour un remplacement)
+    // → 'en_cours' → 'fini' (ou 'erreur') ; 'refuse' si le fichier n'est pas valable.
+    const importEtat = ref(null);
+
     // On affiche les résultats (à la place de la liste) dès qu'il y a du texte.
     const modeRecherche = computed(() => recherche.value.trim().length > 0);
     const rechercheTropCourte = computed(() => recherche.value.trim().length < LONGUEUR_MIN);
@@ -432,6 +445,7 @@ createApp({
         liste.value = [];
         listeChargee.value = false;
         titresSaisons.value = new Map();
+        importEtat.value = null;
         recherche.value = '';
         message.value = null;
       }
@@ -486,7 +500,10 @@ createApp({
         // Profil : statistiques à jour (une fiche a pu changer des épisodes).
         if (r.page === 'profil') chargerListe();
         // Paramètres : le champ part du nom actuel.
-        if (r.page === 'parametres') nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
+        if (r.page === 'parametres') {
+          nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
+          if (importEtat.value?.etape !== 'en_cours') importEtat.value = null;
+        }
       } else {
         ecranFiche.fermerFiche();
         await nextTick(); // attendre que la liste soit de nouveau affichée
@@ -709,13 +726,7 @@ createApp({
       erreur.value = '';
       try {
         const series = await lireDonneesPourExport();
-        const sauvegarde = {
-          format: 'suivi-series',      // pour reconnaître le fichier lors d'un futur import
-          version: 1,
-          exporte_le: new Date().toISOString(),
-          series,
-        };
-        telecharger(`suivi-series-${dateDuJour()}.json`, JSON.stringify(sauvegarde, null, 2));
+        telechargerSauvegarde(series, `suivi-series-${dateDuJour()}.json`);
         const nbEpisodes = series.reduce((total, s) => total + s.episodes_vus.length, 0);
         afficherMessage(`Sauvegarde téléchargée : ${pluriel(series.length, 'série')}, `
           + `${pluriel(nbEpisodes, 'épisode coché', 'épisodes cochés')}.`);
@@ -725,6 +736,192 @@ createApp({
         exportEnCours.value = false;
       }
     }
+
+    // Fichier de sauvegarde : les séries de lireDonneesPourExport() dans une
+    // « enveloppe » qui permet de le reconnaître à l'import (décision 40).
+    function telechargerSauvegarde(series, nomFichier) {
+      const sauvegarde = {
+        format: 'suivi-series',
+        version: 1,
+        exporte_le: new Date().toISOString(),
+        series,
+      };
+      telecharger(nomFichier, JSON.stringify(sauvegarde, null, 2));
+    }
+
+    // --- Actions : import d'une sauvegarde (décision 40) ---
+
+    // 1) Un fichier a été choisi : on le lit, on le vérifie et on calcule ce
+    //    qu'il ajouterait à la liste actuelle. Rien n'est encore écrit.
+    async function choisirFichierImport(evenement) {
+      const champ = evenement.target;
+      const fichier = champ.files?.[0];
+      if (!fichier) return;
+      erreur.value = '';
+      importEtat.value = { etape: 'lecture', nomFichier: fichier.name };
+      try {
+        if (fichier.size > TAILLE_MAX) {
+          throw new Error('Ce fichier est trop gros pour une sauvegarde du site (plus de 10 Mo).');
+        }
+        const sauvegarde = lireSauvegarde(await fichier.text());
+        const actuelles = await lireDonneesPourExport();
+        importEtat.value = {
+          etape: 'choix',
+          nomFichier: fichier.name,
+          sauvegarde,
+          actuelles,
+          plans: {
+            ajout: planifierImport(sauvegarde, actuelles, 'ajout'),
+            remplacement: planifierImport(sauvegarde, actuelles, 'remplacement'),
+          },
+        };
+      } catch (e) {
+        // Fichier refusé : le message s'affiche dans le panneau, près du bouton.
+        importEtat.value = { etape: 'refuse', nomFichier: fichier.name, message: e.message };
+      } finally {
+        champ.value = ''; // permet de choisir de nouveau le même fichier
+      }
+    }
+
+    // 2) Choix du mode : « ajout » part tout de suite, « remplacement »
+    //    demande une confirmation de plus.
+    function choisirModeImport(mode) {
+      const etat = importEtat.value;
+      if (etat?.etape !== 'choix') return;
+      if (mode === 'remplacement') etat.etape = 'confirmation';
+      else lancerImport('ajout');
+    }
+
+    function retourChoixImport() {
+      if (importEtat.value?.etape === 'confirmation') importEtat.value.etape = 'choix';
+    }
+
+    function fermerImport() {
+      if (importEtat.value?.etape !== 'en_cours') importEtat.value = null;
+    }
+
+    // 3) L'import. Ordre choisi pour ne rien perdre en cas de souci :
+    //    a) copie de la liste actuelle (remplacement seulement) ;
+    //    b) fiches des séries absentes du catalogue, redemandées à TMDB ;
+    //    c) seulement ensuite, retrait de la liste actuelle (remplacement) ;
+    //    d) séries, puis épisodes cochés, puis statuts : cocher un épisode
+    //       sort une série de « Plus tard » (décision 26), donc les statuts
+    //       viennent en dernier.
+    async function lancerImport(mode) {
+      const etat = importEtat.value;
+      if (!etat || (etat.etape !== 'choix' && etat.etape !== 'confirmation')) return;
+      const plan = etat.plans[mode];
+      if (mode === 'remplacement') {
+        // Téléchargée tout de suite, pendant le clic (les navigateurs se
+        // méfient des téléchargements qui ne suivent pas un clic).
+        telechargerSauvegarde(etat.actuelles, `suivi-series-${dateDuJour()}-avant-remplacement.json`);
+      }
+      etat.etape = 'en_cours';
+      etat.mode = mode;
+      erreur.value = '';
+      const introuvables = [];
+      let listeVidee = false;
+      try {
+        const aTraiter = [...plan.nouvelles, ...plan.completees];
+        etat.progression = 'recherche des séries dans le catalogue…';
+        const ids = await idsCatalogue(aTraiter.map((s) => s.tmdbId));
+        const manquantes = aTraiter.filter((s) => !ids.has(s.tmdbId));
+        for (const [i, s] of manquantes.entries()) {
+          etat.progression = `fiches TMDB ${i + 1} / ${manquantes.length} (« ${s.titre} »)…`;
+          try {
+            const { id } = await importerSerie(s.tmdbId);
+            ids.set(s.tmdbId, id);
+          } catch (e) {
+            introuvables.push(s.titre);
+            console.warn(`« ${s.titre} » non importée :`, e.message);
+          }
+        }
+
+        if (mode === 'remplacement') {
+          etat.progression = 'retrait de la liste actuelle…';
+          await viderListe();
+          listeVidee = true;
+        }
+
+        const nouvelles = plan.nouvelles.filter((s) => ids.has(s.tmdbId));
+        const completees = plan.completees.filter((s) => ids.has(s.tmdbId));
+        const maintenant = new Date().toISOString(); // date utilisée si la sauvegarde n'en donne pas
+        etat.progression = 'ajout des séries…';
+        await suivreSeriesImportees(nouvelles.map((s) => ({
+          serie_id: ids.get(s.tmdbId),
+          categorie_manuelle: s.categorieManuelle,
+          ajoute_le: s.ajouteLe ?? maintenant,
+        })));
+        etat.progression = 'épisodes cochés…';
+        const episodes = [...nouvelles, ...completees].flatMap((s) => s.episodes.map((e) => ({
+          serie_id: ids.get(s.tmdbId),
+          saison: e.saison,
+          episode: e.episode,
+          vu_le: e.vuLe ?? s.ajouteLe ?? maintenant,
+        })));
+        await cocherEpisodesImportes(episodes);
+        etat.progression = 'statuts…';
+        const statuts = [
+          ...nouvelles.filter((s) => s.statutManuel).map((s) => [ids.get(s.tmdbId), s.statutManuel]),
+          // Ajout : une série déjà « Plus tard » y reste, même si on lui a coché des épisodes.
+          ...completees.filter((s) => s.statutActuel === 'plus_tard').map((s) => [ids.get(s.tmdbId), 'plus_tard']),
+        ];
+        for (const [serieId, statut] of statuts) await changerStatut(serieId, statut);
+
+        etat.bilan = { series: nouvelles.length, completees: completees.length, episodes: episodes.length, introuvables };
+        etat.etape = 'fini';
+      } catch (e) {
+        etat.etape = 'erreur';
+        etat.message = e.message;
+        etat.listeVidee = listeVidee;
+      } finally {
+        await chargerListe();
+      }
+    }
+
+    // Textes du panneau d'import (calculés ici pour garder index.html lisible).
+    const textesImport = computed(() => {
+      const etat = importEtat.value;
+      if (!etat?.sauvegarde) return {};
+      const { sauvegarde, actuelles, plans } = etat;
+      const nbSauvegarde = sauvegarde.series.reduce((t, s) => t + s.episodes.length, 0);
+      const date = sauvegarde.exporteLe ? ` du ${new Date(sauvegarde.exporteLe).toLocaleDateString('fr-FR')}` : '';
+      const nbActuels = actuelles.reduce((t, s) => t + (s.episodes_vus?.length ?? 0), 0);
+      const a = plans.ajout;
+      const ajoutVide = a.nouvelles.length === 0 && a.nbEpisodes === 0;
+      const b = etat.bilan;
+      return {
+        resume: `Sauvegarde${date} : ${pluriel(sauvegarde.series.length, 'série')}, `
+          + `${pluriel(nbSauvegarde, 'épisode coché', 'épisodes cochés')}.`,
+        ignorees: sauvegarde.ignorees.length
+          ? `${pluriel(sauvegarde.ignorees.length, 'série ignorée', 'séries ignorées')} (sans identifiant TMDB) : ${sauvegarde.ignorees.join(', ')}.`
+          : '',
+        listeActuelle: `Votre liste contient déjà ${pluriel(actuelles.length, 'série')}. Que voulez-vous faire ?`,
+        ajoutVide,
+        ajout: ajoutVide
+          ? 'Rien à ajouter : tout est déjà dans votre liste.'
+          : `${pluriel(a.nouvelles.length, 'nouvelle série', 'nouvelles séries')} et `
+            + `${pluriel(a.nbEpisodes, 'épisode', 'épisodes')} à cocher. Vos séries actuelles, `
+            + 'leurs statuts et leurs épisodes cochés sont gardés.',
+        remplacement: `Votre liste actuelle (${pluriel(actuelles.length, 'série')}) est retirée, puis la sauvegarde `
+          + 'est remise telle quelle. Une copie de votre liste actuelle est d\'abord téléchargée.',
+        confirmation: `Votre liste actuelle (${pluriel(actuelles.length, 'série')}, `
+          + `${pluriel(nbActuels, 'épisode coché', 'épisodes cochés')}) sera retirée, puis remplacée par la sauvegarde `
+          + `(${pluriel(sauvegarde.series.length, 'série')}, ${pluriel(nbSauvegarde, 'épisode coché', 'épisodes cochés')}). `
+          + 'Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.',
+        bilan: b
+          ? `Import terminé : ${pluriel(b.series, 'série ajoutée', 'séries ajoutées')}`
+            + (b.completees ? `, ${pluriel(b.completees, 'série complétée', 'séries complétées')}` : '')
+            + `, ${pluriel(b.episodes, 'épisode coché', 'épisodes cochés')}.`
+          : '',
+        introuvables: b?.introuvables.length
+          ? `Non importées (introuvables sur TMDB) : ${b.introuvables.join(', ')}.`
+          : '',
+        apresErreur: etat.listeVidee
+          ? 'Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import.'
+          : 'Vous pouvez relancer l\'import : ce qui a déjà été ajouté ne sera pas compté deux fois.',
+      };
+    });
 
     // Fait télécharger un texte comme fichier : on crée un lien invisible vers
     // le contenu (« Blob ») et on clique dessus.
@@ -884,6 +1081,8 @@ createApp({
     return {
       utilisateur, chargement, email, motDePasse, erreur, envoiEnCours,
       liste, listeChargee, sections, vusEnCours, exportEnCours, exporter, pourcentage,
+      importEtat, textesImport, choisirFichierImport, choisirModeImport, retourChoixImport,
+      fermerImport, lancerImport,
       recherche, resultats, rechercheFaite, rechercheEnCours, ajoutsEnCours, message,
       modeRecherche, rechercheTropCourte, idsDansListe,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,

@@ -342,6 +342,70 @@ export async function lireDonneesPourExport() {
 }
 
 
+// --- Import d'une sauvegarde (décision 40) ---
+
+// Nombre de lignes envoyées par requête lors d'un import (choix de Claude, à revoir).
+const LIGNES_PAR_ENVOI = 500;
+
+/**
+ * Identifiants internes des séries déjà présentes dans le catalogue, à partir
+ * de leurs identifiants TMDB. Renvoie une Map tmdbId → identifiant interne.
+ */
+export async function idsCatalogue(tmdbIds) {
+  const ids = new Map();
+  // 200 identifiants par requête : ils passent dans l'adresse de la requête.
+  for (let i = 0; i < tmdbIds.length; i += 200) {
+    const { data, error } = await supabase
+      .from('series')
+      .select('id, tmdb_id')
+      .in('tmdb_id', tmdbIds.slice(i, i + 200));
+    if (error) throw new Error(traduireErreur(error));
+    for (const s of data) ids.set(s.tmdb_id, s.id);
+  }
+  return ids;
+}
+
+/**
+ * Ajoute des séries à la liste avec leur date d'ajout et leur catégorie
+ * d'origine : lignes [{ serie_id, categorie_manuelle, ajoute_le }].
+ * Une série déjà suivie est laissée telle quelle (« ignoreDuplicates »).
+ */
+export async function suivreSeriesImportees(lignes) {
+  for (let i = 0; i < lignes.length; i += LIGNES_PAR_ENVOI) {
+    const { error } = await supabase
+      .from('suivis')
+      .upsert(lignes.slice(i, i + LIGNES_PAR_ENVOI), { onConflict: 'utilisateur_id,serie_id', ignoreDuplicates: true });
+    if (error) throw new Error(traduireErreur(error));
+  }
+}
+
+/**
+ * Coche des épisodes avec leur date d'origine : lignes
+ * [{ serie_id, saison, episode, vu_le }]. Un épisode déjà coché est laissé
+ * tel quel (sa date ne change pas).
+ */
+export async function cocherEpisodesImportes(lignes) {
+  for (let i = 0; i < lignes.length; i += LIGNES_PAR_ENVOI) {
+    const { error } = await supabase
+      .from('episodes_vus')
+      .upsert(lignes.slice(i, i + LIGNES_PAR_ENVOI), { onConflict: 'utilisateur_id,serie_id,saison,episode', ignoreDuplicates: true });
+    if (error) throw new Error(traduireErreur(error));
+  }
+}
+
+/**
+ * Retire toutes les séries de la liste de l'utilisateur connecté, et avec
+ * elles leurs épisodes cochés (« on delete cascade », comme pour un retrait).
+ * Les règles RLS limitent la suppression à ses propres suivis. Le filtre
+ * « serie_id non vide » est toujours vrai ; il est là par précaution, une
+ * suppression sans aucun filtre pouvant être refusée (non vérifié).
+ */
+export async function viderListe() {
+  const { error } = await supabase.from('suivis').delete().not('serie_id', 'is', null);
+  if (error) throw new Error(traduireErreur(error));
+}
+
+
 // Transforme une erreur renvoyée par Supabase en message compréhensible.
 // Les codes ci-dessous sont ceux attendus pour la connexion (à confirmer en test) ;
 // pour tout autre cas, on affiche le message d'origine.

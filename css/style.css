@@ -521,6 +521,22 @@ a.bouton { display: inline-block; text-decoration: none; }
 .profil-texte { flex: 1; min-width: 0; }
 .illustration-profil { width: auto; height: 7rem; flex-shrink: 0; }
 
+/* --- Import d'une sauvegarde (décision 40) --- */
+/* Étiquette du champ « fichier » présentée comme un bouton ; le contour
+   apparaît quand le champ caché reçoit le focus au clavier. */
+.bouton-fichier { display: inline-block; margin-top: 0.5rem; cursor: pointer; }
+.bouton-fichier:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.import {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+.import p { margin: 0 0 0.5rem; }
+.import .info, .import .erreur { text-align: left; }
+.choix-import { display: grid; gap: 0.25rem; justify-items: start; margin: 0 0 0.75rem; }
+.choix-import .aide { margin: 0 0 0.5rem; }
+
 /* Texte lu par les lecteurs d'écran mais pas affiché (ici l'étiquette du champ
    « Nom d'utilisateur », déjà annoncée par le titre juste au-dessus). */
 .cache-visuel {
