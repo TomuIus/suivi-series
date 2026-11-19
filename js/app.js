@@ -26,16 +26,22 @@ import {
   cocherEpisodesImportes,
   viderListe,
   nettoyerCatalogue,
+  lireProgression,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche, episodesSaison } from './tmdb.js';
 import { lireSauvegarde, planifierImport, TAILLE_MAX } from './import.js';
 import { utiliserFiche } from './fiche.js';
+import {
+  badgesObtenus, groupesBadges, libellePalier, texteAvancement, pourcentageNiveau,
+  nouveautes, texteAnnonce, lireMemoire, enregistrerMemoire,
+} from './badges.js';
 
 // Réglages de la recherche
 const LONGUEUR_MIN = 2;      // caractères avant de lancer une recherche
 const DELAI_FRAPPE = 500;    // ms d'attente après la dernière touche — à revoir après des tests
 const DUREE_MESSAGE = 5000;  // ms d'affichage d'un message de confirmation
 const DUREE_ANNULATION = 8000; // ms pendant lesquels « Annuler » reste proposé
+const DUREE_ANNONCE = 8000;    // ms d'affichage d'un nouveau badge ou rang (choix de Claude, à revoir)
 
 // Titres des prochains épisodes dans « Ma liste » : nombre de saisons demandées
 // à TMDB en même temps (choix de Claude, à revoir après des tests).
@@ -96,39 +102,11 @@ const LONGUEUR_MAX_NOM = 30; // caractères pour le nom d'utilisateur
 const RAYON_ANNEAU = 44;
 const ECART_ANNEAU = 2;  // espace laissé entre deux parts
 
-// Points et niveaux (décisions 33 et 36). Valeurs à revoir après des tests.
-const POINTS_PAR_EPISODE = 1;    // par épisode coché, spéciaux compris
-const BONUS_SERIE_TERMINEE = 20; // par série au statut « Terminé »
-// Coût d'un niveau (décision 36, option C) : chaque niveau coûte 10 points de
-// plus que le précédent (10, 20, 30…), mais jamais plus de 100.
-const PALIER_NIVEAU = 10;
-const COUT_MAX_NIVEAU = 100;
-// Nombre de niveaux dont le coût augmente encore (ici 10 : du niveau 1 au 11).
-const NIVEAUX_CROISSANTS = Math.floor(COUT_MAX_NIVEAU / PALIER_NIVEAU);
-
-// Points nécessaires, au total, pour atteindre le niveau n (n ≥ 1) :
-// niveau 1 = 0, niveau 2 = 10, niveau 3 = 10 + 20 = 30… niveau 11 = 550 ;
-// ensuite 100 de plus par niveau (niveau 12 = 650, niveau 13 = 750…).
-// Tant que le coût augmente : 10 + 20 + … + 10 × (n − 1) = 5 × n × (n − 1).
-function seuilNiveau(n) {
-  if (n - 1 <= NIVEAUX_CROISSANTS) return (PALIER_NIVEAU / 2) * n * (n - 1);
-  const debutPalierFixe = (PALIER_NIVEAU / 2) * NIVEAUX_CROISSANTS * (NIVEAUX_CROISSANTS + 1);
-  return debutPalierFixe + COUT_MAX_NIVEAU * (n - 1 - NIVEAUX_CROISSANTS);
-}
-
-// Niveau atteint avec un nombre de points : le plus grand n dont le seuil
-// ne dépasse pas les points. Formule du second degré dans la partie où le
-// coût augmente, simple division ensuite, puis vérification pour écarter
-// toute erreur d'arrondi.
-function niveauPour(points) {
-  const niveauPlafond = NIVEAUX_CROISSANTS + 1;
-  let n = points >= seuilNiveau(niveauPlafond)
-    ? niveauPlafond + Math.floor((points - seuilNiveau(niveauPlafond)) / COUT_MAX_NIVEAU)
-    : Math.max(1, Math.floor((1 + Math.sqrt(1 + (8 * points) / PALIER_NIVEAU)) / 2));
-  while (seuilNiveau(n + 1) <= points) n++;
-  while (n > 1 && seuilNiveau(n) > points) n--;
-  return n;
-}
+// Points, niveau, rang et badges : calculés par la base depuis la v26
+// (vue « ma_progression », décision 43), pour que le site et la future appli
+// Android utilisent les mêmes règles. Le barème et le coût des niveaux sont
+// dans supabase/migrations/20261120010000_progression.sql ; la mise en forme
+// est dans js/badges.js.
 
 // Libellés affichés pour les statuts (codes de la base) et pour les statuts
 // de diffusion de TMDB. « a_voir » (pas encore commencée) s'affiche
@@ -166,6 +144,7 @@ function lireRoute() {
   if (trouve) return { page: 'fiche', tmdbId: Number(trouve[1]) };
   if (location.hash === '#/profil') return { page: 'profil' };          // décision 29
   if (location.hash === '#/parametres') return { page: 'parametres' };
+  if (location.hash === '#/badges') return { page: 'badges' };          // décision 43
   return { page: 'liste' };
 }
 
@@ -227,26 +206,60 @@ createApp({
         .filter((section) => section.series.length > 0)
     );
 
-    // --- Profil : points et niveau (décision 33) ---
-    // Calculés, comme les statistiques, à partir de la liste déjà chargée :
-    // rien n'est enregistré, les points suivent ce qui est coché (décocher un
-    // épisode retire son point). Le bonus vaut pour toute série au statut
-    // « Terminé », automatique ou choisi à la main.
+    // --- Profil : points, niveau, rang et badges (décisions 33 et 43) ---
+    // Lus dans la vue « ma_progression » en même temps que la liste (voir
+    // chargerListe) : la base fait tous les calculs, rien n'est enregistré ;
+    // décocher un épisode retire son point et peut faire perdre un badge.
+    // null tant que la progression n'a pas été lue (ou si la lecture échoue :
+    // la liste reste utilisable, seul le niveau n'est pas affiché).
+    const maProgression = ref(null);
+
     const niveau = computed(() => {
-      const points = liste.value.reduce((total, s) =>
-        total
-        + POINTS_PAR_EPISODE * ((s.nb_vus ?? 0) + (s.nb_speciaux_vus ?? 0))
-        + (s.statut === 'termine' ? BONUS_SERIE_TERMINEE : 0), 0);
-      const n = niveauPour(points);
-      const debut = seuilNiveau(n);
-      const suivant = seuilNiveau(n + 1);
+      const p = maProgression.value;
+      if (!p) return null;
       return {
-        points,
-        niveau: n,
-        manquants: suivant - points,
-        pourcentage: Math.floor((100 * (points - debut)) / (suivant - debut)),
+        points: p.points,
+        niveau: p.niveau,
+        manquants: p.points_niveau_suivant - p.points,
+        pourcentage: pourcentageNiveau(p),
+        rang: p.rang,
+        rangSuivant: p.rang_suivant,            // vide au dernier rang
+        niveauRangSuivant: p.niveau_rang_suivant,
       };
     });
+
+    // Profil : seulement les badges obtenus, le palier le plus haut de chaque
+    // famille (décision 43). Page « Tous les badges » : tous, par famille.
+    const badgesProfil = computed(() => badgesObtenus(maProgression.value?.badges));
+    const groupes = computed(() => groupesBadges(maProgression.value?.badges));
+    const nombreBadges = computed(() => {
+      const badges = maProgression.value?.badges ?? [];
+      return { obtenus: badges.filter((b) => b.obtenu).length, total: badges.length };
+    });
+
+    // Annonce d'un nouveau badge ou d'un nouveau rang (décision 43) : message
+    // à part de celui des confirmations (« … vu », « Annuler »), pour que l'un
+    // n'efface pas l'autre. Ce qui a déjà été annoncé est retenu sur
+    // l'appareil (voir badges.js) ; la première fois, rien n'est annoncé.
+    const annonce = ref('');
+    let minuterieAnnonce = null;
+    function annoncerNouveautes(p) {
+      const id = utilisateur.value?.id;
+      if (!id) return;
+      let stockage;
+      try {
+        stockage = window.localStorage; // peut être refusé (navigation privée…)
+      } catch {
+        return; // pas de mémoire possible : on n'annonce rien
+      }
+      const resultat = nouveautes(p, lireMemoire(stockage, id));
+      if (!enregistrerMemoire(stockage, id, resultat.memoire)) return; // sinon, annonce répétée à chaque visite
+      const texte = texteAnnonce(resultat);
+      if (!texte) return;
+      annonce.value = texte;
+      clearTimeout(minuterieAnnonce);
+      minuterieAnnonce = setTimeout(() => { annonce.value = ''; }, DUREE_ANNONCE);
+    }
 
     // --- Profil : statistiques (décisions 28 et 34) ---
     // Calculées dans le navigateur à partir de la liste déjà chargée (aucune
@@ -431,6 +444,7 @@ createApp({
       arreterEcoute?.();
       clearTimeout(minuterieFrappe);
       clearTimeout(minuterieMessage);
+      clearTimeout(minuterieAnnonce);
     });
 
     // À chaque connexion (nouvel utilisateur), on charge sa liste ;
@@ -445,6 +459,8 @@ createApp({
         ecranFiche.fermerFiche();
         liste.value = [];
         listeChargee.value = false;
+        maProgression.value = null;
+        annonce.value = '';
         titresSaisons.value = new Map();
         importEtat.value = null;
         recherche.value = '';
@@ -495,11 +511,12 @@ createApp({
         }
         window.scrollTo(0, 0);
         ecranFiche.ouvrirFiche(r);
-      } else if (r.page === 'profil' || r.page === 'parametres') {
+      } else if (r.page === 'profil' || r.page === 'parametres' || r.page === 'badges') {
         ecranFiche.fermerFiche();
         window.scrollTo(0, 0);
-        // Profil : statistiques à jour (une fiche a pu changer des épisodes).
-        if (r.page === 'profil') chargerListe();
+        // Profil et badges : statistiques et progression à jour (une fiche a
+        // pu changer des épisodes).
+        if (r.page === 'profil' || r.page === 'badges') chargerListe();
         // Paramètres : le champ part du nom actuel.
         if (r.page === 'parametres') {
           nomSaisi.value = utilisateur.value?.user_metadata?.nom_utilisateur ?? '';
@@ -537,7 +554,7 @@ createApp({
       }
     }
 
-    // Bouton « ← Profil » (paramètres) : même principe.
+    // Bouton « ← Profil » (paramètres, badges) : même principe.
     function retourProfil() {
       if (pagePrecedente === 'profil') history.back();
       else location.hash = '#/profil';
@@ -571,8 +588,23 @@ createApp({
     async function chargerListe() {
       const numero = ++numeroChargement;
       try {
-        const lignes = await listerSuivis();
-        if (numero === numeroChargement) liste.value = lignes; // sinon, réponse dépassée
+        // La liste et la progression (décision 43) sont lues en même temps.
+        // Si la progression ne peut pas être lue (par exemple si le fichier
+        // SQL de la v26 n'a pas été exécuté), la liste s'affiche quand même.
+        const [lignes, prog] = await Promise.all([
+          listerSuivis(),
+          lireProgression().catch((e) => {
+            console.warn('Progression (niveau, badges) illisible :', e.message);
+            return null;
+          }),
+        ]);
+        if (numero === numeroChargement) { // sinon, réponse dépassée
+          liste.value = lignes;
+          if (prog) {
+            maProgression.value = prog;
+            annoncerNouveautes(prog);
+          }
+        }
         completerFiches(lignes);
       } catch (e) {
         erreur.value = e.message;
@@ -1106,6 +1138,7 @@ createApp({
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
       filtreStats, statistiques, nombre, niveau,
+      maProgression, badgesProfil, groupes, nombreBadges, annonce, libellePalier, texteAvancement,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };

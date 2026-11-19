@@ -422,6 +422,24 @@ export async function nettoyerCatalogue() {
   return data;
 }
 
+/**
+ * Points, niveau, rang et badges de l'utilisateur connecté (vue
+ * « ma_progression », décision 43) : une seule ligne, entièrement calculée
+ * par la base à partir des épisodes cochés. « badges » est la liste des
+ * 18 badges, dans l'ordre d'affichage (voir le fichier SQL pour leur forme).
+ */
+export async function lireProgression() {
+  const { data, error } = await supabase
+    .from('ma_progression')
+    .select(
+      'points, niveau, points_niveau, points_niveau_suivant, ' +
+      'rang_numero, rang, rang_suivant, niveau_rang_suivant, badges'
+    )
+    .single();
+  if (error) throw new Error(traduireErreur(error));
+  return data;
+}
+
 
 // Transforme une erreur renvoyée par Supabase en message compréhensible.
 // Les codes ci-dessous sont ceux attendus pour la connexion (à confirmer en test) ;

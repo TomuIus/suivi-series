@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=25 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=26 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=25">
+  <link rel="stylesheet" href="css/style.css?v=26">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,12 +52,13 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=25",
-      "./js/base.js": "./js/base.js?v=25",
-      "./js/config.js": "./js/config.js?v=25",
-      "./js/fiche.js": "./js/fiche.js?v=25",
-      "./js/import.js": "./js/import.js?v=25",
-      "./js/tmdb.js": "./js/tmdb.js?v=25"
+      "./js/app.js": "./js/app.js?v=26",
+      "./js/badges.js": "./js/badges.js?v=26",
+      "./js/base.js": "./js/base.js?v=26",
+      "./js/config.js": "./js/config.js?v=26",
+      "./js/fiche.js": "./js/fiche.js?v=26",
+      "./js/import.js": "./js/import.js?v=26",
+      "./js/tmdb.js": "./js/tmdb.js?v=26"
     }
   }
   </script>
@@ -94,10 +95,12 @@
       <div v-if="utilisateur" class="compte">
         <!-- Nom d'utilisateur (sinon l'e-mail) et, dessous, le niveau avec sa
              barre (décision 34) : un clic ouvre la page « Profil ». La barre est
-             décorative ici (« aria-hidden ») ; le détail est sur le profil. -->
+             décorative ici (« aria-hidden ») ; le détail est sur le profil.
+             Le rang apparaît au survol du niveau (décision 43 : la place
+             manque sur téléphone pour l'écrire en entier). -->
         <a href="#/profil" class="lien-profil" :title="'Connecté avec ' + utilisateur.email">
           <span class="nom-compte">{{ nomAffiche }}</span>
-          <span v-if="listeChargee" class="mini-niveau">
+          <span v-if="niveau" class="mini-niveau" :title="niveau.rang">
             Niveau {{ niveau.niveau }}
             <span class="barre" aria-hidden="true">
               <span class="barre-remplie" :style="{ width: niveau.pourcentage + '%' }"></span>
@@ -141,6 +144,10 @@
           {{ message.texte }}
           <button v-if="message.annuler" type="button" class="lien-bouton"
                   @click="message.annuler()">Annuler</button>
+        </p>
+        <!-- Nouveau badge ou nouveau rang (décision 43), à part des confirmations -->
+        <p v-if="annonce" class="annonce" role="status">
+          <a href="#/badges">{{ annonce }}</a>
         </p>
 
         <!-- ================= Page : fiche d'une série ================= -->
@@ -326,9 +333,9 @@
               <div class="profil-texte">
                 <h2>{{ nomAffiche }}</h2>
 
-                <!-- Points et niveau (décision 33) -->
-                <div v-if="listeChargee" class="niveau">
-                  <p class="niveau-titre">Niveau {{ niveau.niveau }}</p>
+                <!-- Points, niveau et rang (décisions 33 et 43), calculés par la base -->
+                <div v-if="niveau" class="niveau">
+                  <p class="niveau-titre">Niveau {{ niveau.niveau }} · {{ niveau.rang }}</p>
                   <div class="progression">
                     <span class="barre" role="progressbar" :aria-label="'Progression vers le niveau ' + (niveau.niveau + 1)"
                           aria-valuemin="0" aria-valuemax="100" :aria-valuenow="niveau.pourcentage">
@@ -339,14 +346,35 @@
                     {{ nombre(niveau.points) }} point{{ niveau.points > 1 ? 's' : '' }}
                     · encore {{ nombre(niveau.manquants) }} pour le niveau {{ niveau.niveau + 1 }}
                   </p>
+                  <p v-if="niveau.rangSuivant" class="details">
+                    Prochain rang : « {{ niveau.rangSuivant }} » au niveau {{ niveau.niveauRangSuivant }}
+                  </p>
                   <p class="info aide">
                     1 point par épisode vu (spéciaux cochés compris), +20 par série terminée.
                     Chaque niveau demande 10 points de plus que le précédent, 100 au maximum.
                   </p>
                 </div>
+                <p v-else-if="listeChargee" class="info aide">Niveau et badges indisponibles pour le moment.</p>
               </div>
               <img src="img/tilou-popcorn.png" alt="" class="illustration illustration-profil" width="56" height="112">
             </div>
+
+            <!-- Badges (décision 43) : seulement ceux obtenus ; pour une famille,
+                 le palier le plus haut. La page « Tous les badges » montre le reste. -->
+            <template v-if="maProgression">
+              <h3>Badges</h3>
+              <ul v-if="badgesProfil.length" class="badges">
+                <li v-for="b in badgesProfil" :key="b.code" class="badge" :class="'badge-' + (b.palier || 'defi')">
+                  <span class="badge-pastille" aria-hidden="true"><span class="badge-icone" :class="'icone-' + b.icone"></span></span>
+                  <span class="badge-nom">{{ b.nom }}</span>
+                  <span class="badge-sous-titre">{{ b.palier ? libellePalier(b.palier) : 'Défi' }}</span>
+                </li>
+              </ul>
+              <p v-else class="info aide">
+                Pas encore de badge : cochez un premier épisode pour gagner « Premier épisode ».
+              </p>
+              <a href="#/badges" class="bouton bouton-discret lien-badges">Voir tous les badges</a>
+            </template>
 
             <!-- Statistiques (décisions 28 et 34) : filtre, chiffres clés, par statut -->
             <h3>Statistiques</h3>
@@ -406,6 +434,44 @@
                 <template v-if="statistiques.sansDuree > 0">
                   Durée inconnue pour {{ nombre(statistiques.sansDuree) }} épisode{{ statistiques.sansDuree > 1 ? 's' : '' }} vu{{ statistiques.sansDuree > 1 ? 's' : '' }}, non compté{{ statistiques.sansDuree > 1 ? 's' : '' }}.
                 </template>
+              </p>
+            </template>
+          </section>
+        </template>
+
+        <!-- ================= Page : tous les badges (décision 43) ================= -->
+        <!-- Badges groupés par famille (bronze → platine), puis les défis, chacun
+             avec sa condition et l'avancement. Tout vient de la base (vue
+             « ma_progression ») ; recalculé à chaque visite. -->
+        <template v-else-if="route.page === 'badges'">
+          <nav class="retour">
+            <a href="#/profil" class="bouton bouton-discret" @click.prevent="retourProfil">← Profil</a>
+          </nav>
+
+          <section class="carte page-compte">
+            <h2>Badges</h2>
+            <p v-if="!maProgression" class="info">{{ listeChargee ? 'Badges indisponibles pour le moment.' : 'Chargement…' }}</p>
+            <template v-else>
+              <p class="details">
+                {{ nombreBadges.obtenus }} badge{{ nombreBadges.obtenus > 1 ? 's' : '' }} obtenu{{ nombreBadges.obtenus > 1 ? 's' : '' }}
+                sur {{ nombreBadges.total }}
+              </p>
+              <template v-for="g in groupes" :key="g.cle">
+                <h3>{{ g.nom }}</h3>
+                <ul class="badges badges-complets" :class="{ 'badges-paliers': g.cle !== 'defis' }">
+                  <li v-for="b in g.badges" :key="b.code" class="badge"
+                      :class="[b.obtenu ? '' : 'badge-manquant', 'badge-' + (b.palier || 'defi')]">
+                    <span class="badge-pastille" aria-hidden="true"><span class="badge-icone" :class="'icone-' + b.icone"></span></span>
+                    <span class="badge-nom">{{ b.palier ? libellePalier(b.palier) : b.nom }}</span>
+                    <span class="badge-condition">{{ b.condition }}</span>
+                    <span class="badge-etat">{{ b.obtenu ? '✓ Obtenu' : texteAvancement(b) }}</span>
+                  </li>
+                </ul>
+              </template>
+              <p class="info aide">
+                Les badges sont recalculés à chaque visite d'après les épisodes cochés :
+                décocher un épisode peut en faire perdre un. Temps passé : estimé comme dans
+                les statistiques du Profil.
               </p>
             </template>
           </section>

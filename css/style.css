@@ -26,6 +26,16 @@
      10,6:1 et 5,9:1 en clair, 11,0:1 et 7,3:1 en sombre. */
   --logo-debut: #7a1043;
   --logo-fin: #c2185b;
+  /* Badges (décision 43) : pastille, contour et icône de chaque palier ;
+     les défis aux couleurs de Canapilou. Mêmes couleurs en mode sombre
+     (comme des médailles). Rapports de contraste calculés : icône/pastille
+     6,3 à 8,4:1 ; contour/carte claire 3,7 à 5,9:1 ; pastille/carte sombre
+     6,9 à 10,5:1. */
+  --badge-bronze: #d9a06f;  --badge-bronze-contour: #a5652f;  --badge-bronze-icone: #3d2410;
+  --badge-argent: #c9cfd8;  --badge-argent-contour: #7d8592;  --badge-argent-icone: #2b313b;
+  --badge-or: #ecc246;      --badge-or-contour: #9a7400;      --badge-or-icone: #463200;
+  --badge-platine: #a9dbe3; --badge-platine-contour: #3c8693; --badge-platine-icone: #103a42;
+  --badge-defi: #f5b8d0;    --badge-defi-contour: #c2185b;    --badge-defi-icone: #7a1043;
   color-scheme: light dark;
 }
 
@@ -182,6 +192,9 @@ input:focus-visible,
 .info { color: var(--texte-doux); text-align: center; }
 
 .succes { color: var(--succes); text-align: center; margin: 0 0 1rem; }
+/* Nouveau badge ou nouveau rang (décision 43) : lien vers la page des badges */
+.annonce { text-align: center; margin: 0 0 1rem; font-weight: 600; }
+.annonce a { color: var(--logo-fin); }
 
 /* --- Barre de recherche --- */
 .recherche { position: relative; margin-bottom: 1rem; }
@@ -517,6 +530,77 @@ a.bouton { display: inline-block; text-decoration: none; }
 .niveau-titre { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 700; }
 .niveau .barre { max-width: none; height: 0.65rem; }  /* barre sur toute la largeur */
 .niveau .details { margin: 0.25rem 0 0; }
+
+/* --- Badges (décision 43) ---
+   Profil : badges obtenus en tuiles (3 de front sur téléphone, 4 au-delà de
+   40 rem) ; page « Tous les badges » : 2 de front sur téléphone, 4 au-delà.
+   La pastille est un rond de la couleur du palier ; l'icône (Tabler Icons,
+   img/badges/, licence MIT) y est dessinée par un masque CSS, pour pouvoir
+   la colorer. Badge pas encore obtenu : gris, avec son avancement. */
+.badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.badges-complets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 40rem) {
+  .badges, .badges-complets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0.4rem;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  text-align: center;
+  min-width: 0;
+}
+.badge-pastille {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 0.2rem;
+  border-radius: 50%;
+  border: 2px solid var(--contour);
+  background: var(--pastille);
+  color: var(--icone);
+}
+.badge-icone {
+  width: 1.5rem;
+  height: 1.5rem;
+  background: currentColor;
+  -webkit-mask: var(--masque) center / contain no-repeat;
+  mask: var(--masque) center / contain no-repeat;
+}
+.badge-bronze  { --pastille: var(--badge-bronze);  --contour: var(--badge-bronze-contour);  --icone: var(--badge-bronze-icone); }
+.badge-argent  { --pastille: var(--badge-argent);  --contour: var(--badge-argent-contour);  --icone: var(--badge-argent-icone); }
+.badge-or      { --pastille: var(--badge-or);      --contour: var(--badge-or-contour);      --icone: var(--badge-or-icone); }
+.badge-platine { --pastille: var(--badge-platine); --contour: var(--badge-platine-contour); --icone: var(--badge-platine-icone); }
+.badge-defi    { --pastille: var(--badge-defi);    --contour: var(--badge-defi-contour);    --icone: var(--badge-defi-icone); }
+.badge-manquant { --pastille: var(--carte); --contour: var(--bordure); --icone: var(--texte-doux); }
+.badge-manquant .badge-nom { color: var(--texte-doux); }
+/* Une classe par icône : l'adresse est relative à ce fichier (css/). */
+.icone-clock       { --masque: url(../img/badges/clock.svg); }
+.icone-device-tv   { --masque: url(../img/badges/device-tv.svg); }
+.icone-sparkles    { --masque: url(../img/badges/sparkles.svg); }
+.icone-player-play { --masque: url(../img/badges/player-play.svg); }
+.icone-run         { --masque: url(../img/badges/run.svg); }
+.icone-flame       { --masque: url(../img/badges/flame.svg); }
+.icone-books       { --masque: url(../img/badges/books.svg); }
+.icone-world       { --masque: url(../img/badges/world.svg); }
+.icone-movie       { --masque: url(../img/badges/movie.svg); }
+.badge-nom { font-weight: 600; font-size: 0.85rem; line-height: 1.2; overflow-wrap: anywhere; }
+.badge-sous-titre, .badge-condition, .badge-etat { font-size: 0.75rem; color: var(--texte-doux); line-height: 1.25; }
+.badge-etat { font-variant-numeric: tabular-nums; }
+.lien-badges { display: inline-block; margin-top: 0.75rem; }
 
 /* --- Illustrations de Tilou (décision 39) ---
    Canapé au-dessus du formulaire de connexion ; Tilou au pop-corn à côté du
