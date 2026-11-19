@@ -99,7 +99,8 @@ export async function listerSuivis() {
       'serie_id, tmdb_id, titre, affiche_chemin, statut_diffusion, statut_manuel, statut, ' +
       'nb_diffuses, nb_vus, prochaine_saison, prochain_episode, derniere_activite, ' +
       'categorie_manuelle, anime_detecte, est_anime, ' +
-      'minutes_vues, nb_vus_sans_duree, durees_a_calculer, nb_speciaux_vus'
+      'minutes_vues, nb_vus_sans_duree, durees_a_calculer, nb_speciaux_vus, ' +
+      'fiche_a_rafraichir'
     )
     .order('derniere_activite', { ascending: false });
   if (error) throw new Error(traduireErreur(error));
@@ -403,6 +404,22 @@ export async function cocherEpisodesImportes(lignes) {
 export async function viderListe() {
   const { error } = await supabase.from('suivis').delete().not('serie_id', 'is', null);
   if (error) throw new Error(traduireErreur(error));
+}
+
+
+// --- Catalogue (décision 42) ---
+
+/**
+ * Retire du catalogue les séries que plus personne ne suit et dont la fiche
+ * TMDB a plus de 5 mois (les conditions de TMDB interdisent de garder ses
+ * informations plus de 6 mois). Le travail est fait dans la base par la
+ * fonction SQL « nettoyer_catalogue » : les utilisateurs ne peuvent pas
+ * supprimer de séries eux-mêmes. Renvoie le nombre de séries supprimées.
+ */
+export async function nettoyerCatalogue() {
+  const { data, error } = await supabase.rpc('nettoyer_catalogue');
+  if (error) throw new Error(traduireErreur(error));
+  return data;
 }
 
 

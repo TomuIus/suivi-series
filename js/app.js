@@ -25,6 +25,7 @@ import {
   suivreSeriesImportees,
   cocherEpisodesImportes,
   viderListe,
+  nettoyerCatalogue,
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche, episodesSaison } from './tmdb.js';
 import { lireSauvegarde, planifierImport, TAILLE_MAX } from './import.js';
@@ -572,7 +573,7 @@ createApp({
       try {
         const lignes = await listerSuivis();
         if (numero === numeroChargement) liste.value = lignes; // sinon, réponse dépassée
-        completerClassement(lignes);
+        completerFiches(lignes);
       } catch (e) {
         erreur.value = e.message;
       } finally {
@@ -580,15 +581,28 @@ createApp({
       }
     }
 
-    // Les séries ajoutées avant certains changements n'ont pas encore toutes
-    // leurs informations : classement série / animé (anime_detecte vide,
-    // décision 24) ou durée des épisodes (durees_a_calculer, décision 31).
-    // On fait remettre leur fiche à jour par la fonction serveur, une par
+    // Certaines fiches du catalogue sont à remettre à jour : séries ajoutées
+    // avant certains changements, sans classement série / animé
+    // (anime_detecte vide, décision 24) ou sans durée des épisodes
+    // (durees_a_calculer, décision 31) ; et, depuis la décision 42, fiches de
+    // plus de 5 mois (fiche_a_rafraichir), car les conditions de TMDB
+    // interdisent de garder ses informations plus de 6 mois.
+    // On fait remettre ces fiches à jour par la fonction serveur, une par
     // une, en arrière-plan, une seule fois par visite. Ensuite, on recharge
     // la liste.
     let classementLance = false;
-    async function completerClassement(lignes) {
-      const aClasser = lignes.filter((s) => s.anime_detecte == null || s.durees_a_calculer);
+    let nettoyageLance = false;
+    async function completerFiches(lignes) {
+      // Une fois par visite aussi : retirer du catalogue les séries que plus
+      // personne ne suit et dont la fiche a plus de 5 mois (décision 42).
+      // Sans attendre, sans bloquer le reste en cas d'échec.
+      if (!nettoyageLance) {
+        nettoyageLance = true;
+        nettoyerCatalogue().catch((e) => console.warn('Nettoyage du catalogue impossible :', e.message));
+      }
+      const aClasser = lignes.filter(
+        (s) => s.anime_detecte == null || s.durees_a_calculer || s.fiche_a_rafraichir
+      );
       if (classementLance || aClasser.length === 0) return;
       classementLance = true;
       for (const s of aClasser) {
