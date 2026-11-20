@@ -1,0 +1,14 @@
+{
+  "_aide": "Un badge par code d'icône (champ « icone » de la vue ma_progression). source : image détourée dans sources/. Facultatif : yeux = [x, y, écart] mesurés à la main (x et y en fraction de la largeur et de la hauteur de l'image, écart en pixels) quand un œil est caché ; aligner_bas = true pour caler le bas de l'image sur le bas du rond ; taille = facteur d'agrandissement ; apercu = couleur de pastille pour l'aperçu (bronze, argent, or, platine, defi). Voir README.md.",
+  "badges": {
+    "clock":       { "source": "sources/clock.png", "apercu": "bronze" },
+    "device-tv":   { "source": "sources/device-tv.png", "apercu": "argent" },
+    "sparkles":    { "source": "sources/sparkles.png", "apercu": "or" },
+    "player-play": { "source": "sources/player-play.png", "aligner_bas": true },
+    "run":         { "source": "sources/run.png" },
+    "flame":       { "source": "sources/flame.png" },
+    "books":       { "source": "sources/books.png" },
+    "world":       { "source": "sources/world.png", "yeux": [0.41, 0.52, 150] },
+    "movie":       { "source": "sources/movie.png" }
+  }
+}
