@@ -676,6 +676,25 @@ a.bouton { display: inline-block; text-decoration: none; }
   vertical-align: middle;
 }
 
+/* Statut à côté du titre, dans le bloc « Dans ma liste » de la recherche
+   (décision 44) : même forme que « Animé », en plus discret. */
+.etiquette-statut {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  color: var(--texte-doux);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+/* Titres « Dans ma liste (N) » et « Sur TMDB » de la recherche */
+.titre-bloc { margin: 0 0 0.5rem; font-size: 1rem; }
+.liste + .titre-bloc { margin-top: 1.25rem; }
+
 /* Retrait de la liste */
 .zone-retrait p { margin: 0 0 0.5rem; }
 .lien-danger {

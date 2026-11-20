@@ -30,6 +30,7 @@ import {
 } from './base.js';
 import { rechercherSeries, importerSerie, urlAffiche, episodesSaison } from './tmdb.js';
 import { lireSauvegarde, planifierImport, TAILLE_MAX } from './import.js';
+import { chercherDansListe, autresResultats } from './recherche.js';
 import { utiliserFiche } from './fiche.js';
 import {
   badgesObtenus, groupesBadges, libellePalier, texteAvancement, pourcentageNiveau,
@@ -372,6 +373,15 @@ createApp({
     // Identifiants TMDB des séries déjà suivies, pour afficher « Dans ma liste ».
     const idsDansListe = computed(() => new Set(liste.value.map((s) => s.tmdb_id)));
 
+    // Recherche commune (décision 44) : d'abord les séries de « Ma liste » qui
+    // correspondent (calcul dans le navigateur, sans attendre : la liste est
+    // déjà chargée), puis les résultats TMDB sans ces séries-là. Toute la
+    // liste est regardée, quel que soit le filtre Tout · Séries · Animés et
+    // quel que soit le statut (choix de Claude, à revoir).
+    const resultatsListe = computed(() =>
+      rechercheTropCourte.value ? [] : chercherDansListe(liste.value, recherche.value));
+    const resultatsTmdb = computed(() => autresResultats(resultats.value, resultatsListe.value));
+
     // --- Navigation entre « Ma liste » et les fiches ---
     const route = ref(lireRoute());
     let depuisLaListe = false; // la page actuelle a-t-elle été ouverte depuis la liste ?
@@ -473,13 +483,21 @@ createApp({
     // à chaque lettre. La touche Entrée lance la recherche tout de suite.
     watch(recherche, () => {
       clearTimeout(minuterieFrappe);
+      // Le texte a changé : une réponse encore en route pour l'ancien texte
+      // sera ignorée (depuis la décision 44 ; avant, elle pouvait s'afficher
+      // après un retour en arrière, ex. « blu » → « blux » → « blu »).
+      numeroRecherche++;
       if (rechercheTropCourte.value) {
-        numeroRecherche++; // une éventuelle réponse en attente sera ignorée
         resultats.value = [];
         rechercheFaite.value = '';
         rechercheEnCours.value = false;
         return;
       }
+      // « Recherche… » s'affiche dès la frappe, pendant la pause comme pendant
+      // la requête (depuis la décision 44 : sinon, sous le bloc « Dans ma
+      // liste », le titre « Sur TMDB » resterait seul un instant). Rien à
+      // attendre si l'on revient au texte déjà cherché.
+      rechercheEnCours.value = recherche.value.trim() !== rechercheFaite.value;
       minuterieFrappe = setTimeout(lancerRecherche, DELAI_FRAPPE);
     });
 
@@ -696,7 +714,14 @@ createApp({
         resultats.value = trouves;
         rechercheFaite.value = texte;
       } catch (e) {
-        if (numero === numeroRecherche) erreur.value = e.message;
+        if (numero === numeroRecherche) {
+          erreur.value = e.message;
+          // Les résultats d'avant ne correspondent pas au texte tapé : on les
+          // efface plutôt que de les laisser sous « Sur TMDB » (décision 44).
+          // Entrée relance la recherche.
+          resultats.value = [];
+          rechercheFaite.value = '';
+        }
       } finally {
         if (numero === numeroRecherche) rechercheEnCours.value = false;
       }
@@ -1130,7 +1155,7 @@ createApp({
       importEtat, textesImport, choisirFichierImport, choisirModeImport, retourChoixImport,
       fermerImport, lancerImport,
       recherche, resultats, rechercheFaite, rechercheEnCours, ajoutsEnCours, message,
-      modeRecherche, rechercheTropCourte, idsDansListe,
+      modeRecherche, rechercheTropCourte, idsDansListe, resultatsListe, resultatsTmdb,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
       details, urlAffiche, libelleEpisode, peutCocher, progression,
       route, retourListe, allerAccueil, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,

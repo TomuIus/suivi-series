@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=26 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=27 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=26">
+  <link rel="stylesheet" href="css/style.css?v=27">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,13 +52,14 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=26",
-      "./js/badges.js": "./js/badges.js?v=26",
-      "./js/base.js": "./js/base.js?v=26",
-      "./js/config.js": "./js/config.js?v=26",
-      "./js/fiche.js": "./js/fiche.js?v=26",
-      "./js/import.js": "./js/import.js?v=26",
-      "./js/tmdb.js": "./js/tmdb.js?v=26"
+      "./js/app.js": "./js/app.js?v=27",
+      "./js/badges.js": "./js/badges.js?v=27",
+      "./js/base.js": "./js/base.js?v=27",
+      "./js/config.js": "./js/config.js?v=27",
+      "./js/fiche.js": "./js/fiche.js?v=27",
+      "./js/import.js": "./js/import.js?v=27",
+      "./js/recherche.js": "./js/recherche.js?v=27",
+      "./js/tmdb.js": "./js/tmdb.js?v=27"
     }
   }
   </script>
@@ -593,7 +594,10 @@
         <template v-else>
           <!--
             Barre de recherche, toujours en haut. Dès qu'on tape, les résultats
-            TMDB remplacent la liste ; la croix (ou Échap) ramène à la liste.
+            remplacent la liste ; la croix (ou Échap) ramène à la liste.
+            Recherche commune (décision 44) : d'abord les séries de « Ma liste »
+            qui correspondent (tout de suite), puis les résultats TMDB (après
+            une courte pause dans la frappe), sans répéter les premières.
           -->
           <form class="recherche" role="search" @submit.prevent="lancerRecherche">
             <input v-model="recherche" type="search" class="champ-recherche"
@@ -609,13 +613,65 @@
           <section v-if="modeRecherche" class="carte" aria-live="polite">
             <h2>Résultats de la recherche</h2>
             <p v-if="rechercheTropCourte" class="info">Tapez au moins 2 caractères.</p>
-            <p v-else-if="rechercheEnCours" class="info">Recherche…</p>
-            <p v-else-if="rechercheFaite && resultats.length === 0" class="info">
-              Aucun résultat pour « {{ rechercheFaite }} ».
-            </p>
 
-            <ul v-if="resultats.length" class="resultats">
-              <li v-for="r in resultats" :key="r.tmdbId" class="resultat">
+            <template v-else>
+              <!--
+                1. Séries de « Ma liste » qui correspondent : mêmes lignes que
+                dans la liste (progression, prochain épisode, « ✓ Vu »), avec
+                le statut à côté du titre, puisqu'il n'y a pas de sections ici.
+                Bloc absent si rien ne correspond (la page reste alors comme
+                avant la décision 44).
+              -->
+              <template v-if="resultatsListe.length">
+                <h3 class="titre-bloc">Dans ma liste ({{ resultatsListe.length }})</h3>
+                <ul class="liste">
+                  <li v-for="s in resultatsListe" :key="s.serie_id" class="element-liste">
+                    <a :href="'#/serie/' + s.serie_id" class="lien-fiche">
+                      <img v-if="s.affiche_chemin" :src="urlAffiche(s.affiche_chemin, 'w92')"
+                           alt="" class="affiche affiche-petite" width="46" height="69" loading="lazy">
+                      <div v-else class="affiche affiche-petite sans-affiche" aria-hidden="true"></div>
+
+                      <div class="element-texte">
+                        <span class="titre-liste">
+                          {{ s.titre }}
+                          <span v-if="s.est_anime" class="etiquette-anime">Animé</span>
+                          <span class="etiquette-statut">{{ libelleStatut(s.statut) }}</span>
+                        </span>
+                        <span v-if="pourcentage(s) != null" class="progression">
+                          <span class="barre" role="progressbar" :aria-label="`Progression de ${s.titre}`"
+                                aria-valuemin="0" aria-valuemax="100" :aria-valuenow="pourcentage(s)">
+                            <span class="barre-remplie" :class="{ complete: pourcentage(s) === 100 }"
+                                  :style="{ width: pourcentage(s) + '%' }"></span>
+                          </span>
+                          <span class="pourcentage">{{ pourcentage(s) }}&nbsp;%</span>
+                        </span>
+                        <span class="details">{{ progression(s) }}</span>
+                      </div>
+                    </a>
+
+                    <button v-if="peutCocher(s)" type="button" class="bouton bouton-vu"
+                            :disabled="vusEnCours.has(s.serie_id)"
+                            :aria-label="`Marquer ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} de ${s.titre} comme vu`"
+                            @click="cocher(s)">
+                      {{ vusEnCours.has(s.serie_id) ? '…' : '✓ Vu' }}
+                    </button>
+                  </li>
+                </ul>
+                <h3 class="titre-bloc">Sur TMDB</h3>
+              </template>
+
+              <!-- 2. Résultats TMDB, sans les séries montrées au-dessus -->
+              <p v-if="rechercheEnCours" class="info">Recherche…</p>
+              <p v-else-if="rechercheFaite && resultats.length === 0" class="info">
+                Aucun résultat pour « {{ rechercheFaite }} ».
+              </p>
+              <p v-else-if="rechercheFaite && resultatsTmdb.length === 0" class="info">
+                Rien d'autre sur TMDB pour « {{ rechercheFaite }} ».
+              </p>
+            </template>
+
+            <ul v-if="!rechercheTropCourte && resultatsTmdb.length" class="resultats">
+              <li v-for="r in resultatsTmdb" :key="r.tmdbId" class="resultat">
                 <!-- Affiche + texte : lien vers la fiche (ou l'aperçu si pas dans la liste) -->
                 <a :href="lienResultat(r)" class="lien-resultat">
                   <!-- alt vide : l'image est décorative, le titre est juste à côté -->
