@@ -314,11 +314,31 @@ input:focus-visible,
 }
 .element-texte .details { overflow-wrap: anywhere; }
 
-.bouton-vu {              /* bouton « ✓ Vu » : assez grand pour un appui au doigt */
+.bouton-vu {              /* bouton « Vu » : assez grand pour un appui au doigt */
   flex: none;
   margin-top: 0;
   min-height: 2.75rem;
   padding: 0.5rem 0.85rem;
+  display: inline-flex;   /* coche et « Vu » centrés verticalement */
+  align-items: center;
+  justify-content: center;
+}
+
+/* Coche dessinée (décision 46) : remplace le caractère « ✓ », dont le dessin
+   dépend de la police de l'appareil. Icône « check » de Tabler Icons
+   (img/icones/), appliquée comme masque : elle prend la couleur du texte
+   autour (currentColor), comme les icônes des badges. Tailles à revoir
+   après des tests. */
+.coche {
+  display: inline-block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.25em;
+  vertical-align: -0.2em;
+  background: currentColor;
+  -webkit-mask: url(../img/icones/check.svg) center / contain no-repeat;
+  mask: url(../img/icones/check.svg) center / contain no-repeat;
 }
 
 .lien-bouton {            /* bouton qui ressemble à un lien (« Annuler ») */
@@ -416,6 +436,7 @@ a.bouton { display: inline-block; text-decoration: none; }
   font-weight: 700;
   line-height: 1;
 }
+.case .coche { width: 1.1rem; height: 1.1rem; margin: 0; }  /* coche de la case d'un épisode vu */
 .numero-episode { flex: none; min-width: 1.5rem; font-weight: 600; color: var(--texte-doux); }
 .texte-episode { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .titre-episode { overflow-wrap: anywhere; }

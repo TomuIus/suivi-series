@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=29 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=30 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=29">
+  <link rel="stylesheet" href="css/style.css?v=30">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,14 +52,14 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=29",
-      "./js/badges.js": "./js/badges.js?v=29",
-      "./js/base.js": "./js/base.js?v=29",
-      "./js/config.js": "./js/config.js?v=29",
-      "./js/fiche.js": "./js/fiche.js?v=29",
-      "./js/import.js": "./js/import.js?v=29",
-      "./js/recherche.js": "./js/recherche.js?v=29",
-      "./js/tmdb.js": "./js/tmdb.js?v=29"
+      "./js/app.js": "./js/app.js?v=30",
+      "./js/badges.js": "./js/badges.js?v=30",
+      "./js/base.js": "./js/base.js?v=30",
+      "./js/config.js": "./js/config.js?v=30",
+      "./js/fiche.js": "./js/fiche.js?v=30",
+      "./js/import.js": "./js/import.js?v=30",
+      "./js/recherche.js": "./js/recherche.js?v=30",
+      "./js/tmdb.js": "./js/tmdb.js?v=30"
     }
   }
   </script>
@@ -276,7 +276,7 @@
                             :aria-pressed="fiche.suivi ? String(etatEpisode(saison.numero, e) === 'vu') : null"
                             @click="basculer(saison.numero, e)">
                       <span v-if="fiche.suivi" class="case" aria-hidden="true">
-                        {{ etatEpisode(saison.numero, e) === 'vu' ? '✓' : '' }}
+                        <span v-if="etatEpisode(saison.numero, e) === 'vu'" class="coche"></span>
                       </span>
                       <span class="numero-episode">{{ e }}</span>
                       <span class="texte-episode">
@@ -465,7 +465,8 @@
                     <span class="badge-pastille" aria-hidden="true"><span class="badge-icone" :class="'icone-' + b.icone"></span></span>
                     <span class="badge-nom">{{ b.palier ? libellePalier(b.palier) : b.nom }}</span>
                     <span class="badge-condition">{{ b.condition }}</span>
-                    <span class="badge-etat">{{ b.obtenu ? '✓ Obtenu' : texteAvancement(b) }}</span>
+                    <span v-if="b.obtenu" class="badge-etat"><span class="coche" aria-hidden="true"></span>Obtenu</span>
+                    <span v-else class="badge-etat">{{ texteAvancement(b) }}</span>
                   </li>
                 </ul>
               </template>
@@ -617,7 +618,7 @@
             <template v-else>
               <!--
                 1. Séries de « Ma liste » qui correspondent : mêmes lignes que
-                dans la liste (progression, prochain épisode, « ✓ Vu »), avec
+                dans la liste (progression, prochain épisode, bouton « Vu »), avec
                 le statut à côté du titre, puisqu'il n'y a pas de sections ici.
                 Bloc absent si rien ne correspond (la page reste alors comme
                 avant la décision 44).
@@ -653,7 +654,8 @@
                             :disabled="vusEnCours.has(s.serie_id)"
                             :aria-label="`Marquer ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} de ${s.titre} comme vu`"
                             @click="cocher(s)">
-                      {{ vusEnCours.has(s.serie_id) ? '…' : '✓ Vu' }}
+                      <template v-if="vusEnCours.has(s.serie_id)">…</template>
+                      <template v-else><span class="coche" aria-hidden="true"></span>Vu</template>
                     </button>
                   </li>
                 </ul>
@@ -690,7 +692,7 @@
                 </a>
 
                 <div class="resultat-action">
-                  <span v-if="idsDansListe.has(r.tmdbId)" class="deja">{{ mentionDansListe(r.tmdbId) }}</span>
+                  <span v-if="idsDansListe.has(r.tmdbId)" class="deja"><span class="coche" aria-hidden="true"></span>{{ mentionDansListe(r.tmdbId) }}</span>
                   <template v-else>
                     <button type="button" class="bouton bouton-petit"
                             :disabled="ajoutsEnCours.has(r.tmdbId)" @click="ajouter(r, false)">
@@ -771,7 +773,8 @@
                           :disabled="vusEnCours.has(s.serie_id)"
                           :aria-label="`Marquer ${libelleEpisode(s.prochaine_saison, s.prochain_episode)} de ${s.titre} comme vu`"
                           @click="cocher(s)">
-                    {{ vusEnCours.has(s.serie_id) ? '…' : '✓ Vu' }}
+                    <template v-if="vusEnCours.has(s.serie_id)">…</template>
+                    <template v-else><span class="coche" aria-hidden="true"></span>Vu</template>
                   </button>
                 </li>
               </ul>

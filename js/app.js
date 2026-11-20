@@ -425,7 +425,7 @@ createApp({
 
     // Mention d'un résultat de recherche déjà dans la liste.
     function mentionDansListe(tmdbId) {
-      return statutParTmdb.value.get(tmdbId) === 'plus_tard' ? '✓ Dans « Plus tard »' : '✓ Dans ma liste';
+      return statutParTmdb.value.get(tmdbId) === 'plus_tard' ? 'Dans « Plus tard »' : 'Dans ma liste';
     }
 
     let arreterEcoute = null;
@@ -1052,7 +1052,7 @@ createApp({
     // section « En cours », on demande à TMDB les titres de la saison de son
     // prochain épisode, si on ne les a pas déjà. Quelques saisons à la fois ;
     // en cas d'échec, on réessaiera au prochain chargement de la liste.
-    // Après « ✓ Vu », le prochain épisode est souvent dans la même saison :
+    // Après « Vu », le prochain épisode est souvent dans la même saison :
     // son titre est alors déjà connu.
     async function chargerTitresProchains(lignes) {
       const aCharger = [];
