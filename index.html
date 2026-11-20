@@ -9,13 +9,57 @@
   <!-- Icônes de l'onglet et de l'écran d'accueil du téléphone : la tête de Tilou. -->
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
+
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=31 » ci-dessous et dans la carte des imports.
+    Thème (décision 48) : Automatique (réglage de l'appareil), Clair ou Sombre.
+    Le choix est retenu sur l'appareil (stockage local du navigateur, clé
+    « suivi-series.theme » ; absente = Automatique). Ce script s'exécute avant
+    l'affichage de la page : il pose data-theme="clair" ou "sombre" sur <html>,
+    et la feuille de style choisit ses couleurs d'après cet attribut. En
+    Automatique, il suit aussi un changement du réglage de l'appareil pendant
+    la visite. La page Paramètres le change par window.themeSite.changer().
+  -->
+  <script>
+    (function () {
+      var CLE = 'suivi-series.theme';
+      var memoire = 'auto'; // si le stockage est refusé : choix gardé le temps de la visite
+      var systeme = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      function choix() {
+        try {
+          var v = localStorage.getItem(CLE);
+          return v === 'clair' || v === 'sombre' ? v : memoire;
+        } catch (e) {
+          return memoire;
+        }
+      }
+      function appliquer() {
+        var c = choix();
+        if (c === 'auto') c = systeme && systeme.matches ? 'sombre' : 'clair';
+        document.documentElement.setAttribute('data-theme', c);
+      }
+      function changer(valeur) {
+        memoire = valeur === 'clair' || valeur === 'sombre' ? valeur : 'auto';
+        try {
+          if (memoire === 'auto') localStorage.removeItem(CLE);
+          else localStorage.setItem(CLE, memoire);
+        } catch (e) { /* pas grave : le choix vaut pour cette visite */ }
+        appliquer();
+      }
+      appliquer();
+      if (systeme) {
+        if (systeme.addEventListener) systeme.addEventListener('change', appliquer);
+        else if (systeme.addListener) systeme.addListener(appliquer); // anciens Safari
+      }
+      window.themeSite = { choix: choix, changer: changer };
+    })();
+  </script>
+  <!--
+    NUMÉRO DE VERSION DU SITE : « ?v=32 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=31">
+  <link rel="stylesheet" href="css/style.css?v=32">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,14 +96,14 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=31",
-      "./js/badges.js": "./js/badges.js?v=31",
-      "./js/base.js": "./js/base.js?v=31",
-      "./js/config.js": "./js/config.js?v=31",
-      "./js/fiche.js": "./js/fiche.js?v=31",
-      "./js/import.js": "./js/import.js?v=31",
-      "./js/recherche.js": "./js/recherche.js?v=31",
-      "./js/tmdb.js": "./js/tmdb.js?v=31"
+      "./js/app.js": "./js/app.js?v=32",
+      "./js/badges.js": "./js/badges.js?v=32",
+      "./js/base.js": "./js/base.js?v=32",
+      "./js/config.js": "./js/config.js?v=32",
+      "./js/fiche.js": "./js/fiche.js?v=32",
+      "./js/import.js": "./js/import.js?v=32",
+      "./js/recherche.js": "./js/recherche.js?v=32",
+      "./js/tmdb.js": "./js/tmdb.js?v=32"
     }
   }
   </script>
@@ -347,12 +391,13 @@
                     {{ nombre(niveau.points) }} point{{ niveau.points > 1 ? 's' : '' }}
                     · encore {{ nombre(niveau.manquants) }} pour le niveau {{ niveau.niveau + 1 }}
                   </p>
-                  <p v-if="niveau.rangSuivant" class="details">
-                    Prochain rang : « {{ niveau.rangSuivant }} » au niveau {{ niveau.niveauRangSuivant }}
+                  <!-- Nom du prochain rang caché : il reste une surprise (décision 48) -->
+                  <p v-if="niveau.niveauRangSuivant" class="details">
+                    Prochain rang au niveau {{ niveau.niveauRangSuivant }}
                   </p>
+                  <!-- Sans chiffres : le barème est dans la base et peut changer (décision 48) -->
                   <p class="info aide">
-                    1 point par épisode vu (spéciaux cochés compris), +20 par série terminée.
-                    Chaque niveau demande 10 points de plus que le précédent, 100 au maximum.
+                    Cochez des épisodes et terminez des séries pour gagner des points.
                   </p>
                 </div>
                 <p v-else-if="listeChargee" class="info aide">Niveau et badges indisponibles pour le moment.</p>
@@ -429,21 +474,28 @@
                 en « Plus tard », hors diagramme.
               </p>
 
-              <p class="info aide">
-                Épisodes vus et temps passé : épisodes spéciaux compris s'ils sont cochés.
-                Temps passé estimé d'après la durée moyenne des épisodes de chaque saison (TMDB).
-                <template v-if="statistiques.sansDuree > 0">
-                  Durée inconnue pour {{ nombre(statistiques.sansDuree) }} épisode{{ statistiques.sansDuree > 1 ? 's' : '' }} vu{{ statistiques.sansDuree > 1 ? 's' : '' }}, non compté{{ statistiques.sansDuree > 1 ? 's' : '' }}.
+              <!-- Détail du calcul retiré (décision 48) : épisodes spéciaux comptés
+                   s'ils sont cochés ; temps passé estimé d'après la durée moyenne
+                   des épisodes de chaque saison (TMDB). Seul reste l'avertissement
+                   utile quand des durées manquent. -->
+              <p v-if="statistiques.sansDuree > 0" class="info aide">
+                <template v-if="statistiques.sansDuree > 1">
+                  {{ nombre(statistiques.sansDuree) }} épisodes vus sans durée connue ne sont pas comptés dans le temps passé.
+                </template>
+                <template v-else>
+                  1 épisode vu sans durée connue n'est pas compté dans le temps passé.
                 </template>
               </p>
             </template>
           </section>
         </template>
 
-        <!-- ================= Page : tous les badges (décision 43) ================= -->
-        <!-- Badges groupés par famille (bronze → platine), puis les défis, chacun
-             avec sa condition et l'avancement. Tout vient de la base (vue
-             « ma_progression ») ; recalculé à chaque visite. -->
+        <!-- ================= Page : tous les badges (décisions 43 et 48) ================= -->
+        <!-- Compteur et sa barre ; une tuile par famille à paliers (pastille du
+             palier le plus haut obtenu, 4 petits ronds, barre vers le palier
+             suivant), puis les défis, chacun avec sa condition et l'avancement.
+             Tout vient de la base (vue « ma_progression ») ; recalculé à chaque
+             visite (décocher un épisode peut faire perdre un badge). -->
         <template v-else-if="route.page === 'badges'">
           <nav class="retour">
             <a href="#/profil" class="bouton bouton-discret" @click.prevent="retourProfil">← Profil</a>
@@ -453,28 +505,56 @@
             <h2>Badges</h2>
             <p v-if="!maProgression" class="info">{{ listeChargee ? 'Badges indisponibles pour le moment.' : 'Chargement…' }}</p>
             <template v-else>
-              <p class="details">
+              <p class="details compte-badges">
                 {{ nombreBadges.obtenus }} badge{{ nombreBadges.obtenus > 1 ? 's' : '' }} obtenu{{ nombreBadges.obtenus > 1 ? 's' : '' }}
                 sur {{ nombreBadges.total }}
               </p>
-              <template v-for="g in groupes" :key="g.cle">
-                <h3>{{ g.nom }}</h3>
-                <ul class="badges badges-complets" :class="{ 'badges-paliers': g.cle !== 'defis' }">
-                  <li v-for="b in g.badges" :key="b.code" class="badge"
-                      :class="[b.obtenu ? '' : 'badge-manquant', 'badge-' + (b.palier || 'defi')]">
-                    <span class="badge-pastille" aria-hidden="true"><img class="badge-image" :src="'img/badges/' + b.icone + '.png'" alt="" width="64" height="88"></span>
-                    <span class="badge-nom">{{ b.palier ? libellePalier(b.palier) : b.nom }}</span>
-                    <span class="badge-condition">{{ b.condition }}</span>
-                    <span v-if="b.obtenu" class="badge-etat"><span class="coche" aria-hidden="true"></span>Obtenu</span>
-                    <span v-else class="badge-etat">{{ texteAvancement(b) }}</span>
-                  </li>
-                </ul>
-              </template>
-              <p class="info aide">
-                Les badges sont recalculés à chaque visite d'après les épisodes cochés :
-                décocher un épisode peut en faire perdre un. Temps passé : estimé comme dans
-                les statistiques du Profil.
-              </p>
+              <div class="progression progression-badges">
+                <span class="barre" role="progressbar" aria-label="Badges obtenus"
+                      aria-valuemin="0" aria-valuemax="100" :aria-valuenow="nombreBadges.pourcentage">
+                  <span class="barre-remplie" :class="{ complete: nombreBadges.pourcentage === 100 }"
+                        :style="{ width: nombreBadges.pourcentage + '%' }"></span>
+                </span>
+              </div>
+
+              <!-- Familles à paliers : une tuile chacune (décision 48, option 2) -->
+              <h3>Badges à paliers</h3>
+              <ul class="badges badges-complets">
+                <li v-for="f in badgesPage.familles" :key="f.cle" class="badge badge-famille"
+                    :class="f.palier ? 'badge-' + f.palier : 'badge-manquant'">
+                  <span class="badge-pastille" aria-hidden="true"><img class="badge-image" :src="'img/badges/' + f.icone + '.png'" alt="" width="64" height="88"></span>
+                  <span class="badge-nom">{{ f.nom }}</span>
+                  <span class="badge-sous-titre">{{ f.palier ? libellePalier(f.palier) : 'Aucun palier' }}</span>
+                  <!-- Petits ronds : paliers obtenus en couleur, suivants en pointillé.
+                       Dessin seulement ; le texte caché donne la même chose. -->
+                  <span class="paliers" aria-hidden="true">
+                    <span v-for="p in f.paliers" :key="p.palier" class="palier"
+                          :class="p.obtenu ? 'palier-obtenu badge-' + p.palier : ''"
+                          :title="libellePalier(p.palier) + (p.obtenu ? ' : obtenu' : '')"></span>
+                  </span>
+                  <span class="cache-visuel">{{ f.nbObtenus }} palier{{ f.nbObtenus > 1 ? 's' : '' }} obtenu{{ f.nbObtenus > 1 ? 's' : '' }} sur {{ f.nbPaliers }}.</span>
+                  <template v-if="f.prochain">
+                    <span class="barre" role="progressbar" :aria-label="'Progression vers le palier ' + libellePalier(f.prochain.palier)"
+                          aria-valuemin="0" aria-valuemax="100" :aria-valuenow="f.pourcentage">
+                      <span class="barre-remplie" :style="{ width: f.pourcentage + '%' }"></span>
+                    </span>
+                    <span class="badge-etat">{{ f.texte }}</span>
+                  </template>
+                  <span v-else class="badge-etat"><span class="coche" aria-hidden="true"></span>{{ f.texte }}</span>
+                </li>
+              </ul>
+
+              <h3>Défis</h3>
+              <ul class="badges badges-complets">
+                <li v-for="b in badgesPage.defis" :key="b.code" class="badge"
+                    :class="b.obtenu ? 'badge-defi' : 'badge-manquant badge-defi'">
+                  <span class="badge-pastille" aria-hidden="true"><img class="badge-image" :src="'img/badges/' + b.icone + '.png'" alt="" width="64" height="88"></span>
+                  <span class="badge-nom">{{ b.nom }}</span>
+                  <span class="badge-condition">{{ b.condition }}</span>
+                  <span v-if="b.obtenu" class="badge-etat"><span class="coche" aria-hidden="true"></span>Obtenu</span>
+                  <span v-else class="badge-etat">{{ texteAvancement(b) }}</span>
+                </li>
+              </ul>
             </template>
           </section>
         </template>
@@ -502,12 +582,25 @@
               </div>
             </form>
 
-            <!-- Sauvegarde (déplacée ici depuis « Ma liste », décision 30) -->
+            <!-- Thème (décision 48) : appliqué tout de suite, retenu sur cet appareil
+                 (voir le script en tête de page) -->
+            <h3>Thème</h3>
+            <div class="filtres" role="group" aria-label="Thème du site">
+              <button v-for="t in themes" :key="t.valeur" type="button" class="filtre"
+                      :aria-pressed="String(choixTheme === t.valeur)" @click="changerTheme(t.valeur)">
+                {{ t.libelle }}
+              </button>
+            </div>
+            <p class="info aide">
+              Automatique : suit le réglage de votre appareil. Le choix est retenu sur cet appareil.
+            </p>
+
+            <!-- Sauvegarde (déplacée ici depuis « Ma liste », décision 30). Rappel
+                 pour soi : l'offre gratuite de Supabase ne fait pas de sauvegarde. -->
             <h3>Sauvegarde</h3>
             <p class="info aide">
-              Téléchargez une copie de votre liste et de vos épisodes cochés
-              (fichier JSON). L'offre gratuite de Supabase ne fait pas de
-              sauvegarde : pensez-y de temps en temps.
+              Téléchargez une copie de votre liste et de vos épisodes cochés.
+              Pensez-y de temps en temps.
             </p>
             <button type="button" class="bouton bouton-discret" :disabled="exportEnCours" @click="exporter">
               {{ exportEnCours ? 'Préparation…' : 'Exporter mes données' }}

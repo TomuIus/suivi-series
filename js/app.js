@@ -33,7 +33,7 @@ import { lireSauvegarde, planifierImport, TAILLE_MAX } from './import.js';
 import { chercherDansListe, autresResultats } from './recherche.js';
 import { utiliserFiche } from './fiche.js';
 import {
-  badgesObtenus, groupesBadges, libellePalier, texteAvancement, pourcentageNiveau,
+  badgesObtenus, pageBadges, compteBadges, libellePalier, texteAvancement, pourcentageNiveau,
   nouveautes, texteAnnonce, lireMemoire, enregistrerMemoire,
 } from './badges.js';
 
@@ -88,6 +88,17 @@ function enregistrerFiltre(valeur) {
     // Pas grave : le choix ne sera simplement pas retenu.
   }
 }
+
+// Thème du site (décision 48) : Automatique (réglage de l'appareil), Clair ou
+// Sombre, retenu sur l'appareil. Le choix est lu et appliqué par un petit
+// script en tête de index.html (window.themeSite), avant l'affichage de la
+// page, pour éviter un éclair de la mauvaise couleur ; ici, on ne fait que
+// l'afficher et le changer.
+const THEMES = [
+  { valeur: 'auto',   libelle: 'Automatique' },
+  { valeur: 'clair',  libelle: 'Clair' },
+  { valeur: 'sombre', libelle: 'Sombre' },
+];
 
 // Garde les titres correspondant à un filtre ('tout', 'series' ou 'animes').
 function filtrerTitres(titres, valeur) {
@@ -224,19 +235,19 @@ createApp({
         manquants: p.points_niveau_suivant - p.points,
         pourcentage: pourcentageNiveau(p),
         rang: p.rang,
-        rangSuivant: p.rang_suivant,            // vide au dernier rang
+        // Niveau du prochain rang, vide au dernier rang. Son nom n'est pas
+        // affiché, pour garder la surprise (décision 48).
         niveauRangSuivant: p.niveau_rang_suivant,
       };
     });
 
     // Profil : seulement les badges obtenus, le palier le plus haut de chaque
-    // famille (décision 43). Page « Tous les badges » : tous, par famille.
+    // famille (décision 43). Page « Tous les badges » : une tuile par famille
+    // à paliers, puis les défis (décision 48) ; chaque palier compte pour un
+    // badge dans le compteur (« sur 18 »).
     const badgesProfil = computed(() => badgesObtenus(maProgression.value?.badges));
-    const groupes = computed(() => groupesBadges(maProgression.value?.badges));
-    const nombreBadges = computed(() => {
-      const badges = maProgression.value?.badges ?? [];
-      return { obtenus: badges.filter((b) => b.obtenu).length, total: badges.length };
-    });
+    const badgesPage = computed(() => pageBadges(maProgression.value?.badges));
+    const nombreBadges = computed(() => compteBadges(maProgression.value?.badges));
 
     // Annonce d'un nouveau badge ou d'un nouveau rang (décision 43) : message
     // à part de celui des confirmations (« … vu », « Annuler »), pour que l'un
@@ -348,6 +359,15 @@ createApp({
     // Nom affiché en haut : le nom d'utilisateur s'il existe, sinon l'e-mail.
     const nomAffiche = computed(() =>
       utilisateur.value?.user_metadata?.nom_utilisateur || utilisateur.value?.email || '');
+
+    // --- Paramètres (thème, décision 48) ---
+    // Si le script de index.html manque (page d'essai…), le choix reste
+    // « Automatique » et les boutons n'ont pas d'effet.
+    const choixTheme = ref(window.themeSite?.choix() ?? 'auto');
+    function changerTheme(valeur) {
+      window.themeSite?.changer(valeur);
+      choixTheme.value = window.themeSite?.choix() ?? 'auto';
+    }
 
     // --- Recherche ---
     const recherche = ref('');            // texte tapé dans la barre
@@ -1163,7 +1183,8 @@ createApp({
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
       filtreStats, statistiques, nombre, niveau,
-      maProgression, badgesProfil, groupes, nombreBadges, annonce, libellePalier, texteAvancement,
+      maProgression, badgesProfil, badgesPage, nombreBadges, annonce, libellePalier, texteAvancement,
+      themes: THEMES, choixTheme, changerTheme,
       longueurMaxNom: LONGUEUR_MAX_NOM,
       ...ecranFiche, // tout ce que renvoie utiliserFiche() (fiche.js)
     };

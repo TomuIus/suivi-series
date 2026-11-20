@@ -44,6 +44,16 @@ export function texteAvancement(badge) {
   }
 }
 
+// Nombre de badges obtenus sur le total, chaque palier comptant pour un
+// badge (« 5 badges obtenus sur 18 »), avec le pourcentage de la barre
+// (arrondi vers le bas : 100 % seulement quand tout est obtenu).
+export function compteBadges(badges) {
+  const liste = badges ?? [];
+  const obtenus = liste.filter((b) => b.obtenu).length;
+  const total = liste.length;
+  return { obtenus, total, pourcentage: total > 0 ? Math.floor((100 * obtenus) / total) : 0 };
+}
+
 // Badges montrés sur le Profil (décision 43) : seulement ceux obtenus ;
 // pour une famille à paliers, seulement le palier le plus haut obtenu.
 // L'ordre reste celui de la base (familles, puis défis).
@@ -57,22 +67,56 @@ export function badgesObtenus(badges) {
   return (badges ?? []).filter((b) => b.obtenu && (!b.palier || plusHaut.get(b.famille) === b));
 }
 
-// Badges groupés pour la page « Tous les badges » : une partie par famille
-// (bronze → platine), puis les défis. Le nom d'une famille est celui de ses
-// badges ; l'ordre est celui de la base.
-export function groupesBadges(badges) {
-  const groupes = [];
+// Page « Tous les badges » (décision 48, option 2) : une tuile par famille à
+// paliers (au lieu d'une par palier), puis les défis un par un.
+// Pour chaque famille :
+//   palier     : palier le plus haut obtenu (null si aucun : pastille grise) ;
+//   paliers    : les 4 paliers dans l'ordre, obtenus ou non (petits ronds) ;
+//   prochain   : premier palier pas encore obtenu (null quand tout est obtenu) ;
+//   pourcentage: avancement vers ce palier (barre), arrondi vers le bas ;
+//   texte      : « 312 / 500 h pour Or », ou « Tous les paliers obtenus ».
+// Le nom d'une famille est celui de ses badges ; l'ordre est celui de la base.
+export function pageBadges(badges) {
+  const familles = [];
+  const defis = [];
   for (const b of badges ?? []) {
-    const cle = b.palier ? b.famille : 'defis';
-    let groupe = groupes.find((g) => g.cle === cle);
-    if (!groupe) {
-      groupe = { cle, nom: b.palier ? b.nom : 'Défis', badges: [] };
-      groupes.push(groupe);
+    if (!b.palier) {
+      defis.push(b);
+      continue;
     }
-    groupe.badges.push(b);
+    let famille = familles.find((f) => f.cle === b.famille);
+    if (!famille) {
+      famille = { cle: b.famille, nom: b.nom, icone: b.icone, membres: [] };
+      familles.push(famille);
+    }
+    famille.membres.push(b);
   }
-  // Les défis toujours en dernier, même si la base changeait d'ordre.
-  return [...groupes.filter((g) => g.cle !== 'defis'), ...groupes.filter((g) => g.cle === 'defis')];
+  return {
+    familles: familles.map(({ membres, ...f }) => {
+      const tries = [...membres].sort((a, b) => PALIERS.indexOf(a.palier) - PALIERS.indexOf(b.palier));
+      const obtenus = tries.filter((b) => b.obtenu);
+      const prochain = tries.find((b) => !b.obtenu) ?? null;
+      return {
+        ...f,
+        palier: obtenus.length ? obtenus[obtenus.length - 1].palier : null,
+        nbObtenus: obtenus.length,
+        nbPaliers: tries.length,
+        paliers: tries.map((b) => ({ palier: b.palier, obtenu: b.obtenu })),
+        prochain,
+        pourcentage: prochain ? avancement(prochain) : 100,
+        texte: prochain
+          ? `${texteAvancement(prochain)} pour ${libellePalier(prochain.palier)}`
+          : 'Tous les paliers obtenus',
+      };
+    }),
+    defis,
+  };
+}
+
+// Pourcentage d'avancement d'un badge (0 à 100, arrondi vers le bas).
+function avancement(badge) {
+  if (!(badge.seuil > 0)) return 0;
+  return Math.min(100, Math.max(0, Math.floor((100 * badge.valeur) / badge.seuil)));
 }
 
 // Pourcentage de la barre vers le niveau suivant (arrondi vers le bas).
