@@ -2,16 +2,28 @@
    Les couleurs sont des « variables » (--nom) réutilisées partout ; elles
    changent automatiquement si l'appareil est réglé en mode sombre. */
 
+/* Couleurs du site harmonisées avec Tilou et le logo (décision 45, option 2) :
+   accent framboise (rose clair en mode sombre), fonds et bordures légèrement
+   rosés (prune en mode sombre). Avant : accent bleu (#2f6fde / #6a9cf5) et
+   fonds gris-bleu. Solution de repli choisie par l'utilisateur (option 1) :
+   garder l'accent framboise, mais remettre les anciens fonds, bordures et
+   textes neutres :
+     clair  : --fond #f6f7f9, --texte #1d2330, --texte-doux #5b6475, --bordure #d9dde5
+     sombre : --fond #14171c, --carte #1e232b, --texte #e8ebf0,
+              --texte-doux #a3abb8, --bordure #333a45, --accent-texte #0d1117
+   Rapports de contraste calculés (seuil WCAG du texte : 4,5:1) : texte
+   14,8 à 15,9:1 ; texte doux 6,0 à 6,8:1 ; accent sur fond et carte 5,5 à
+   7,6:1 ; texte des boutons sur l'accent 5,9:1 (clair) et 8,4:1 (sombre). */
 :root {
-  --fond: #f6f7f9;
+  --fond: #fbf5f8;
   --carte: #ffffff;
-  --texte: #1d2330;
-  --texte-doux: #5b6475;
-  --accent: #2f6fde;
+  --texte: #2a1f26;
+  --texte-doux: #6b5a64;
+  --accent: #c2185b;
   --accent-texte: #ffffff;
   --erreur: #b3261e;
   --succes: #1e7a3c;
-  --bordure: #d9dde5;
+  --bordure: #ecdde5;
   --rayon: 10px;
   /* Couleurs des statuts dans l'anneau du Profil (décision 35). Palette
      vérifiée avec l'outil de contrôle des palettes : parts voisines bien
@@ -23,14 +35,15 @@
   --statut-plus_tard: #e87ba4;
   /* Couleurs du mot « Canapilou » dans le logo : « Canap » framboise, « ilou »
      rose (la signature commune aux projets). Contraste avec le fond de l'en-tête :
-     10,6:1 et 5,9:1 en clair, 11,0:1 et 7,3:1 en sombre. */
+     10,6:1 et 5,9:1 en clair, 11,6:1 et 7,6:1 en sombre (fond prune de la
+     décision 45 ; avant : 11,0:1 et 7,3:1). */
   --logo-debut: #7a1043;
   --logo-fin: #c2185b;
   /* Badges (décision 43) : pastille, contour et icône de chaque palier ;
      les défis aux couleurs de Canapilou. Mêmes couleurs en mode sombre
      (comme des médailles). Rapports de contraste calculés : icône/pastille
      6,3 à 8,4:1 ; contour/carte claire 3,7 à 5,9:1 ; pastille/carte sombre
-     6,9 à 10,5:1. */
+     7,3 à 11,0:1 depuis le fond prune de la décision 45 (avant : 6,9 à 10,5:1). */
   --badge-bronze: #d9a06f;  --badge-bronze-contour: #a5652f;  --badge-bronze-icone: #3d2410;
   --badge-argent: #c9cfd8;  --badge-argent-contour: #7d8592;  --badge-argent-icone: #2b313b;
   --badge-or: #ecc246;      --badge-or-contour: #9a7400;      --badge-or-icone: #463200;
@@ -41,15 +54,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fond: #14171c;
-    --carte: #1e232b;
-    --texte: #e8ebf0;
-    --texte-doux: #a3abb8;
-    --accent: #6a9cf5;
-    --accent-texte: #0d1117;
+    --fond: #1a1418;
+    --carte: #251c22;
+    --texte: #f0e6eb;
+    --texte-doux: #a99aa3;
+    --accent: #ff8ac4;
+    --accent-texte: #1a1418;
     --erreur: #f2a19b;
     --succes: #7fd69a;
-    --bordure: #333a45;
+    --bordure: #3d2d37;
     --statut-en_cours: #3987e5;
     --statut-a_jour: #d95926;
     --statut-termine: #199e70;
