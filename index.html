@@ -10,12 +10,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="img/icone-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="img/icone-192.png">
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=30 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=31 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=30">
+  <link rel="stylesheet" href="css/style.css?v=31">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -52,14 +52,14 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=30",
-      "./js/badges.js": "./js/badges.js?v=30",
-      "./js/base.js": "./js/base.js?v=30",
-      "./js/config.js": "./js/config.js?v=30",
-      "./js/fiche.js": "./js/fiche.js?v=30",
-      "./js/import.js": "./js/import.js?v=30",
-      "./js/recherche.js": "./js/recherche.js?v=30",
-      "./js/tmdb.js": "./js/tmdb.js?v=30"
+      "./js/app.js": "./js/app.js?v=31",
+      "./js/badges.js": "./js/badges.js?v=31",
+      "./js/base.js": "./js/base.js?v=31",
+      "./js/config.js": "./js/config.js?v=31",
+      "./js/fiche.js": "./js/fiche.js?v=31",
+      "./js/import.js": "./js/import.js?v=31",
+      "./js/recherche.js": "./js/recherche.js?v=31",
+      "./js/tmdb.js": "./js/tmdb.js?v=31"
     }
   }
   </script>
@@ -366,7 +366,7 @@
               <h3>Badges</h3>
               <ul v-if="badgesProfil.length" class="badges">
                 <li v-for="b in badgesProfil" :key="b.code" class="badge" :class="'badge-' + (b.palier || 'defi')">
-                  <span class="badge-pastille" aria-hidden="true"><span class="badge-icone" :class="'icone-' + b.icone"></span></span>
+                  <span class="badge-pastille" aria-hidden="true"><img class="badge-image" :src="'img/badges/' + b.icone + '.png'" alt="" width="64" height="88"></span>
                   <span class="badge-nom">{{ b.nom }}</span>
                   <span class="badge-sous-titre">{{ b.palier ? libellePalier(b.palier) : 'Défi' }}</span>
                 </li>
@@ -462,7 +462,7 @@
                 <ul class="badges badges-complets" :class="{ 'badges-paliers': g.cle !== 'defis' }">
                   <li v-for="b in g.badges" :key="b.code" class="badge"
                       :class="[b.obtenu ? '' : 'badge-manquant', 'badge-' + (b.palier || 'defi')]">
-                    <span class="badge-pastille" aria-hidden="true"><span class="badge-icone" :class="'icone-' + b.icone"></span></span>
+                    <span class="badge-pastille" aria-hidden="true"><img class="badge-image" :src="'img/badges/' + b.icone + '.png'" alt="" width="64" height="88"></span>
                     <span class="badge-nom">{{ b.palier ? libellePalier(b.palier) : b.nom }}</span>
                     <span class="badge-condition">{{ b.condition }}</span>
                     <span v-if="b.obtenu" class="badge-etat"><span class="coche" aria-hidden="true"></span>Obtenu</span>

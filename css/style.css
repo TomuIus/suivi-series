@@ -37,16 +37,16 @@
      10,6:1 et 5,9:1 en clair, 11,0:1 et 7,3:1 en sombre. */
   --logo-debut: #7a1043;
   --logo-fin: #c2185b;
-  /* Badges (décision 43) : pastille, contour et icône de chaque palier ;
-     les défis aux couleurs de Canapilou. Mêmes couleurs en mode sombre
-     (comme des médailles). Rapports de contraste calculés : icône/pastille
-     6,3 à 8,4:1 ; contour/carte claire 3,7 à 5,9:1 ; pastille/carte sombre
-     6,9 à 10,5:1. */
-  --badge-bronze: #d9a06f;  --badge-bronze-contour: #a5652f;  --badge-bronze-icone: #3d2410;
-  --badge-argent: #c9cfd8;  --badge-argent-contour: #7d8592;  --badge-argent-icone: #2b313b;
-  --badge-or: #ecc246;      --badge-or-contour: #9a7400;      --badge-or-icone: #463200;
-  --badge-platine: #a9dbe3; --badge-platine-contour: #3c8693; --badge-platine-icone: #103a42;
-  --badge-defi: #f5b8d0;    --badge-defi-contour: #c2185b;    --badge-defi-icone: #7a1043;
+  /* Badges (décision 43) : pastille et contour de chaque palier ; les défis
+     aux couleurs de Canapilou. Mêmes couleurs en mode sombre (comme des
+     médailles). Rapports de contraste calculés : contour/carte claire 3,7 à
+     5,9:1 ; pastille/carte sombre 6,9 à 10,5:1. Depuis la v31 (décision 47),
+     la pastille porte une image de Tilou au lieu d'une icône. */
+  --badge-bronze: #d9a06f;  --badge-bronze-contour: #a5652f;
+  --badge-argent: #c9cfd8;  --badge-argent-contour: #7d8592;
+  --badge-or: #ecc246;      --badge-or-contour: #9a7400;
+  --badge-platine: #a9dbe3; --badge-platine-contour: #3c8693;
+  --badge-defi: #f5b8d0;    --badge-defi-contour: #c2185b;
   color-scheme: light dark;
 }
 
@@ -327,8 +327,7 @@ input:focus-visible,
 /* Coche dessinée (décision 46) : remplace le caractère « ✓ », dont le dessin
    dépend de la police de l'appareil. Icône « check » de Tabler Icons
    (img/icones/), appliquée comme masque : elle prend la couleur du texte
-   autour (currentColor), comme les icônes des badges. Tailles à revoir
-   après des tests. */
+   autour (currentColor). Tailles à revoir après des tests. */
 .coche {
   display: inline-block;
   flex: none;
@@ -566,9 +565,14 @@ a.bouton { display: inline-block; text-decoration: none; }
 /* --- Badges (décision 43) ---
    Profil : badges obtenus en tuiles (3 de front sur téléphone, 4 au-delà de
    40 rem) ; page « Tous les badges » : 2 de front sur téléphone, 4 au-delà.
-   La pastille est un rond de la couleur du palier ; l'icône (Tabler Icons,
-   img/badges/, licence MIT) y est dessinée par un masque CSS, pour pouvoir
-   la colorer. Badge pas encore obtenu : gris, avec son avancement. */
+   La pastille est un rond de la couleur du palier, dessiné ici ; par-dessus,
+   une image de Tilou (img/badges/<icône>.png, décision 47) dont les oreilles
+   dépassent du rond. L'image est déjà découpée au bord intérieur du rond
+   (sous son centre) : rond de 4 rem avec un contour de 2 px, 1,5 rem au-dessus
+   pour les oreilles. Changer ces tailles = refaire les images (script
+   fabriquer_badges.py, hors du dépôt). Tailles choisies par Claude, à revoir
+   après des tests. Badge pas encore obtenu : image en gris et pâlie, pastille
+   neutre, avec son avancement. */
 .badges {
   list-style: none;
   margin: 0;
@@ -594,41 +598,37 @@ a.bouton { display: inline-block; text-decoration: none; }
   min-width: 0;
 }
 .badge-pastille {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  position: relative;
+  width: 4rem;
+  height: 5.5rem;           /* rond de 4 rem + 1,5 rem pour les oreilles */
   margin-bottom: 0.2rem;
+}
+.badge-pastille::before {   /* le rond coloré du palier, en bas */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4rem;
+  box-sizing: border-box;
   border-radius: 50%;
   border: 2px solid var(--contour);
   background: var(--pastille);
-  color: var(--icone);
 }
-.badge-icone {
-  width: 1.5rem;
-  height: 1.5rem;
-  background: currentColor;
-  -webkit-mask: var(--masque) center / contain no-repeat;
-  mask: var(--masque) center / contain no-repeat;
+.badge-image {              /* Tilou, par-dessus le rond */
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
-.badge-bronze  { --pastille: var(--badge-bronze);  --contour: var(--badge-bronze-contour);  --icone: var(--badge-bronze-icone); }
-.badge-argent  { --pastille: var(--badge-argent);  --contour: var(--badge-argent-contour);  --icone: var(--badge-argent-icone); }
-.badge-or      { --pastille: var(--badge-or);      --contour: var(--badge-or-contour);      --icone: var(--badge-or-icone); }
-.badge-platine { --pastille: var(--badge-platine); --contour: var(--badge-platine-contour); --icone: var(--badge-platine-icone); }
-.badge-defi    { --pastille: var(--badge-defi);    --contour: var(--badge-defi-contour);    --icone: var(--badge-defi-icone); }
-.badge-manquant { --pastille: var(--carte); --contour: var(--bordure); --icone: var(--texte-doux); }
+.badge-bronze  { --pastille: var(--badge-bronze);  --contour: var(--badge-bronze-contour); }
+.badge-argent  { --pastille: var(--badge-argent);  --contour: var(--badge-argent-contour); }
+.badge-or      { --pastille: var(--badge-or);      --contour: var(--badge-or-contour); }
+.badge-platine { --pastille: var(--badge-platine); --contour: var(--badge-platine-contour); }
+.badge-defi    { --pastille: var(--badge-defi);    --contour: var(--badge-defi-contour); }
+.badge-manquant { --pastille: var(--carte); --contour: var(--bordure); }
+.badge-manquant .badge-image { filter: grayscale(1); opacity: 0.45; }
 .badge-manquant .badge-nom { color: var(--texte-doux); }
-/* Une classe par icône : l'adresse est relative à ce fichier (css/). */
-.icone-clock       { --masque: url(../img/badges/clock.svg); }
-.icone-device-tv   { --masque: url(../img/badges/device-tv.svg); }
-.icone-sparkles    { --masque: url(../img/badges/sparkles.svg); }
-.icone-player-play { --masque: url(../img/badges/player-play.svg); }
-.icone-run         { --masque: url(../img/badges/run.svg); }
-.icone-flame       { --masque: url(../img/badges/flame.svg); }
-.icone-books       { --masque: url(../img/badges/books.svg); }
-.icone-world       { --masque: url(../img/badges/world.svg); }
-.icone-movie       { --masque: url(../img/badges/movie.svg); }
 .badge-nom { font-weight: 600; font-size: 0.85rem; line-height: 1.2; overflow-wrap: anywhere; }
 .badge-sous-titre, .badge-condition, .badge-etat { font-size: 0.75rem; color: var(--texte-doux); line-height: 1.25; }
 .badge-etat { font-variant-numeric: tabular-nums; }
