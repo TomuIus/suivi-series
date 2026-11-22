@@ -1,58 +1,89 @@
 package io.github.tomuius.canapilou.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+// Le thème de l'appli : les couleurs de Canapilou placées dans les « rôles »
+// de Material 3 (primary = couleur d'accent, background = fond, surface =
+// cartes…). Les couleurs dynamiques d'Android 12+ (tirées du fond d'écran) ne
+// sont pas utilisées : l'appli garde l'identité du site (décision 60).
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
+private val CouleursClaires = lightColorScheme(
+    primary = AccentClair,
+    onPrimary = AccentTexteClair,
+    primaryContainer = TeinteClair,
+    onPrimaryContainer = LogoDebutClair,
+    secondary = LogoDebutClair,
     onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondaryContainer = TeinteClair,
+    onSecondaryContainer = LogoDebutClair,
+    tertiary = AccentClair,
+    onTertiary = AccentTexteClair,
+    background = FondClair,
+    onBackground = TexteClair,
+    surface = CarteClair,
+    onSurface = TexteClair,
+    surfaceVariant = FondClair,
+    onSurfaceVariant = TexteDouxClair,
+    surfaceContainerLowest = CarteClair,
+    surfaceContainerLow = CarteClair,
+    surfaceContainer = CarteClair,
+    surfaceContainerHigh = CarteClair,
+    surfaceContainerHighest = CarteClair,
+    outline = BordureClair,
+    outlineVariant = BordureClair,
+    error = ErreurClair,
+    onError = Color.White,
 )
+
+private val CouleursSombres = darkColorScheme(
+    primary = AccentSombre,
+    onPrimary = AccentTexteSombre,
+    primaryContainer = TeinteSombre,
+    onPrimaryContainer = LogoDebutSombre,
+    secondary = LogoDebutSombre,
+    onSecondary = AccentTexteSombre,
+    secondaryContainer = TeinteSombre,
+    onSecondaryContainer = LogoDebutSombre,
+    tertiary = AccentSombre,
+    onTertiary = AccentTexteSombre,
+    background = FondSombre,
+    onBackground = TexteSombre,
+    surface = CarteSombre,
+    onSurface = TexteSombre,
+    surfaceVariant = FondSombre,
+    onSurfaceVariant = TexteDouxSombre,
+    surfaceContainerLowest = CarteSombre,
+    surfaceContainerLow = CarteSombre,
+    surfaceContainer = CarteSombre,
+    surfaceContainerHigh = CarteSombre,
+    surfaceContainerHighest = CarteSombre,
+    outline = BordureSombre,
+    outlineVariant = BordureSombre,
+    error = ErreurSombre,
+    onError = AccentTexteSombre,
+)
+
+/** Vert « succès » (barre de progression à 100 %), selon le thème clair ou sombre. */
+val LocalCouleurSucces = staticCompositionLocalOf { SuccesClair }
 
 @Composable
 fun CanapilouTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    // Clair ou sombre : suit le réglage du téléphone (choix dans l'appli : plus tard).
+    sombre: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    CompositionLocalProvider(LocalCouleurSucces provides if (sombre) SuccesSombre else SuccesClair) {
+        MaterialTheme(
+            colorScheme = if (sombre) CouleursSombres else CouleursClaires,
+            typography = Typography,
+            content = content,
+        )
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
 }
