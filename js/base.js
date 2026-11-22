@@ -267,7 +267,28 @@ function lireEpisodesVus(serieId) {
     .order('episode'));
 }
 
-/** Choisit un statut à la main ; null = revenir au statut automatique. */
+/**
+ * Choisit un statut depuis la fiche ; null = revenir au statut automatique.
+ * Passe par la fonction SQL « choisir_statut » (décision 51) : pour « À jour »
+ * et « Terminé », la base coche aussi, dans la même opération, tous les
+ * épisodes déjà sortis qui ne l'étaient pas, sauf les spéciaux (décision 36).
+ * La règle est ainsi écrite une seule fois, pour le site et l'appli Android.
+ * Renvoie la liste des épisodes que la base vient de cocher
+ * ([{ saison, episode }], vide s'il n'y en a pas).
+ */
+export async function choisirStatut(serieId, statutManuel) {
+  const { data, error } = await supabase.rpc('choisir_statut', {
+    id_serie: serieId,
+    statut_choisi: statutManuel,
+  });
+  if (error) throw new Error(traduireErreur(error));
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Enregistre un statut tel quel, sans rien cocher ; null = statut automatique.
+ * Sert à remettre l'ancien statut (« Annuler ») et à l'import d'une sauvegarde.
+ */
 export async function changerStatut(serieId, statutManuel) {
   const { error } = await supabase
     .from('suivis')
