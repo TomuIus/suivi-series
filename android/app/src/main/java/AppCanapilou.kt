@@ -18,6 +18,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.tomuius.canapilou.donnees.EtatConnexion
+import io.github.tomuius.canapilou.ui.apropos.EcranAPropos
 import io.github.tomuius.canapilou.ui.connexion.EcranConnexion
 import io.github.tomuius.canapilou.ui.liste.EcranListe
 import kotlinx.serialization.Serializable
@@ -28,6 +29,9 @@ import kotlinx.serialization.Serializable
 // viendront (fiche d'une série, recherche…).
 @Serializable
 data object CleMaListe : NavKey
+
+@Serializable
+data object CleAPropos : NavKey
 
 // Racine de l'appli : selon l'état de la connexion, on affiche une attente
 // (lecture de la session enregistrée), l'écran de connexion, ou l'appli.
@@ -68,7 +72,15 @@ private fun NavigationPrincipale() {
         ),
         entryProvider = { cle ->
             when (cle) {
-                is CleMaListe -> NavEntry(cle) { EcranListe() }
+                is CleMaListe -> NavEntry(cle) {
+                    EcranListe(
+                        // Pas deux fois « À propos » dans l'historique si l'on appuie vite deux fois.
+                        onAPropos = { if (historique.lastOrNull() != CleAPropos) historique.add(CleAPropos) },
+                    )
+                }
+                is CleAPropos -> NavEntry(cle) {
+                    EcranAPropos(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
+                }
                 else -> NavEntry(cle) { Text("Écran inconnu") }
             }
         },

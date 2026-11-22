@@ -1,10 +1,14 @@
 package io.github.tomuius.canapilou
 
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.donnees.urlAffiche
+import io.github.tomuius.canapilou.ui.liste.CleSaison
 import io.github.tomuius.canapilou.ui.liste.Section
 import io.github.tomuius.canapilou.ui.liste.ligneProgression
+import io.github.tomuius.canapilou.ui.liste.peutCocher
 import io.github.tomuius.canapilou.ui.liste.pourcentage
 import io.github.tomuius.canapilou.ui.liste.regrouperParSection
+import io.github.tomuius.canapilou.ui.liste.titreProchain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -22,8 +26,9 @@ class ListeTest {
         saison: Int? = null,
         episode: Int? = null,
         id: Long = 1,
+        tmdbId: Int = 1,
     ) = SerieSuivie(
-        serieId = id, tmdbId = 1, titre = "Essai", statut = statut,
+        serieId = id, tmdbId = tmdbId, titre = "Essai", statut = statut,
         nbDiffuses = nbDiffuses, nbVus = nbVus, prochaineSaison = saison, prochainEpisode = episode,
     )
 
@@ -42,6 +47,56 @@ class ListeTest {
         assertEquals("4 épisodes vus | en attente de la suite", ligneProgression(serie("a_jour", 4, 3)))
         assertEquals("Aucun épisode diffusé pour l'instant", ligneProgression(serie("abandonne", 0, 0)))
         assertEquals("3 / 10 épisodes vus", ligneProgression(serie("en_cours", 3, 10)))
+    }
+
+    @Test
+    fun titresDuProchainEpisodeCommeSurLeSite() {
+        // Résultats attendus calculés avec titreProchainListe et progression du site.
+        val s = serie("en_cours", 5, 808, 1, 6)
+        assertEquals("Prochain : S1·E6 \"Ste Lisa Blues\" | 5 / 808 épisodes vus", ligneProgression(s, "Ste Lisa Blues"))
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, "Épisode 6"))
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, "Episode 6"))
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, "épisode 12"))
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, "  Épisode 6  "))
+        assertEquals(
+            "Prochain : S1·E6 \"Épisode 6 : le retour\" | 5 / 808 épisodes vus",
+            ligneProgression(s, "Épisode 6 : le retour"),
+        )
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, ""))
+        assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(s, null))
+    }
+
+    @Test
+    fun titreRetrouveParSaison() {
+        val titres = mapOf(
+            CleSaison(tmdbId = 42, saison = 1) to mapOf(5 to "Cinq", 6 to "Ste Lisa Blues", 7 to null),
+            CleSaison(tmdbId = 42, saison = 2) to mapOf(6 to "Autre saison"),
+            CleSaison(tmdbId = 7, saison = 1) to mapOf(6 to "Autre série"),
+        )
+        assertEquals("Ste Lisa Blues", titreProchain(serie("en_cours", 5, 808, 1, 6, tmdbId = 42), titres))
+        assertNull(titreProchain(serie("en_cours", 6, 808, 1, 7, tmdbId = 42), titres))  // TMDB sans titre
+        assertNull(titreProchain(serie("en_cours", 7, 808, 1, 8, tmdbId = 42), titres))  // épisode absent
+        assertNull(titreProchain(serie("en_cours", 0, 10, 3, 1, tmdbId = 42), titres))   // saison pas encore reçue
+        assertNull(titreProchain(serie("a_jour", 6, 6, tmdbId = 42), titres))            // pas de prochain épisode
+    }
+
+    @Test
+    fun adresseDesAffiches() {
+        // Même adresse que urlAffiche de js/tmdb.js.
+        assertEquals("https://image.tmdb.org/t/p/w154/abc.jpg", urlAffiche("/abc.jpg"))
+        assertEquals("https://image.tmdb.org/t/p/w92/abc.jpg", urlAffiche("/abc.jpg", "w92"))
+        assertNull(urlAffiche(null))
+        assertNull(urlAffiche(""))
+    }
+
+    @Test
+    fun boutonVuSeulementEnCours() {
+        assertEquals(true, peutCocher(serie("en_cours", 5, 808, 1, 6)))
+        assertEquals(true, peutCocher(serie("a_voir", 0, 10, 1, 1)))
+        assertEquals(false, peutCocher(serie("en_cours", 0, 0)))         // rien de sorti
+        assertEquals(false, peutCocher(serie("plus_tard", 2, 10, 1, 3)))
+        assertEquals(false, peutCocher(serie("abandonne", 2, 10, 1, 3)))
+        assertEquals(false, peutCocher(serie("a_jour", 6, 6)))
     }
 
     @Test

@@ -20,6 +20,8 @@ supabase = "3.9.0"
 # Ktor : la bibliothèque réseau sur laquelle repose supabase-kt. Même version
 # que celle utilisée par supabase-kt 3.9.0 (3.6.0 selon une source secondaire).
 ktor = "3.6.0"
+# Coil : chargement des affiches depuis Internet, avec cache (décision 62).
+coil = "3.6.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +53,9 @@ supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgre
 supabase-functions = { group = "io.github.jan-tennert.supabase", name = "functions-kt" }
 # Moteur réseau de Ktor pour Android (celui du guide officiel de Supabase).
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
+# Coil 3 : affichage d'images dans Compose, et téléchargement par OkHttp.
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

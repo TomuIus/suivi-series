@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coche (un trait brisé), dessinée pour Canapilou : bouton « Vu » de
+     « Ma liste ». Le site utilise l'icône « check » de Tabler ; celle-ci est
+     un dessin à part, pour ne pas avoir à joindre de licence. Sa couleur est
+     donnée par l'appli (celle du texte du bouton). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M5,12.5L9.5,17L19,7.5"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

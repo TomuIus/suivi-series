@@ -7,6 +7,7 @@ import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
+import io.github.tomuius.canapilou.donnees.DepotTmdb
 
 // Assemblage de l'appli (décision 58) : un seul objet crée, au premier usage
 // (« by lazy »), le client Supabase et les dépôts. Les écrans demandent leurs
@@ -25,4 +26,5 @@ object Conteneur {
 
     val depotCompte: DepotCompte by lazy { DepotCompte(client) }
     val depotListe: DepotListe by lazy { DepotListe(client) }
+    val depotTmdb: DepotTmdb by lazy { DepotTmdb(client) }
 }

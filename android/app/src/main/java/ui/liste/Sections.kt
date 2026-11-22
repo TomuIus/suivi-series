@@ -5,8 +5,8 @@ import kotlin.math.min
 
 // Règles d'affichage de « Ma liste », sans rien dessiner : ce fichier se teste
 // seul (voir app/src/test/java/ListeTest.kt). Mêmes règles que le site
-// (constante SECTIONS et fonctions pourcentage, libelleEpisode, progression
-// de js/app.js) : à modifier aux deux endroits.
+// (constante SECTIONS et fonctions pourcentage, libelleEpisode, peutCocher,
+// titreProchainListe, progression de js/app.js) : à modifier aux deux endroits.
 
 /**
  * Sections de « Ma liste », dans l'ordre d'affichage. « À voir » (pas encore
@@ -39,19 +39,56 @@ fun pourcentage(s: SerieSuivie): Int? {
 fun libelleEpisode(saison: Int, episode: Int): String = "S$saison·E$episode"
 
 /**
- * Ligne d'informations sous le titre, comme sur le site :
- * « Prochain : S1·E6 | 5 / 808 épisodes vus ». Le titre de l'épisode
- * (« Prochain : S1·E6 "Ste Lisa Blues" ») viendra à une étape suivante.
+ * Le bouton « Vu » n'apparaît que s'il y a un épisode sorti à cocher, et
+ * seulement dans la section « En cours » (statuts en_cours et a_voir), comme
+ * peutCocher sur le site. C'est aussi pour ces séries qu'on demande le titre
+ * du prochain épisode. (Le site ne regarde que la saison : la vue donne
+ * toujours la saison et l'épisode ensemble ; Kotlin demande de vérifier les deux.)
  */
-fun ligneProgression(s: SerieSuivie): String {
+fun peutCocher(s: SerieSuivie): Boolean =
+    s.prochaineSaison != null && s.prochainEpisode != null && (s.statut == "en_cours" || s.statut == "a_voir")
+
+/** Une saison d'une série chez TMDB : c'est par saison que l'on demande les titres. */
+data class CleSaison(val tmdbId: Int, val saison: Int)
+
+/**
+ * Titre du prochain épisode de [s] tel que TMDB le donne, s'il est déjà connu.
+ * [titres] : pour chaque saison déjà reçue, le titre de chaque épisode (par numéro).
+ */
+fun titreProchain(s: SerieSuivie, titres: Map<CleSaison, Map<Int, String?>>): String? {
+    val saison = s.prochaineSaison ?: return null
+    val episode = s.prochainEpisode ?: return null
+    return titres[CleSaison(s.tmdbId, saison)]?.get(episode)
+}
+
+// Titre générique (« Épisode 6 », quand TMDB n'a pas de vrai titre) : il
+// n'apporterait rien à côté de « E6 », on ne l'affiche pas (décision 38).
+// Même expression que sur le site ; « É » et « é » écrits tous les deux pour ne
+// pas dépendre de la gestion des majuscules accentuées.
+private val TITRE_GENERIQUE = Regex("^[ÉéE]pisode\\s*\\d+$", RegexOption.IGNORE_CASE)
+
+/** Titre à afficher pour le prochain épisode, ou null (titre absent, vide ou générique). */
+fun titreAffichable(titre: String?): String? =
+    if (titre.isNullOrEmpty() || TITRE_GENERIQUE.matches(titre.trim())) null else titre
+
+/**
+ * Ligne d'informations sous le titre, comme sur le site :
+ * « Prochain : S1·E6 "Ste Lisa Blues" | 5 / 808 épisodes vus ».
+ * [titreProchain] : titre du prochain épisode tel que TMDB le donne, s'il est
+ * déjà connu (il est demandé à part, il arrive un instant après la liste).
+ */
+fun ligneProgression(s: SerieSuivie, titreProchain: String? = null): String {
     val compte = "${s.nbVus} / ${s.nbDiffuses} épisodes vus"
     return when {
         s.statut == "termine" -> "${s.nbVus} épisodes vus"
         s.statut == "a_jour" -> "${s.nbVus} épisodes vus | en attente de la suite"
         s.nbDiffuses == 0 -> "Aucun épisode diffusé pour l'instant"
         s.statut == "plus_tard" -> compte // pas de « Prochain » : série mise de côté
-        s.prochaineSaison != null && s.prochainEpisode != null && s.statut != "abandonne" ->
-            "Prochain : ${libelleEpisode(s.prochaineSaison, s.prochainEpisode)} | $compte"
+        s.prochaineSaison != null && s.prochainEpisode != null && s.statut != "abandonne" -> {
+            val titre = titreAffichable(titreProchain)
+            val episode = libelleEpisode(s.prochaineSaison, s.prochainEpisode) + (if (titre != null) " \"$titre\"" else "")
+            "Prochain : $episode | $compte"
+        }
         else -> compte
     }
 }
