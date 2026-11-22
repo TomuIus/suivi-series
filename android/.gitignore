@@ -1,0 +1,13 @@
+*.iml
+.gradle
+/local.properties
+# Réglages d'Android Studio : pas envoyés sur GitHub (décision 57).
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+# Données de travail de Kotlin 2 : à ne jamais envoyer (documentation de Kotlin).
+.kotlin
