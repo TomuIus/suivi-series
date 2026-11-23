@@ -299,14 +299,15 @@
                   : 'Ajoutez la série à votre liste pour cocher des épisodes.' }}
               </p>
 
-              <!-- Déplier une saison charge les titres de ses épisodes (TMDB). -->
+              <!-- Déplier une saison charge les titres de ses épisodes (TMDB).
+                   Aperçu : « (1 épisode) », « (10 épisodes) », même règle que l'appli (nombreEpisodes). -->
               <details v-for="saison in fiche.saisons" :key="saison.numero"
                        class="section" :open="saison.numero === fiche.saisonInitiale"
                        @toggle="$event.target.open && chargerTitres(saison.numero)">
                 <summary>
                   <h3>
                     {{ saison.numero === 0 ? 'Épisodes spéciaux' : 'Saison ' + saison.numero }}
-                    ({{ fiche.suivi ? nbVusSaison(saison) + ' / ' + saison.nb_episodes : saison.nb_episodes + ' épisodes' }})
+                    ({{ fiche.suivi ? nbVusSaison(saison) + ' / ' + saison.nb_episodes : saison.nb_episodes + (saison.nb_episodes > 1 ? ' épisodes' : ' épisode') }})
                   </h3>
                 </summary>
 
