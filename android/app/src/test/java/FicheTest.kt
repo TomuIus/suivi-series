@@ -1,0 +1,175 @@
+package io.github.tomuius.canapilou
+
+import io.github.tomuius.canapilou.donnees.Episode
+import io.github.tomuius.canapilou.donnees.Saison
+import io.github.tomuius.canapilou.donnees.SerieCatalogue
+import io.github.tomuius.canapilou.donnees.Suivi
+import io.github.tomuius.canapilou.ui.fiche.EtatEpisode
+import io.github.tomuius.canapilou.ui.fiche.episodesPrecedentsNonVus
+import io.github.tomuius.canapilou.ui.fiche.estDiffuse
+import io.github.tomuius.canapilou.ui.fiche.etatEpisode
+import io.github.tomuius.canapilou.ui.fiche.ficheAncienne
+import io.github.tomuius.canapilou.ui.fiche.libelleDiffusion
+import io.github.tomuius.canapilou.ui.fiche.ligneDiffusion
+import io.github.tomuius.canapilou.ui.fiche.nbVusSaison
+import io.github.tomuius.canapilou.ui.fiche.ordonnerSaisons
+import io.github.tomuius.canapilou.ui.fiche.saisonInitiale
+import io.github.tomuius.canapilou.ui.fiche.texteDate
+import io.github.tomuius.canapilou.ui.fiche.texteInvite
+import io.github.tomuius.canapilou.ui.fiche.titreEpisodeAffiche
+import io.github.tomuius.canapilou.ui.fiche.titreSaison
+import java.time.Duration
+import java.time.Instant
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+// Règles de la fiche (ui/fiche/ReglesFiche.kt). Les résultats attendus ont été
+// calculés avec les fonctions du site (estDiffuse, etatEpisode, nbVusSaison,
+// proposerPrecedents, preparer de js/fiche.js ; libelleDiffusion de
+// js/app.js ; format des dates de Intl en français), extraites telles quelles
+// et lancées sous Node, pour que l'appli fasse exactement pareil.
+class FicheTest {
+
+    private fun serie(
+        statut: String?,
+        derniereSaison: Int? = null,
+        dernierEpisode: Int? = null,
+        majLe: String? = null,
+        estAnime: Boolean? = false,
+    ) = SerieCatalogue(
+        id = 1, tmdbId = 1, titre = "Essai", statutDiffusion = statut,
+        derniereSaisonDiffusee = derniereSaison, dernierEpisodeDiffuse = dernierEpisode,
+        ficheMajLe = majLe, estAnime = estAnime,
+    )
+
+    private fun suivi(nbVus: Int = 0, nbDiffuses: Int = 0, saison: Int? = null, episode: Int? = null) =
+        Suivi(
+            serieId = 1, statut = "en_cours", nbDiffuses = nbDiffuses, nbVus = nbVus,
+            prochaineSaison = saison, prochainEpisode = episode,
+        )
+
+    private fun saisons(vararg numeros: Int) = numeros.map { Saison(it, 1) }
+
+    @Test
+    fun episodesSortisCommeSurLeSite() {
+        assertEquals(true, estDiffuse(serie("Ended"), 1, 999))
+        assertEquals(true, estDiffuse(serie("Canceled"), 3, 1))
+        assertEquals(true, estDiffuse(serie("Returning Series"), 0, 5))   // spécial : toujours
+        assertEquals(false, estDiffuse(serie("Returning Series"), 1, 1))  // rien de sorti
+        assertEquals(true, estDiffuse(serie("Returning Series", 2, 5), 1, 10))
+        assertEquals(true, estDiffuse(serie("Returning Series", 2, 5), 2, 5))
+        assertEquals(false, estDiffuse(serie("Returning Series", 2, 5), 2, 6))
+        assertEquals(false, estDiffuse(serie("Returning Series", 2, 5), 3, 1))
+        assertEquals(false, estDiffuse(serie("Returning Series", 2, null), 2, 1))
+        assertEquals(true, estDiffuse(serie("Returning Series", 2, null), 1, 3))
+        assertEquals(true, estDiffuse(serie(null, 1, 3), 1, 3))
+    }
+
+    // Série en diffusion (dernier épisode sorti : S2·E3) avec spéciaux et
+    // saisons 1 à 3 ; cochés : S1·E2, S2·E4, spécial 1, et un « S1·E9 » qui
+    // n'existe plus dans la saison (ne doit pas être compté).
+    private val serieEnCours = serie("Returning Series", 2, 3)
+    private val saisonsEnCours = listOf(Saison(0, 2), Saison(1, 3), Saison(2, 5), Saison(3, 4))
+    private val vusEnCours = setOf(Episode(1, 2), Episode(2, 4), Episode(0, 1), Episode(1, 9))
+
+    @Test
+    fun etatsEtCompteursCommeSurLeSite() {
+        assertEquals(EtatEpisode.VU, etatEpisode(serieEnCours, vusEnCours, 1, 2))
+        assertEquals(EtatEpisode.NON_VU, etatEpisode(serieEnCours, vusEnCours, 1, 1))
+        assertEquals(EtatEpisode.VU, etatEpisode(serieEnCours, vusEnCours, 2, 4)) // coché, même pas sorti
+        assertEquals(EtatEpisode.A_VENIR, etatEpisode(serieEnCours, vusEnCours, 2, 5))
+        assertEquals(EtatEpisode.NON_VU, etatEpisode(serieEnCours, vusEnCours, 0, 2))
+        assertEquals(EtatEpisode.VU, etatEpisode(serieEnCours, vusEnCours, 0, 1))
+        assertEquals(listOf(1, 1, 1, 0), saisonsEnCours.map { nbVusSaison(it, vusEnCours) })
+    }
+
+    @Test
+    fun episodesPrecedentsCommeSurLeSite() {
+        fun precedents(saison: Int, episode: Int) =
+            episodesPrecedentsNonVus(serieEnCours, saisonsEnCours, vusEnCours, saison, episode)
+        assertEquals(listOf(Episode(1, 1), Episode(1, 3), Episode(2, 1)), precedents(2, 2))
+        assertEquals(
+            listOf(Episode(1, 1), Episode(1, 3), Episode(2, 1), Episode(2, 2), Episode(2, 3)),
+            precedents(3, 1), // les épisodes pas encore sortis ne sont pas proposés
+        )
+        assertEquals(emptyList<Episode>(), precedents(1, 1))
+        assertEquals(emptyList<Episode>(), precedents(0, 2)) // spécial : rien à proposer
+        // Série finie : tout ce qui précède est sorti.
+        assertEquals(
+            listOf(
+                Episode(1, 1), Episode(1, 2), Episode(1, 3),
+                Episode(2, 1), Episode(2, 2), Episode(2, 3), Episode(2, 4), Episode(2, 5),
+                Episode(3, 1),
+            ),
+            episodesPrecedentsNonVus(serie("Ended", 3, 4), saisonsEnCours, emptySet(), 3, 2),
+        )
+    }
+
+    @Test
+    fun saisonOuverteEtOrdreCommeSurLeSite() {
+        assertEquals(2, saisonInitiale(saisons(0, 1, 2), suivi(saison = 2, episode = 1)))
+        assertEquals(2, saisonInitiale(saisons(0, 1, 2), suivi()))
+        assertEquals(0, saisonInitiale(saisons(0), suivi()))
+        assertEquals(0, saisonInitiale(emptyList(), suivi()))
+        assertEquals(1, saisonInitiale(saisons(1, 2, 3), suivi(saison = 1, episode = 4)))
+        assertEquals(listOf(1, 2, 0), ordonnerSaisons(saisons(0, 1, 2)).map { it.numero })
+        assertEquals(listOf(0), ordonnerSaisons(saisons(0)).map { it.numero })
+        assertEquals(listOf(1, 2, 3), ordonnerSaisons(saisons(1, 2, 3)).map { it.numero })
+    }
+
+    @Test
+    fun textesCommeSurLeSite() {
+        assertEquals("En diffusion", libelleDiffusion("Returning Series"))
+        assertEquals("En production", libelleDiffusion("In Production"))
+        assertEquals("Prévue", libelleDiffusion("Planned"))
+        assertEquals("Pilote", libelleDiffusion("Pilot"))
+        assertEquals("Terminée", libelleDiffusion("Ended"))
+        assertEquals("Annulée", libelleDiffusion("Canceled"))
+        assertEquals("Weird", libelleDiffusion("Weird"))
+        assertEquals("Statut de diffusion inconnu", libelleDiffusion(null))
+        assertEquals(
+            "En diffusion | 5 / 808 épisodes vus",
+            ligneDiffusion(serie("Returning Series"), suivi(nbVus = 5, nbDiffuses = 808)),
+        )
+        assertEquals("Saison 2", titreSaison(2))
+        assertEquals("Épisodes spéciaux", titreSaison(0))
+        // Textes repris de index.html (barre « cocher les précédents ») et de titreEpisode.
+        assertEquals("Cocher aussi l'épisode précédent non vu ?", texteInvite(1))
+        assertEquals("Cocher aussi les 4 épisodes précédents non vus ?", texteInvite(4))
+        assertEquals("Pilote", titreEpisodeAffiche("Pilote", chargement = false, episode = 1))
+        assertEquals("…", titreEpisodeAffiche(null, chargement = true, episode = 3))
+        assertEquals("Épisode 3", titreEpisodeAffiche(null, chargement = false, episode = 3))
+        assertEquals("Épisode 3", titreEpisodeAffiche("", chargement = false, episode = 3))
+    }
+
+    @Test
+    fun datesEnFrancaisCommeSurLeSite() {
+        val attendues = listOf(
+            "2023-01-02" to "2 janv. 2023", "2023-02-28" to "28 févr. 2023", "2023-03-04" to "4 mars 2023",
+            "2023-04-05" to "5 avr. 2023", "2023-05-06" to "6 mai 2023", "2023-06-07" to "7 juin 2023",
+            "2023-07-08" to "8 juil. 2023", "2023-08-09" to "9 août 2023", "2023-09-10" to "10 sept. 2023",
+            "2023-10-11" to "11 oct. 2023", "2023-11-12" to "12 nov. 2023", "2023-12-13" to "13 déc. 2023",
+        )
+        for ((date, texte) in attendues) assertEquals(texte, texteDate(date, aVenir = false))
+        assertEquals("à venir · 29 sept. 2023", texteDate("2023-09-29", aVenir = true))
+        assertEquals("", texteDate(null, aVenir = false))
+        assertEquals("", texteDate("", aVenir = true))
+        assertEquals("", texteDate("pas une date", aVenir = false))
+    }
+
+    @Test
+    fun ficheARemettreAJour() {
+        val maintenant = Instant.parse("2026-11-23T12:00:00Z")
+        fun il_y_a(heures: Long) = maintenant.minus(Duration.ofHours(heures)).toString()
+        assertEquals(true, ficheAncienne(serie(null, majLe = il_y_a(25)), maintenant))
+        assertEquals(true, ficheAncienne(serie(null, majLe = il_y_a(24)), maintenant)) // 24 h pile : oui
+        assertEquals(false, ficheAncienne(serie(null, majLe = il_y_a(23)), maintenant))
+        assertEquals(true, ficheAncienne(serie(null, majLe = il_y_a(1), estAnime = null), maintenant))
+        // Format renvoyé par la base (microsecondes, décalage horaire).
+        assertEquals(false, ficheAncienne(serie(null, majLe = "2026-11-23T10:15:30.123456+00:00"), maintenant))
+        assertEquals(true, ficheAncienne(serie(null, majLe = "2026-11-20T10:15:30.123456+01:00"), maintenant))
+        // Date absente ou illisible : pas ancienne (comme sur le site).
+        assertEquals(false, ficheAncienne(serie(null, majLe = null), maintenant))
+        assertEquals(false, ficheAncienne(serie(null, majLe = "hier"), maintenant))
+    }
+}

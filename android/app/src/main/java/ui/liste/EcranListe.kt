@@ -1,6 +1,5 @@
 package io.github.tomuius.canapilou.ui.liste
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,18 +15,15 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -44,13 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -61,27 +51,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
 import io.github.tomuius.canapilou.Conteneur
 import io.github.tomuius.canapilou.R
 import io.github.tomuius.canapilou.donnees.SerieSuivie
-import io.github.tomuius.canapilou.donnees.urlAffiche
-import io.github.tomuius.canapilou.ui.theme.LocalCouleurSucces
+import io.github.tomuius.canapilou.ui.commun.AfficheSerie
+import io.github.tomuius.canapilou.ui.commun.BarreProgression
+import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
+import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
+import io.github.tomuius.canapilou.ui.commun.Etiquette
+import io.github.tomuius.canapilou.ui.commun.afficherPendant
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.withTimeoutOrNull
 
 // Écran « Ma liste » : vos séries, rangées en sections par statut, comme sur
-// le site. Étape 2 (plan sous la décision 60) : affiches, titre du prochain
-// épisode, bouton « Vu » avec « Annuler », menu (Actualiser, À propos, Se
-// déconnecter). L'ouverture d'une fiche viendra ensuite.
-
-// Durée d'affichage des messages, comme sur le site (DUREE_MESSAGE et
-// DUREE_ANNULATION de js/app.js).
-private const val DUREE_MESSAGE = 5_000L
-private const val DUREE_ANNULATION = 8_000L
+// le site : affiches, titre du prochain épisode, bouton « Vu » avec
+// « Annuler », menu (Actualiser, À propos, Se déconnecter) ; un appui sur une
+// série ouvre sa fiche (décision 66).
 
 @Composable
 fun EcranListe(
+    onOuvrirSerie: (Long) -> Unit,
     onAPropos: () -> Unit,
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant que l'écran
     // est dans l'historique), créé avec les dépôts du Conteneur.
@@ -99,24 +87,18 @@ fun EcranListe(
     val accessibilite = LocalAccessibilityManager.current
     LaunchedEffect(vm) {
         vm.messages.collectLatest { m ->
-            val base = if (m.annulation != null) DUREE_ANNULATION else DUREE_MESSAGE
-            // Si l'utilisateur a demandé plus de temps pour lire ou agir
-            // (réglage d'accessibilité d'Android), Android allonge la durée.
-            val duree = accessibilite?.calculateRecommendedTimeoutMillis(
-                base,
-                containsText = true,
-                containsControls = m.annulation != null,
-            ) ?: base
-            val resultat = withTimeoutOrNull(duree) {
-                etatMessages.showSnackbar(
-                    message = m.texte,
-                    actionLabel = if (m.annulation != null) "Annuler" else null,
-                    duration = SnackbarDuration.Indefinite, // la durée est gérée ci-dessus
-                )
+            val resultat = if (m.annulation != null) {
+                etatMessages.afficherPendant(m.texte, DUREE_ANNULATION, accessibilite, action = "Annuler")
+            } else {
+                etatMessages.afficherPendant(m.texte, DUREE_MESSAGE, accessibilite)
             }
             if (resultat == SnackbarResult.ActionPerformed && m.annulation != null) vm.annuler(m.annulation)
         }
     }
+
+    // De retour d'une fiche où l'on a coché des épisodes : la liste se relit
+    // (sans l'indicateur d'attente), comme le site au retour sur « Ma liste ».
+    LaunchedEffect(vm) { vm.relireSiPerimee() }
 
     Scaffold(
         topBar = {
@@ -158,7 +140,7 @@ fun EcranListe(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        ListeEnSections(e.sections, titres, vusEnCours, onVu = vm::cocher)
+                        ListeEnSections(e.sections, titres, vusEnCours, onVu = vm::cocher, onOuvrir = onOuvrirSerie)
                     }
             }
         }
@@ -214,6 +196,7 @@ private fun ListeEnSections(
     titres: Map<CleSaison, Map<Int, String?>>,
     vusEnCours: Set<Long>,
     onVu: (SerieSuivie) -> Unit,
+    onOuvrir: (Long) -> Unit,
 ) {
     // Section dépliée ou repliée : mémorisé même si Android recrée l'écran.
     // « key » donne à chaque section sa propre case de mémoire.
@@ -240,6 +223,7 @@ private fun ListeEnSections(
                         titreProchain = titreProchain(serie, titres),
                         vuEnCours = serie.serieId in vusEnCours,
                         onVu = { onVu(serie) },
+                        onOuvrir = { onOuvrir(serie.serieId) },
                     )
                 }
             }
@@ -273,16 +257,25 @@ private fun TitreSection(titre: String, nombre: Int, ouverte: Boolean, onBascule
 }
 
 // Une série de la liste : affiche, titre, progression, et bouton « Vu »
-// dans la section « En cours ».
+// dans la section « En cours ». Un appui sur la carte ouvre la fiche (le
+// bouton « Vu » garde son propre appui).
 @Composable
-private fun CarteSerie(s: SerieSuivie, titreProchain: String?, vuEnCours: Boolean, onVu: () -> Unit) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+private fun CarteSerie(
+    s: SerieSuivie,
+    titreProchain: String?,
+    vuEnCours: Boolean,
+    onVu: () -> Unit,
+    onOuvrir: () -> Unit,
+) {
+    OutlinedCard(onClick = onOuvrir, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Affiche(s.afficheChemin)
+            // 46 × 69 dp, comme les 46 × 69 pixels du site ; taille TMDB w154
+            // pour rester nette sur un téléphone (choix de Claude, à revoir).
+            AfficheSerie(s.afficheChemin, 46.dp, 69.dp, "w154")
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -310,40 +303,6 @@ private fun CarteSerie(s: SerieSuivie, titreProchain: String?, vuEnCours: Boolea
     }
 }
 
-// Petite affiche de la série (46 × 69 dp, comme les 46 × 69 pixels du site),
-// chargée par Coil (décision 62) ; cadre en pointillé s'il n'y en a pas.
-// Décorative pour les lecteurs d'écran : le titre est juste à côté.
-@Composable
-private fun Affiche(chemin: String?) {
-    val forme = RoundedCornerShape(6.dp)
-    val taille = Modifier.size(width = 46.dp, height = 69.dp)
-    val url = urlAffiche(chemin)
-    if (url == null) {
-        val couleur = MaterialTheme.colorScheme.outline
-        Box(
-            taille.drawBehind {
-                drawRoundRect(
-                    color = couleur,
-                    cornerRadius = CornerRadius(6.dp.toPx()),
-                    style = Stroke(
-                        width = 1.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx())),
-                    ),
-                )
-            }
-        )
-    } else {
-        AsyncImage(
-            model = url,
-            contentDescription = null,
-            contentScale = ContentScale.Crop, // remplit le cadre sans déformer (object-fit: cover)
-            modifier = taille
-                .clip(forme)
-                .background(MaterialTheme.colorScheme.background), // fond pendant le chargement
-        )
-    }
-}
-
 // Bouton « Vu » : coche dessinée + « Vu » ; « … » pendant l'envoi. Les
 // lecteurs d'écran annoncent « Marquer S1·E6 de … comme vu », comme sur le site.
 @Composable
@@ -364,39 +323,5 @@ private fun BoutonVu(s: SerieSuivie, enCours: Boolean, onVu: () -> Unit) {
             Spacer(Modifier.width(4.dp))
             Text("Vu", modifier = Modifier.clearAndSetSemantics {})
         }
-    }
-}
-
-// Barre de progression et pourcentage, verte à 100 % (comme sur le site).
-@Composable
-private fun BarreProgression(pourcentage: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        LinearProgressIndicator(
-            progress = { pourcentage / 100f },
-            modifier = Modifier.weight(1f),
-            color = if (pourcentage == 100) LocalCouleurSucces.current else MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.outlineVariant,
-        )
-        // Espace insécable (\u00A0) avant « % », comme en français sur le site.
-        Text("$pourcentage\u00A0%", style = MaterialTheme.typography.labelMedium)
-    }
-}
-
-// Petite étiquette, par exemple « Animé ».
-@Composable
-private fun Etiquette(texte: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shape = RoundedCornerShape(50),
-    ) {
-        Text(
-            texte,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-        )
     }
 }

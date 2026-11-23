@@ -21,6 +21,18 @@ data class EpisodeTmdb(
 @Serializable
 private data class ReponseSaison(val episodes: List<EpisodeTmdb> = emptyList())
 
+/** Réponse de l'action « ajouter » : la série copiée (ou remise à jour) dans le catalogue. */
+@Serializable
+data class SerieImportee(val id: Long, val titre: String, val resume: String? = null)
+
+// Réponse de l'action « fiche » : { "serie": { …, "resume": … }, "saisons": [ … ] }.
+// Pour l'instant, seul le résumé sert (l'aperçu complet viendra avec la recherche).
+@Serializable
+private data class ResumeSeul(val resume: String? = null)
+
+@Serializable
+private data class ReponseApercu(val serie: ResumeSeul)
+
 // Dépôt « TMDB » : tout ce qui passe par la fonction serveur « tmdb », comme
 // js/tmdb.js sur le site. La clé TMDB reste sur le serveur (décision 8) ;
 // l'appli envoie seulement son jeton de connexion.
@@ -55,6 +67,35 @@ class DepotTmdb(private val client: SupabaseClient) {
         val episodes = json.decodeFromString(ReponseSaison.serializer(), reponse.bodyAsText()).episodes
         saisons[cle] = episodes
         return episodes
+    }
+
+    /**
+     * Copie (ou remet à jour) la fiche TMDB d'une série dans le catalogue
+     * (action « ajouter », comme importerSerie sur le site) : titre, affiche,
+     * saisons, dernier épisode sorti, classement animé, durées. Renvoie
+     * l'identifiant interne, le titre et le résumé.
+     */
+    suspend fun importerSerie(tmdbId: Int): SerieImportee {
+        val reponse = client.functions.invoke(
+            function = "tmdb",
+            body = buildJsonObject {
+                put("action", "ajouter")
+                put("tmdbId", tmdbId)
+            },
+        )
+        return json.decodeFromString(SerieImportee.serializer(), reponse.bodyAsText())
+    }
+
+    /** Résumé d'une série, demandé à TMDB sans rien enregistrer (action « fiche »). */
+    suspend fun resume(tmdbId: Int): String? {
+        val reponse = client.functions.invoke(
+            function = "tmdb",
+            body = buildJsonObject {
+                put("action", "fiche")
+                put("tmdbId", tmdbId)
+            },
+        )
+        return json.decodeFromString(ReponseApercu.serializer(), reponse.bodyAsText()).serie.resume
     }
 
     /** Oublie les titres reçus (bouton « Actualiser », comme un rechargement de la page du site). */

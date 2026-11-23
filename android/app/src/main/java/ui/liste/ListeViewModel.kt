@@ -75,6 +75,11 @@ class ListeViewModel(
     // numeroChargement sur le site).
     private var numeroLecture = 0
 
+    // Version des données (voir DepotListe.version) au moment de la dernière
+    // lecture affichée : si elle a changé depuis (épisodes cochés dans une
+    // fiche), la liste affichée n'est plus à jour.
+    private var versionLue = -1L
+
     init {
         charger()
     }
@@ -154,6 +159,19 @@ class ListeViewModel(
         }
     }
 
+    /**
+     * Appelée quand l'écran réapparaît (retour d'une fiche) : si des données
+     * ont changé entre-temps, relit la liste sans l'indicateur d'attente. Rien
+     * à faire si rien n'a changé (par exemple quand Android recrée l'écran
+     * après une rotation).
+     */
+    fun relireSiPerimee() {
+        if (_etat.value !is EtatListe.Pret || depotListe.version.value == versionLue) return
+        viewModelScope.launch {
+            relireSansAttente()?.let { erreur -> _messages.send(Message("Liste non actualisée : $erreur")) }
+        }
+    }
+
     /** Déconnexion : l'appli revient d'elle-même à l'écran de connexion. */
     fun seDeconnecter() {
         viewModelScope.launch {
@@ -172,8 +190,10 @@ class ListeViewModel(
     // remonte à l'appelant.
     private suspend fun relire() {
         val numero = ++numeroLecture
+        val version = depotListe.version.value // relevée AVANT la lecture
         val series = depotListe.lireMaListe()
         if (numero != numeroLecture) return // réponse dépassée
+        versionLue = version
         _etat.value = EtatListe.Pret(regrouperParSection(series), series.size)
         chargerTitres(series)
     }

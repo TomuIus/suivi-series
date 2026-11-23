@@ -30,9 +30,12 @@ fun regrouperParSection(series: List<SerieSuivie>): Map<Section, List<SerieSuivi
  * comme dans la vue « ma_liste »). Arrondi vers le bas : 100 % seulement quand
  * tout est vu. null s'il n'y a encore aucun épisode sorti.
  */
-fun pourcentage(s: SerieSuivie): Int? {
-    if (s.nbDiffuses <= 0) return null
-    return 100 * min(s.nbVus, s.nbDiffuses) / s.nbDiffuses // division entière = arrondi vers le bas
+fun pourcentage(s: SerieSuivie): Int? = pourcentage(s.nbVus, s.nbDiffuses)
+
+/** Même calcul à partir des deux compteurs (sert aussi à la fiche). */
+fun pourcentage(nbVus: Int, nbDiffuses: Int): Int? {
+    if (nbDiffuses <= 0) return null
+    return 100 * min(nbVus, nbDiffuses) / nbDiffuses // division entière = arrondi vers le bas
 }
 
 /** « S2·E5 » (point médian, sans espaces : demande de l'utilisateur, v21). */

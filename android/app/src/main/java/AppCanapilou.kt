@@ -20,15 +20,20 @@ import androidx.navigation3.ui.NavDisplay
 import io.github.tomuius.canapilou.donnees.EtatConnexion
 import io.github.tomuius.canapilou.ui.apropos.EcranAPropos
 import io.github.tomuius.canapilou.ui.connexion.EcranConnexion
+import io.github.tomuius.canapilou.ui.fiche.EcranFiche
 import io.github.tomuius.canapilou.ui.liste.EcranListe
 import kotlinx.serialization.Serializable
 
 // Les « clés » des écrans pour Navigation 3 (décision 59) : chaque écran de
 // l'historique est désigné par une clé. Elles sont @Serializable pour que
 // l'historique soit sauvegardé quand Android recrée l'appli. D'autres
-// viendront (fiche d'une série, recherche…).
+// viendront (recherche, aperçu…).
 @Serializable
 data object CleMaListe : NavKey
+
+/** Fiche d'une série du catalogue (identifiant interne, comme « #/serie/42 » sur le site). */
+@Serializable
+data class CleFiche(val serieId: Long) : NavKey
 
 @Serializable
 data object CleAPropos : NavKey
@@ -74,8 +79,16 @@ private fun NavigationPrincipale() {
             when (cle) {
                 is CleMaListe -> NavEntry(cle) {
                     EcranListe(
-                        // Pas deux fois « À propos » dans l'historique si l'on appuie vite deux fois.
-                        onAPropos = { if (historique.lastOrNull() != CleAPropos) historique.add(CleAPropos) },
+                        // Un appui rapide sur deux séries n'ouvre qu'une fiche ; de même,
+                        // pas deux fois « À propos » dans l'historique.
+                        onOuvrirSerie = { id -> if (historique.lastOrNull() == CleMaListe) historique.add(CleFiche(id)) },
+                        onAPropos = { if (historique.lastOrNull() == CleMaListe) historique.add(CleAPropos) },
+                    )
+                }
+                is CleFiche -> NavEntry(cle) {
+                    EcranFiche(
+                        serieId = cle.serieId,
+                        onRetour = { if (historique.size > 1) historique.removeLastOrNull() },
                     )
                 }
                 is CleAPropos -> NavEntry(cle) {
