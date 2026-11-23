@@ -4,6 +4,7 @@ import io.github.tomuius.canapilou.donnees.Episode
 import io.github.tomuius.canapilou.donnees.Saison
 import io.github.tomuius.canapilou.donnees.SerieCatalogue
 import io.github.tomuius.canapilou.donnees.Suivi
+import io.github.tomuius.canapilou.ui.liste.episodesVus
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -120,7 +121,7 @@ fun libelleDiffusion(statut: String?): String =
 
 /** Ligne sous le titre : « En diffusion | 5 / 808 épisodes vus ». */
 fun ligneDiffusion(serie: SerieCatalogue, suivi: Suivi): String =
-    "${libelleDiffusion(serie.statutDiffusion)} | ${suivi.nbVus} / ${suivi.nbDiffuses} épisodes vus"
+    "${libelleDiffusion(serie.statutDiffusion)} | ${suivi.nbVus} / ${suivi.nbDiffuses} ${episodesVus(suivi.nbVus)}"
 
 /** « Saison 2 » ou « Épisodes spéciaux ». */
 fun titreSaison(numero: Int): String = if (numero == 0) "Épisodes spéciaux" else "Saison $numero"

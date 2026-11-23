@@ -150,6 +150,9 @@ class FicheTest {
             "En diffusion | 5 / 808 épisodes vus",
             ligneDiffusion(serie("Returning Series"), suivi(nbVus = 5, nbDiffuses = 808)),
         )
+        // Accord avec le nombre d'épisodes vus (décision 70).
+        assertEquals("Terminée | 1 / 12 épisode vu", ligneDiffusion(serie("Ended"), suivi(nbVus = 1, nbDiffuses = 12)))
+        assertEquals("Prévue | 0 / 0 épisode vu", ligneDiffusion(serie("Planned"), suivi(nbVus = 0, nbDiffuses = 0)))
         assertEquals("Saison 2", titreSaison(2))
         assertEquals("Épisodes spéciaux", titreSaison(0))
         // Textes repris de index.html (barre « cocher les précédents ») et de titreEpisode.

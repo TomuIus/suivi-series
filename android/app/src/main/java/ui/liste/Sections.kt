@@ -75,16 +75,24 @@ fun titreAffichable(titre: String?): String? =
     if (titre.isNullOrEmpty() || TITRE_GENERIQUE.matches(titre.trim())) null else titre
 
 /**
+ * « épisode vu » ou « épisodes vus », accordé avec le nombre d'épisodes vus,
+ * y compris quand un total suit : « 1 / 808 épisode vu », « 0 épisode vu »
+ * (décision 70 : choix de l'utilisateur ; zéro est suivi du singulier). Même
+ * règle sur le site (episodesVus dans js/app.js).
+ */
+fun episodesVus(nombre: Int): String = if (nombre <= 1) "épisode vu" else "épisodes vus"
+
+/**
  * Ligne d'informations sous le titre, comme sur le site :
  * « Prochain : S1·E6 "Ste Lisa Blues" | 5 / 808 épisodes vus ».
  * [titreProchain] : titre du prochain épisode tel que TMDB le donne, s'il est
  * déjà connu (il est demandé à part, il arrive un instant après la liste).
  */
 fun ligneProgression(s: SerieSuivie, titreProchain: String? = null): String {
-    val compte = "${s.nbVus} / ${s.nbDiffuses} épisodes vus"
+    val compte = "${s.nbVus} / ${s.nbDiffuses} ${episodesVus(s.nbVus)}"
     return when {
-        s.statut == "termine" -> "${s.nbVus} épisodes vus"
-        s.statut == "a_jour" -> "${s.nbVus} épisodes vus | en attente de la suite"
+        s.statut == "termine" -> "${s.nbVus} ${episodesVus(s.nbVus)}"
+        s.statut == "a_jour" -> "${s.nbVus} ${episodesVus(s.nbVus)} | en attente de la suite"
         s.nbDiffuses == 0 -> "Aucun épisode diffusé pour l'instant"
         s.statut == "plus_tard" -> compte // pas de « Prochain » : série mise de côté
         s.prochaineSaison != null && s.prochainEpisode != null && s.statut != "abandonne" -> {

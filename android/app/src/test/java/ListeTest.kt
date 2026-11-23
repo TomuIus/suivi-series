@@ -35,11 +35,17 @@ class ListeTest {
     @Test
     fun lignesCommeSurLeSite() {
         assertEquals("Prochain : S1·E6 | 5 / 808 épisodes vus", ligneProgression(serie("en_cours", 5, 808, 1, 6)))
-        assertEquals("Prochain : S1·E1 | 0 / 10 épisodes vus", ligneProgression(serie("a_voir", 0, 10, 1, 1)))
+        assertEquals("Prochain : S1·E1 | 0 / 10 épisode vu", ligneProgression(serie("a_voir", 0, 10, 1, 1)))
         assertEquals("6 épisodes vus | en attente de la suite", ligneProgression(serie("a_jour", 6, 6)))
         assertEquals("10 épisodes vus", ligneProgression(serie("termine", 10, 10)))
-        // Comme le site (défaut connu, à corriger des deux côtés) : pas de singulier.
-        assertEquals("1 épisodes vus", ligneProgression(serie("termine", 1, 1)))
+        // Accord avec le nombre d'épisodes vus, même avec un total (décision 70).
+        assertEquals("1 épisode vu", ligneProgression(serie("termine", 1, 1)))
+        assertEquals("0 épisode vu", ligneProgression(serie("termine", 0, 5)))
+        assertEquals("1 épisode vu | en attente de la suite", ligneProgression(serie("a_jour", 1, 1)))
+        assertEquals("Prochain : S1·E2 | 1 / 808 épisode vu", ligneProgression(serie("en_cours", 1, 808, 1, 2)))
+        assertEquals("1 / 10 épisode vu", ligneProgression(serie("plus_tard", 1, 10, 1, 2)))
+        assertEquals("0 / 10 épisode vu", ligneProgression(serie("abandonne", 0, 10, 1, 1)))
+        assertEquals("0 / 10 épisode vu", ligneProgression(serie("plus_tard", 0, 10, 1, 1)))
         assertEquals("Aucun épisode diffusé pour l'instant", ligneProgression(serie("en_cours", 0, 0)))
         assertEquals("2 / 10 épisodes vus", ligneProgression(serie("plus_tard", 2, 10, 1, 3)))
         assertEquals("2 / 10 épisodes vus", ligneProgression(serie("abandonne", 2, 10, 1, 3)))

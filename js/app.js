@@ -1113,12 +1113,20 @@ createApp({
       return titre;
     }
 
+    // « épisode vu » ou « épisodes vus », accordé avec le nombre d'épisodes vus,
+    // y compris quand un total suit : « 1 / 808 épisode vu », « 0 épisode vu »
+    // (décision 70 : choix de l'utilisateur ; zéro est suivi du singulier).
+    // Même règle dans l'appli Android (episodesVus, Sections.kt).
+    function episodesVus(nombre) {
+      return nombre <= 1 ? 'épisode vu' : 'épisodes vus';
+    }
+
     // Ligne d'informations sous le titre d'une série de la liste. Exemple
     // demandé par l'utilisateur : « Prochain : S1·E6 "Ste Lisa Blues" | 5 / 808 épisodes vus ».
     function progression(s) {
-      const compte = `${s.nb_vus} / ${s.nb_diffuses} épisodes vus`;
-      if (s.statut === 'termine') return `${s.nb_vus} épisodes vus`;
-      if (s.statut === 'a_jour') return `${s.nb_vus} épisodes vus | en attente de la suite`;
+      const compte = `${s.nb_vus} / ${s.nb_diffuses} ${episodesVus(s.nb_vus)}`;
+      if (s.statut === 'termine') return `${s.nb_vus} ${episodesVus(s.nb_vus)}`;
+      if (s.statut === 'a_jour') return `${s.nb_vus} ${episodesVus(s.nb_vus)} | en attente de la suite`;
       if (s.nb_diffuses === 0) return "Aucun épisode diffusé pour l'instant";
       if (s.statut === 'plus_tard') return compte; // pas de « Prochain » : mise de côté
       if (s.prochaine_saison != null && s.statut !== 'abandonne') {
@@ -1177,7 +1185,7 @@ createApp({
       recherche, resultats, rechercheFaite, rechercheEnCours, ajoutsEnCours, message,
       modeRecherche, rechercheTropCourte, idsDansListe, resultatsListe, resultatsTmdb,
       connexion, deconnexion, lancerRecherche, effacerRecherche, ajouter, cocher,
-      details, urlAffiche, libelleEpisode, peutCocher, progression,
+      details, urlAffiche, libelleEpisode, peutCocher, progression, episodesVus,
       route, retourListe, allerAccueil, serieIdParTmdb, lienResultat, nombreSaisons, mentionDansListe,
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
