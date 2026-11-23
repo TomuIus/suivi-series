@@ -1,0 +1,57 @@
+{
+  "format": "suivi-series",
+  "version": 1,
+  "exporte_le": "2026-11-23T20:45:12.345Z",
+  "series": [
+    {
+      "tmdb_id": 1399,
+      "imdb_id": "tt0944947",
+      "tvdb_id": 121361,
+      "titre": "Game of Thrones",
+      "titre_original": "Game of Thrones",
+      "statut_manuel": null,
+      "categorie_manuelle": null,
+      "ajoute_le": "2026-11-13T18:20:00.123456+00:00",
+      "episodes_vus": [
+        {
+          "saison": 1,
+          "episode": 2,
+          "vu_le": "2026-11-13T19:00:00.5+00:00"
+        }
+      ]
+    },
+    {
+      "tmdb_id": 65930,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » \"x\" \\ é 🐰   </script>\nfin",
+      "titre_original": "進撃の巨人",
+      "statut_manuel": "plus_tard",
+      "categorie_manuelle": "anime",
+      "ajoute_le": "2026-11-14T09:00:00+00:00",
+      "episodes_vus": [
+        {
+          "saison": 0,
+          "episode": 1,
+          "vu_le": "2026-11-14T09:05:00+00:00"
+        },
+        {
+          "saison": 1,
+          "episode": 1,
+          "vu_le": "2026-11-14T09:10:00+00:00"
+        }
+      ]
+    },
+    {
+      "tmdb_id": null,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": null,
+      "titre_original": null,
+      "statut_manuel": "termine",
+      "categorie_manuelle": "serie",
+      "ajoute_le": "2026-11-15T10:00:00+00:00",
+      "episodes_vus": []
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 package io.github.tomuius.canapilou.ui.parametres
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,18 +50,31 @@ import io.github.tomuius.canapilou.ui.commun.RangeeChoix
 import io.github.tomuius.canapilou.ui.commun.afficherPendant
 import kotlinx.coroutines.flow.collectLatest
 
-// Page « Paramètres » (décision 90), partie A, comme la page « parametres »
-// du site : « Connecté avec … », nom d'utilisateur, thème. À venir : la
-// sauvegarde (export, puis import).
+// Page « Paramètres » (décision 90), comme la page « parametres » du site :
+// « Connecté avec … », nom d'utilisateur, thème (partie A), export de la
+// sauvegarde (partie B). À venir : l'import (partie C).
 
 @Composable
 fun EcranParametres(
     onRetour: () -> Unit,
-    vm: ParametresViewModel = viewModel { ParametresViewModel(Conteneur.depotCompte, Conteneur.depotReglages) },
+    vm: ParametresViewModel = viewModel {
+        ParametresViewModel(Conteneur.depotCompte, Conteneur.depotReglages, Conteneur.depotSauvegarde)
+    },
 ) {
     val enregistrement by vm.enregistrement.collectAsStateWithLifecycle()
     val theme by vm.theme.collectAsStateWithLifecycle()
+    val exportEnCours by vm.exportEnCours.collectAsStateWithLifecycle()
     val focus = LocalFocusManager.current
+    val contexte = LocalContext.current
+
+    // Fenêtre « Enregistrer sous » d'Android (décision 92) : ouverte quand le
+    // fichier est prêt, avec le nom proposé ; l'endroit choisi revient ici.
+    val lanceurExport = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri -> vm.ecrireExport(contexte.contentResolver, uri) }
+    LaunchedEffect(vm) {
+        vm.demandeEnregistrement.collect { nom -> lanceurExport.launch(nom) }
+    }
 
     // Messages en bas de l'écran (nom enregistré, erreur).
     val etatMessages = remember { SnackbarHostState() }
@@ -118,6 +135,13 @@ fun EcranParametres(
                     Titre("Thème")
                     RangeeChoix(ChoixTheme.entries, theme, { it.libelle }, vm::changerTheme)
                     TexteDoux("Automatique : suit le réglage de votre appareil. Le choix est retenu sur cet appareil.")
+
+                    // Sauvegarde (décisions 22, 30 et 92) : même fichier que le site.
+                    Titre("Sauvegarde")
+                    TexteDoux("Enregistrez une copie de votre liste et de vos épisodes cochés. Pensez-y de temps en temps.")
+                    OutlinedButton(onClick = vm::preparerExport, enabled = !exportEnCours) {
+                        Text(if (exportEnCours) "Préparation…" else "Exporter mes données")
+                    }
                 }
             }
         }

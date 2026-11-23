@@ -9,6 +9,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
 import io.github.tomuius.canapilou.donnees.DepotReglages
+import io.github.tomuius.canapilou.donnees.DepotSauvegarde
 import io.github.tomuius.canapilou.donnees.DepotTmdb
 
 // Assemblage de l'appli (décision 58) : un seul objet crée, au premier usage
@@ -39,4 +40,5 @@ object Conteneur {
     val depotListe: DepotListe by lazy { DepotListe(client) }
     val depotTmdb: DepotTmdb by lazy { DepotTmdb(client) }
     val depotReglages: DepotReglages by lazy { DepotReglages(contexte) }
+    val depotSauvegarde: DepotSauvegarde by lazy { DepotSauvegarde(client) }
 }
