@@ -26,6 +26,18 @@ internal data class EpisodeVu(
     val episode: Int,
 )
 
+// Une ligne à écrire dans la table « suivis » (série ajoutée à votre liste) ;
+// statut manuel « plus_tard » pour « Plus tard », sinon rien (automatique).
+@Serializable
+internal data class NouveauSuivi(
+    @SerialName("serie_id") val serieId: Long,
+    @SerialName("statut_manuel") val statutManuel: String? = null,
+)
+
+// Ce que la base renvoie des lignes réellement ajoutées.
+@Serializable
+internal data class SuiviAjoute(@SerialName("serie_id") val serieId: Long)
+
 // Lectures longues page par page : l'API de Supabase renvoie 1 000 lignes au
 // plus par requête (même valeur que LIGNES_PAR_PAGE dans js/base.js).
 private const val LIGNES_PAR_PAGE = 1000
@@ -35,8 +47,8 @@ private const val LIGNES_PAR_PAGE = 1000
 private const val SUPPRESSIONS_SIMULTANEES = 10
 
 // Dépôt « liste » : vos séries et vos épisodes cochés (comme listerSuivis,
-// chargerFiche, marquerVus, annulerVu(s), choisirStatut, changerStatut,
-// changerCategorie et retirerSerie dans js/base.js). C'est ici, et
+// chargerFiche, suivreSerie, marquerVus, annulerVu(s), choisirStatut,
+// changerStatut, changerCategorie et retirerSerie dans js/base.js). C'est ici, et
 // seulement ici, qu'on ajoutera plus tard une copie locale et une file
 // d'attente pour l'utilisation hors connexion (décision 58) : les écrans
 // n'auront pas à changer.
@@ -221,6 +233,28 @@ class DepotListe(private val client: SupabaseClient) {
             client.from("suivis").update({ set("categorie_manuelle", categorie) }) {
                 filter { eq("serie_id", serieId) }
             }
+        } finally {
+            noterChangement()
+        }
+    }
+
+    /**
+     * Ajoute à votre liste une série déjà copiée dans le catalogue (voir
+     * DepotTmdb.importerSerie) ; « Plus tard » si [plusTard]. Renvoie false si
+     * elle y était déjà : rien n'est alors changé (pas même son statut), comme
+     * suivreSerie sur le site. Écriture qui ignore les doublons ; la base ne
+     * renvoie que les lignes vraiment ajoutées, d'où la réponse.
+     */
+    suspend fun suivreSerie(serieId: Long, plusTard: Boolean): Boolean {
+        try {
+            val ajoutees = client.from("suivis")
+                .upsert(NouveauSuivi(serieId, if (plusTard) "plus_tard" else null)) {
+                    onConflict = "utilisateur_id,serie_id"
+                    ignoreDuplicates = true
+                    select(columns = Columns.list("serie_id"))
+                }
+                .decodeList<SuiviAjoute>()
+            return ajoutees.isNotEmpty()
         } finally {
             noterChangement()
         }

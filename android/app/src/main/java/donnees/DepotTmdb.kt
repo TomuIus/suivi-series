@@ -9,21 +9,13 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-/** Un épisode d'une saison, tel que la fonction serveur « tmdb » le renvoie. */
-@Serializable
-data class EpisodeTmdb(
-    val numero: Int,
-    val titre: String? = null, // null quand TMDB n'a pas de titre
-    val date: String? = null,  // date de sortie, « 2023-09-29 », ou null
-)
-
 // Forme de la réponse de l'action « saison » : { "episodes": [ … ] }.
 @Serializable
 private data class ReponseSaison(val episodes: List<EpisodeTmdb> = emptyList())
 
-/** Réponse de l'action « ajouter » : la série copiée (ou remise à jour) dans le catalogue. */
+// Forme de la réponse de l'action « rechercher » : { "resultats": [ … ] }.
 @Serializable
-data class SerieImportee(val id: Long, val titre: String, val resume: String? = null)
+private data class ReponseRecherche(val resultats: List<ResultatTmdb> = emptyList())
 
 // Réponse de l'action « fiche » : { "serie": { …, "resume": … }, "saisons": [ … ] }.
 // Pour l'instant, seul le résumé sert (l'aperçu complet viendra avec la recherche).
@@ -67,6 +59,18 @@ class DepotTmdb(private val client: SupabaseClient) {
         val episodes = json.decodeFromString(ReponseSaison.serializer(), reponse.bodyAsText()).episodes
         saisons[cle] = episodes
         return episodes
+    }
+
+    /** Recherche des séries et animés par titre (action « rechercher », 20 résultats au plus). */
+    suspend fun rechercher(texte: String): List<ResultatTmdb> {
+        val reponse = client.functions.invoke(
+            function = "tmdb",
+            body = buildJsonObject {
+                put("action", "rechercher")
+                put("texte", texte)
+            },
+        )
+        return json.decodeFromString(ReponseRecherche.serializer(), reponse.bodyAsText()).resultats
     }
 
     /**

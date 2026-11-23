@@ -1,5 +1,6 @@
 package io.github.tomuius.canapilou.ui.liste
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -22,7 +28,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -42,17 +50,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.tomuius.canapilou.Conteneur
 import io.github.tomuius.canapilou.R
+import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.ui.commun.AfficheSerie
 import io.github.tomuius.canapilou.ui.commun.BarreProgression
@@ -60,12 +72,16 @@ import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
 import io.github.tomuius.canapilou.ui.commun.Etiquette
 import io.github.tomuius.canapilou.ui.commun.afficherPendant
+import io.github.tomuius.canapilou.ui.fiche.libelleStatut
 import kotlinx.coroutines.flow.collectLatest
 
 // Écran « Ma liste » : vos séries, rangées en sections par statut, comme sur
 // le site : affiches, titre du prochain épisode, bouton « Vu » avec
 // « Annuler », menu (Actualiser, À propos, Se déconnecter) ; un appui sur une
-// série ouvre sa fiche (décision 66).
+// série ouvre sa fiche (décision 66). Barre de recherche toujours en haut
+// (décision 75) : dès qu'on tape, les résultats remplacent la liste, d'abord
+// « Dans ma liste », puis « Sur TMDB » avec « Ajouter » et « Plus tard »
+// (décisions 44 et 76).
 
 @Composable
 fun EcranListe(
@@ -83,6 +99,21 @@ fun EcranListe(
     val etat by vm.etat.collectAsStateWithLifecycle()
     val titres by vm.titres.collectAsStateWithLifecycle()
     val vusEnCours by vm.vusEnCours.collectAsStateWithLifecycle()
+    val rechercheTmdb by vm.rechercheTmdb.collectAsStateWithLifecycle()
+    val ajoutsEnCours by vm.ajoutsEnCours.collectAsStateWithLifecycle()
+    val modeRecherche = vm.recherche.isNotBlank()
+
+    // Position de la liste et sections dépliées, gardées ici (et non dans la
+    // liste elle-même) pour les retrouver après une recherche. Mémorisées même
+    // si Android recrée l'écran ; « key » donne à chaque section sa case.
+    val defilementListe = rememberLazyListState()
+    val ouvertes: Map<Section, MutableState<Boolean>> = Section.entries.associateWith { section ->
+        key(section.name) { rememberSaveable { mutableStateOf(!section.replieeParDefaut) } }
+    }
+
+    // Pendant une recherche, le retour du téléphone l'efface (comme Échap
+    // sur le site) au lieu de quitter l'appli.
+    BackHandler(enabled = modeRecherche) { vm.effacerRecherche() }
 
     // Messages en bas de l'écran (« snackbar »). « collectLatest » : un
     // nouveau message remplace aussitôt le précédent, comme sur le site.
@@ -119,40 +150,271 @@ fun EcranListe(
         },
         snackbarHost = { SnackbarHost(etatMessages) },
     ) { marges ->
-        Box(
+        Column(
             modifier = Modifier
                 .padding(marges)
                 .fillMaxSize(),
         ) {
-            when (val e = etat) {
-                EtatListe.Chargement ->
-                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+            BarreRecherche(
+                texte = vm.recherche,
+                onChange = vm::changerRecherche,
+                onRechercher = vm::lancerRecherche,
+                onEffacer = vm::effacerRecherche,
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            ) {
+                if (modeRecherche) {
+                    ResultatsRecherche(
+                        texte = vm.recherche,
+                        series = (etat as? EtatListe.Pret)?.series.orEmpty(),
+                        rechercheTmdb = rechercheTmdb,
+                        ajoutsEnCours = ajoutsEnCours,
+                        titres = titres,
+                        vusEnCours = vusEnCours,
+                        onVu = vm::cocher,
+                        onOuvrir = onOuvrirSerie,
+                        onAjouter = vm::ajouter,
+                    )
+                } else when (val e = etat) {
+                    EtatListe.Chargement ->
+                        CircularProgressIndicator(Modifier.align(Alignment.Center))
 
-                is EtatListe.Erreur -> Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(e.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                    Button(onClick = { vm.charger() }) { Text("Réessayer") }
-                }
-
-                is EtatListe.Pret ->
-                    if (e.total == 0) {
-                        Text(
-                            "Votre liste est vide pour l'instant.",
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(24.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        ListeEnSections(e.sections, titres, vusEnCours, onVu = vm::cocher, onOuvrir = onOuvrirSerie)
+                    is EtatListe.Erreur -> Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(e.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                        Button(onClick = { vm.charger() }) { Text("Réessayer") }
                     }
+
+                    is EtatListe.Pret ->
+                        if (e.total == 0) {
+                            Text(
+                                "Votre liste est vide pour l'instant.",
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(24.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            ListeEnSections(
+                                e.sections, titres, vusEnCours, ouvertes, defilementListe,
+                                onVu = vm::cocher, onOuvrir = onOuvrirSerie,
+                            )
+                        }
+                }
             }
         }
+    }
+}
+
+// Barre de recherche : loupe, texte, croix pour effacer. La touche
+// « Rechercher » du clavier lance la recherche tout de suite (Entrée sur le site).
+@Composable
+private fun BarreRecherche(
+    texte: String,
+    onChange: (String) -> Unit,
+    onRechercher: () -> Unit,
+    onEffacer: () -> Unit,
+) {
+    val clavier = LocalSoftwareKeyboardController.current
+    OutlinedTextField(
+        value = texte,
+        onValueChange = onChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+        placeholder = { Text("Rechercher une série ou un animé…") },
+        leadingIcon = { Icon(painterResource(R.drawable.loupe), contentDescription = null) },
+        trailingIcon = if (texte.isEmpty()) null else {
+            {
+                IconButton(onClick = onEffacer) {
+                    Icon(painterResource(R.drawable.croix), contentDescription = "Effacer la recherche")
+                }
+            }
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(50),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = {
+            onRechercher()
+            clavier?.hide()
+        }),
+    )
+}
+
+// Résultats de la recherche, à la place de la liste : d'abord vos séries qui
+// correspondent (mêmes cartes que dans la liste, avec leur statut), puis les
+// résultats de TMDB sans celles-ci (recherche commune, décision 44).
+@Composable
+private fun ResultatsRecherche(
+    texte: String,
+    series: List<SerieSuivie>,
+    rechercheTmdb: RechercheTmdb,
+    ajoutsEnCours: Map<Int, String>,
+    titres: Map<CleSaison, Map<Int, String?>>,
+    vusEnCours: Set<Long>,
+    onVu: (SerieSuivie) -> Unit,
+    onOuvrir: (Long) -> Unit,
+    onAjouter: (ResultatTmdb, Boolean) -> Unit,
+) {
+    val tropCourte = texte.trim().length < LONGUEUR_MIN
+    val dansListe = remember(series, texte) { if (tropCourte) emptyList() else chercherDansListe(series, texte) }
+    val autres = remember(rechercheTmdb, dansListe) { autresResultats(rechercheTmdb.resultats, dansListe) }
+    // Séries suivies, par identifiant TMDB : mention « Dans ma liste » et
+    // ouverture de leur fiche depuis les résultats TMDB.
+    val suivies = remember(series) { series.associateBy { it.tmdbId } }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (tropCourte) {
+            item(key = "court") { TexteInfo("Tapez au moins 2 caractères.") }
+            return@LazyColumn
+        }
+        if (dansListe.isNotEmpty()) {
+            item(key = "titre-liste") { TitreBloc("Dans ma liste (${dansListe.size})") }
+            items(dansListe, key = { "liste-${it.serieId}" }) { serie ->
+                CarteSerie(
+                    s = serie,
+                    titreProchain = titreProchain(serie, titres),
+                    vuEnCours = serie.serieId in vusEnCours,
+                    onVu = { onVu(serie) },
+                    onOuvrir = { onOuvrir(serie.serieId) },
+                    statutVisible = true,
+                )
+            }
+            item(key = "titre-tmdb") { TitreBloc("Sur TMDB") }
+        }
+        val faite = rechercheTmdb.faite
+        val info = when {
+            rechercheTmdb.enCours -> "Recherche…"
+            faite.isNotEmpty() && rechercheTmdb.resultats.isEmpty() -> "Aucun résultat pour « $faite »."
+            faite.isNotEmpty() && autres.isEmpty() -> "Rien d'autre sur TMDB pour « $faite »."
+            else -> null
+        }
+        if (info != null) item(key = "info") { TexteInfo(info) }
+        items(autres, key = { "tmdb-${it.tmdbId}" }) { r ->
+            CarteResultat(r, suivies[r.tmdbId], ajoutsEnCours[r.tmdbId], onAjouter, onOuvrir)
+        }
+    }
+}
+
+@Composable
+private fun TitreBloc(texte: String) {
+    Text(
+        texte,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+}
+
+@Composable
+private fun TexteInfo(texte: String) {
+    Text(texte, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+// Un résultat TMDB : affiche, titre, année · pays · titre original, début du
+// résumé ; puis « Ajouter » et « Plus tard » (« Ajout… » pendant l'envoi),
+// ou « Dans ma liste » si la série est déjà suivie (un appui ouvre alors sa
+// fiche). L'aperçu d'une série non suivie viendra ensuite (décision 74).
+@Composable
+private fun CarteResultat(
+    r: ResultatTmdb,
+    suivie: SerieSuivie?,
+    ajoutEnCours: String?,
+    onAjouter: (ResultatTmdb, Boolean) -> Unit,
+    onOuvrir: (Long) -> Unit,
+) {
+    val contenu: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 64 × 96 dp, comme les 64 × 96 pixels du site.
+            AfficheSerie(r.affiche, 64.dp, 96.dp, "w154")
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        r.titre,
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (r.anime) Etiquette("Animé")
+                }
+                val details = detailsResultat(r)
+                if (details.isNotEmpty()) {
+                    Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (!r.resume.isNullOrBlank()) {
+                    // Début du résumé seulement (2 lignes), comme sur le site.
+                    Text(r.resume, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                if (suivie != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.coche),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(mentionDansListe(suivie.statut), style = MaterialTheme.typography.labelLarge)
+                    }
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp),
+                    ) {
+                        val libelleAjouter = "Ajouter ${r.titre} à ma liste"
+                        Button(
+                            onClick = { onAjouter(r, false) },
+                            enabled = ajoutEnCours == null,
+                            modifier = Modifier.semantics { contentDescription = libelleAjouter },
+                        ) {
+                            Text(
+                                if (ajoutEnCours == "liste") "Ajout…" else "Ajouter",
+                                modifier = Modifier.clearAndSetSemantics {},
+                            )
+                        }
+                        val libellePlusTard = "Mettre ${r.titre} dans Plus tard"
+                        OutlinedButton(
+                            onClick = { onAjouter(r, true) },
+                            enabled = ajoutEnCours == null,
+                            modifier = Modifier.semantics { contentDescription = libellePlusTard },
+                        ) {
+                            Text(
+                                if (ajoutEnCours == "plus_tard") "Ajout…" else "Plus tard",
+                                modifier = Modifier.clearAndSetSemantics {},
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (suivie != null) {
+        OutlinedCard(onClick = { onOuvrir(suivie.serieId) }, modifier = Modifier.fillMaxWidth()) { contenu() }
+    } else {
+        OutlinedCard(modifier = Modifier.fillMaxWidth()) { contenu() }
     }
 }
 
@@ -204,16 +466,13 @@ private fun ListeEnSections(
     sections: Map<Section, List<SerieSuivie>>,
     titres: Map<CleSaison, Map<Int, String?>>,
     vusEnCours: Set<Long>,
+    ouvertes: Map<Section, MutableState<Boolean>>,
+    defilement: LazyListState,
     onVu: (SerieSuivie) -> Unit,
     onOuvrir: (Long) -> Unit,
 ) {
-    // Section dépliée ou repliée : mémorisé même si Android recrée l'écran.
-    // « key » donne à chaque section sa propre case de mémoire.
-    val ouvertes: Map<Section, MutableState<Boolean>> = Section.entries.associateWith { section ->
-        key(section.name) { rememberSaveable { mutableStateOf(!section.replieeParDefaut) } }
-    }
-
     LazyColumn(
+        state = defilement,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -275,6 +534,9 @@ private fun CarteSerie(
     vuEnCours: Boolean,
     onVu: () -> Unit,
     onOuvrir: () -> Unit,
+    // Dans les résultats de recherche, il n'y a pas de sections : le statut
+    // s'affiche alors à côté du titre.
+    statutVisible: Boolean = false,
 ) {
     OutlinedCard(onClick = onOuvrir, modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -299,6 +561,7 @@ private fun CarteSerie(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (s.estAnime) Etiquette("Animé")
+                    if (statutVisible) Etiquette(libelleStatut(s.statut))
                 }
                 pourcentage(s)?.let { p -> BarreProgression(p) }
                 Text(

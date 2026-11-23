@@ -1,15 +1,21 @@
 package io.github.tomuius.canapilou.ui.liste
 
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
 import io.github.tomuius.canapilou.donnees.DepotTmdb
+import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.donnees.messageErreur
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,8 +30,23 @@ import kotlinx.coroutines.sync.withPermit
 sealed interface EtatListe {
     data object Chargement : EtatListe
     data class Erreur(val message: String) : EtatListe
-    data class Pret(val sections: Map<Section, List<SerieSuivie>>, val total: Int) : EtatListe
+    /** [series] : toute la liste, activité la plus récente d'abord (sert à la recherche). */
+    data class Pret(
+        val sections: Map<Section, List<SerieSuivie>>,
+        val total: Int,
+        val series: List<SerieSuivie>,
+    ) : EtatListe
 }
+
+/**
+ * Recherche sur TMDB : [enCours] (« Recherche… »), [faite] = texte de la
+ * dernière recherche aboutie (vide sinon), [resultats] = ses résultats.
+ */
+data class RechercheTmdb(
+    val enCours: Boolean = false,
+    val faite: String = "",
+    val resultats: List<ResultatTmdb> = emptyList(),
+)
 
 /** Épisode qu'on vient de cocher avec « Vu », pour pouvoir le décocher (« Annuler »). */
 data class Annulation(val serieId: Long, val titre: String, val saison: Int, val episode: Int)
@@ -36,6 +57,10 @@ data class Message(val texte: String, val annulation: Annulation? = null)
 // Nombre de saisons demandées à TMDB en même temps pour les titres (même
 // valeur que TITRES_SIMULTANES sur le site, choisie par Claude, à revoir).
 private const val TITRES_SIMULTANES = 4
+
+// Pause dans la frappe avant de lancer la recherche sur TMDB (DELAI_FRAPPE
+// du site : 0,5 s, à revoir après des tests).
+private const val DELAI_FRAPPE = 500L
 
 // ViewModel de « Ma liste » (décision 58) : il charge les séries par les
 // dépôts, coche les épisodes, et garde le tout même quand Android recrée
@@ -74,6 +99,29 @@ class ListeViewModel(
     // (deux « Vu » rapprochés), seule la plus récente est affichée (comme
     // numeroChargement sur le site).
     private var numeroLecture = 0
+
+    // --- Recherche (décisions 44 et 75) ---
+
+    /**
+     * Texte tapé dans la barre de recherche. Gardé comme un état de Compose
+     * (et non un StateFlow) : c'est la façon recommandée pour un champ de
+     * saisie, sinon le curseur peut sauter pendant la frappe.
+     */
+    var recherche by mutableStateOf("")
+        private set
+
+    private val _rechercheTmdb = MutableStateFlow(RechercheTmdb())
+    val rechercheTmdb: StateFlow<RechercheTmdb> = _rechercheTmdb.asStateFlow()
+
+    // Séries en cours d'ajout : identifiant TMDB → "liste" ou "plus_tard"
+    // (bouton appuyé, qui affiche « Ajout… »).
+    private val _ajoutsEnCours = MutableStateFlow<Map<Int, String>>(emptyMap())
+    val ajoutsEnCours: StateFlow<Map<Int, String>> = _ajoutsEnCours.asStateFlow()
+
+    private var minuterieFrappe: Job? = null
+    // Numéro de la recherche en cours : une réponse arrivée après un
+    // changement du texte est ignorée (numeroRecherche sur le site).
+    private var numeroRecherche = 0
 
     // Version des données (voir DepotListe.version) au moment de la dernière
     // lecture affichée : si elle a changé depuis (épisodes cochés dans une
@@ -172,6 +220,81 @@ class ListeViewModel(
         }
     }
 
+    /**
+     * Le texte de la barre a changé. Comme sur le site, on attend une pause
+     * de 0,5 s dans la frappe avant de chercher sur TMDB ; « Recherche… »
+     * s'affiche tout de suite. Sous 2 caractères, rien n'est cherché.
+     */
+    fun changerRecherche(texte: String) {
+        recherche = texte.take(100) // 100 caractères au plus, comme le champ du site
+        minuterieFrappe?.cancel()
+        numeroRecherche++ // une réponse encore en route pour l'ancien texte sera ignorée
+        val nettoye = recherche.trim()
+        if (nettoye.length < LONGUEUR_MIN) {
+            _rechercheTmdb.value = RechercheTmdb()
+            return
+        }
+        _rechercheTmdb.update { it.copy(enCours = nettoye != it.faite) }
+        minuterieFrappe = viewModelScope.launch {
+            delay(DELAI_FRAPPE)
+            lancerRecherche()
+        }
+    }
+
+    /** Lance la recherche sur TMDB tout de suite (touche « Rechercher » du clavier). */
+    fun lancerRecherche() {
+        minuterieFrappe?.cancel()
+        val texte = recherche.trim()
+        if (texte.length < LONGUEUR_MIN || texte == _rechercheTmdb.value.faite) return
+        val numero = ++numeroRecherche
+        _rechercheTmdb.update { it.copy(enCours = true) }
+        viewModelScope.launch {
+            try {
+                val trouves = depotTmdb.rechercher(texte)
+                if (numero == numeroRecherche) _rechercheTmdb.value = RechercheTmdb(false, texte, trouves)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (numero == numeroRecherche) {
+                    // Les anciens résultats ne correspondent plus au texte : on
+                    // les efface (la touche « Rechercher » relance).
+                    _rechercheTmdb.value = RechercheTmdb()
+                    _messages.send(Message(messageErreur(e)))
+                }
+            }
+        }
+    }
+
+    /** Croix, ou retour du téléphone : efface la recherche et ramène à la liste. */
+    fun effacerRecherche() {
+        changerRecherche("")
+    }
+
+    /**
+     * Boutons « Ajouter » et « Plus tard » d'un résultat TMDB, comme ajouter
+     * sur le site : la fiche TMDB est d'abord copiée dans le catalogue (action
+     * « ajouter » de la fonction serveur), puis la série est ajoutée à votre
+     * liste ; la liste est relue, puis un message confirme.
+     */
+    fun ajouter(r: ResultatTmdb, plusTard: Boolean) {
+        if (r.tmdbId in _ajoutsEnCours.value) return // évite un double appui
+        _ajoutsEnCours.update { it + (r.tmdbId to if (plusTard) "plus_tard" else "liste") }
+        viewModelScope.launch {
+            try {
+                val serie = depotTmdb.importerSerie(r.tmdbId)
+                val nouvelle = depotListe.suivreSerie(serie.id, plusTard)
+                val erreurLecture = relireSansAttente()
+                _messages.send(Message(avecErreurLecture(messageAjout(serie.titre, nouvelle, plusTard), erreurLecture)))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _messages.send(Message(messageErreur(e)))
+            } finally {
+                _ajoutsEnCours.update { it - r.tmdbId }
+            }
+        }
+    }
+
     /** Affiche un message venu d'un autre écran (par exemple « … ne fait plus partie de votre liste. »). */
     fun annoncer(texte: String) {
         viewModelScope.launch { _messages.send(Message(texte)) }
@@ -199,7 +322,7 @@ class ListeViewModel(
         val series = depotListe.lireMaListe()
         if (numero != numeroLecture) return // réponse dépassée
         versionLue = version
-        _etat.value = EtatListe.Pret(regrouperParSection(series), series.size)
+        _etat.value = EtatListe.Pret(regrouperParSection(series), series.size, series)
         chargerTitres(series)
     }
 
