@@ -111,6 +111,15 @@ private fun NavigationPrincipale() {
                         onApercu = { tmdbId -> if (historique.lastOrNull() == CleMaListe) historique.add(CleApercu(tmdbId)) },
                         onAPropos = { if (historique.lastOrNull() == CleMaListe) historique.add(CleAPropos) },
                         onProfil = { if (historique.lastOrNull() == CleMaListe) historique.add(CleProfil) },
+                        // « Voir » d'une annonce (décision 96), comme le lien vers la page
+                        // des badges sur le site : le Profil est mis dessous, pour que
+                        // « ← Profil » y ramène, puis « Ma liste ».
+                        onTousLesBadges = {
+                            if (historique.lastOrNull() == CleMaListe) {
+                                historique.add(CleProfil)
+                                historique.add(CleBadges)
+                            }
+                        },
                         messageEnAttente = messagePourLaListe,
                         onMessagePris = { messagePourLaListe = null },
                     )

@@ -56,6 +56,9 @@ class DepotCompte(private val client: SupabaseClient) {
         return (utilisateur.userMetadata?.get("nom_utilisateur") as? JsonPrimitive)?.contentOrNull
     }
 
+    /** Identifiant du compte connecté (null sans connexion) : sert à la mémoire des annonces. */
+    fun identifiant(): String? = client.auth.currentUserOrNull()?.id
+
     /** E-mail du compte connecté (« Connecté avec … » dans les Paramètres). */
     fun email(): String = client.auth.currentUserOrNull()?.email.orEmpty()
 

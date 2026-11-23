@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 // Petite mémoire sur le téléphone (décision 88), l'équivalent du stockage
-// local du navigateur sur le site (filtre de « Ma liste », thème) : des
+// local du navigateur sur le site (filtre de « Ma liste », thème, mémoire
+// des annonces) : des
 // réglages propres à cet appareil,
 // jamais envoyés à la base. Bibliothèque DataStore « Preferences » de
 // Jetpack : des paires clé-valeur, lues comme un Flow (la valeur arrive, puis
@@ -66,6 +67,26 @@ class DepotReglages(private val contexte: Context) {
             }
         } catch (e: IOException) {
             Log.w("Canapilou", "Thème non retenu : ${e.message}")
+        }
+    }
+
+    /**
+     * Mémoire des annonces des nouveaux badges et rangs (décision 96) pour le
+     * compte [utilisateurId], comme la clé « suivi-series.annonces.<identifiant> »
+     * du site : lit l'ancienne mémoire (null la première fois) et la remplace
+     * par celle que [nouvelle] calcule, d'un seul tenant (deux lectures de la
+     * liste qui se croisent ne peuvent pas annoncer deux fois la même chose).
+     * Renvoie false si l'écriture a échoué : rien ne sera alors annoncé,
+     * sinon l'annonce reviendrait à chaque lecture (comme sur le site).
+     */
+    suspend fun remplacerMemoireAnnonces(utilisateurId: String, nouvelle: (String?) -> String): Boolean {
+        val cle = stringPreferencesKey("annonces_$utilisateurId")
+        return try {
+            contexte.reglages.edit { it[cle] = nouvelle(it[cle]) }
+            true
+        } catch (e: IOException) {
+            Log.w("Canapilou", "Mémoire des annonces non retenue : ${e.message}")
+            false
         }
     }
 

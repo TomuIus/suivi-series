@@ -2,12 +2,22 @@ package io.github.tomuius.canapilou.ui.profil
 
 import io.github.tomuius.canapilou.donnees.Badge
 import io.github.tomuius.canapilou.donnees.Progression
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 // Règles d'affichage du Profil et de la page « Tous les badges », sans
 // affichage (testables seules), recopiées du site : badgesObtenus,
 // libellePalier, pourcentageNiveau, pageBadges, compteBadges et
 // texteAvancement de js/badges.js, nombre de js/app.js, textes des pages
-// « profil » et « badges » de index.html.
+// « profil » et « badges » de index.html ; et les annonces des nouveaux
+// badges et rangs (nomComplet, nouveautes, texteAnnonce et lireMemoire de
+// js/badges.js).
 // Les calculs eux-mêmes (points, niveau, rang, badges) sont faits par la base.
 
 /** Paliers des badges, du plus bas au plus haut. */
@@ -189,3 +199,66 @@ fun textePaliersObtenus(f: FamilleBadges): String {
 
 /** État d'un défi : « Obtenu », ou son avancement. */
 fun etatDefi(badge: Badge): String = if (badge.obtenu) "Obtenu" else texteAvancement(badge)
+
+// --- Annonces des nouveaux badges et rangs (décisions 43 et 96) ---
+// Ce qui a déjà été annoncé est retenu sur le téléphone (DepotReglages),
+// pour chaque compte. La première fois, rien n'est annoncé : on retient
+// seulement l'état du moment (sinon tous les badges déjà gagnés seraient
+// annoncés d'un coup). La mémoire suit l'état actuel : un badge perdu
+// (épisode décoché) en sort, et sera donc annoncé de nouveau s'il est
+// regagné (défaut accepté, comme sur le site).
+
+/** Nom complet d'un badge, pour les annonces : « Temps passé (or) », « Longue haleine ». */
+fun nomComplet(badge: Badge): String =
+    if (badge.palier.isNullOrEmpty()) badge.nom else "${badge.nom} (${libellePalier(badge.palier).lowercase()})"
+
+/**
+ * Ce qu'il faut annoncer : les badges nouvellement obtenus, le nom du
+ * nouveau rang (null s'il n'a pas changé), et la mémoire à enregistrer à la
+ * place de l'ancienne (texte JSON, comme sur le site : {"rang":3,"badges":[…]}).
+ */
+data class Nouveautes(val badges: List<Badge>, val rang: String?, val memoire: String)
+
+/** Compare la progression lue dans la base avec la mémoire enregistrée ([memoire] : null la première fois). */
+fun nouveautes(progression: Progression, memoire: String?): Nouveautes {
+    val obtenus = progression.badges.orEmpty().filter { it.obtenu }
+    val nouvelleMemoire = buildJsonObject {
+        put("rang", progression.rangNumero)
+        putJsonArray("badges") { obtenus.forEach { add(it.code) } }
+    }.toString()
+    val ancienne = lireMemoireAnnonces(memoire) ?: return Nouveautes(emptyList(), null, nouvelleMemoire)
+    val (rang, dejaVus) = ancienne
+    return Nouveautes(
+        badges = obtenus.filter { it.code !in dejaVus },
+        rang = if (progression.rangNumero > rang) progression.rang else null,
+        memoire = nouvelleMemoire,
+    )
+}
+
+// Mémoire enregistrée : numéro du rang et codes des badges déjà annoncés ;
+// null si elle est absente, illisible ou d'une autre forme (alors : comme la
+// première fois).
+private fun lireMemoireAnnonces(texte: String?): Pair<Double, Set<String>>? {
+    if (texte.isNullOrEmpty()) return null
+    val objet = try {
+        Json.parseToJsonElement(texte) as? JsonObject
+    } catch (e: Exception) {
+        null
+    } ?: return null
+    val rang = (objet["rang"] as? JsonPrimitive)?.takeIf { !it.isString }?.content?.toDoubleOrNull()
+        ?.takeIf { !it.isNaN() } ?: return null
+    val badges = objet["badges"] as? JsonArray ?: return null
+    return rang to badges.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }.toSet()
+}
+
+/**
+ * Texte de l'annonce, ou vide s'il n'y a rien à annoncer. Ex. : « Nouveau
+ * rang : Adepte du plaid. Nouveau badge : Longue haleine. »
+ */
+fun texteAnnonce(n: Nouveautes): String {
+    val morceaux = mutableListOf<String>()
+    if (!n.rang.isNullOrEmpty()) morceaux += "Nouveau rang : ${n.rang}."
+    if (n.badges.size == 1) morceaux += "Nouveau badge : ${nomComplet(n.badges[0])}."
+    if (n.badges.size > 1) morceaux += "Nouveaux badges : ${n.badges.joinToString(", ") { nomComplet(it) }}."
+    return morceaux.joinToString(" ")
+}

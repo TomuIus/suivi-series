@@ -15,6 +15,9 @@ import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.donnees.fichesAEntretenir
 import io.github.tomuius.canapilou.donnees.messageErreur
+import io.github.tomuius.canapilou.ui.profil.Nouveautes
+import io.github.tomuius.canapilou.ui.profil.nouveautes
+import io.github.tomuius.canapilou.ui.profil.texteAnnonce
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -118,6 +121,13 @@ class ListeViewModel(
     // recrée l'écran.
     private val _messages = Channel<Message>(Channel.BUFFERED)
     val messages: Flow<Message> = _messages.receiveAsFlow()
+
+    // Annonce d'un nouveau badge ou d'un nouveau rang (décision 96), en
+    // attente d'être montrée : l'écran l'affiche après le message en cours,
+    // puis la retire (annonceAffichee). Gardée ici, elle n'est pas perdue si
+    // l'on ouvre une fiche avant qu'elle ait été montrée.
+    private val _annonce = MutableStateFlow<String?>(null)
+    val annonce: StateFlow<String?> = _annonce.asStateFlow()
 
     // Saisons dont les titres sont en cours de demande (pour ne pas les
     // demander deux fois), et limite de demandes simultanées. Utilisés
@@ -339,6 +349,11 @@ class ListeViewModel(
         }
     }
 
+    /** L'écran a montré l'annonce [texte] en entier (ou on l'a fermée) : elle est oubliée. */
+    fun annonceAffichee(texte: String) {
+        _annonce.compareAndSet(texte, null) // une annonce arrivée entre-temps reste en attente
+    }
+
     /** Affiche un message venu d'un autre écran (par exemple « … ne fait plus partie de votre liste. »). */
     fun annoncer(texte: String) {
         viewModelScope.launch { _messages.send(Message(texte)) }
@@ -384,6 +399,30 @@ class ListeViewModel(
         if (prog != null) _progression.value = prog
         chargerTitres(series)
         entretenirCatalogue(series)
+        if (prog != null) annoncerNouveautes(prog)
+    }
+
+    // Compare la progression avec ce qui a déjà été annoncé sur ce téléphone
+    // et prépare l'annonce, comme annoncerNouveautes sur le site (décisions
+    // 43 et 96). La mémoire est remplacée avant l'annonce ; si elle ne peut
+    // pas être écrite, rien n'est annoncé (sinon, annonce répétée à chaque
+    // lecture). Un souci ici n'empêche jamais l'affichage de la liste.
+    private suspend fun annoncerNouveautes(prog: Progression) {
+        try {
+            val id = depotCompte.identifiant() ?: return
+            var resultat: Nouveautes? = null
+            val ecrite = depotReglages.remplacerMemoireAnnonces(id) { ancienne ->
+                nouveautes(prog, ancienne).also { resultat = it }.memoire
+            }
+            val r = resultat
+            if (!ecrite || r == null) return
+            val texte = texteAnnonce(r)
+            if (texte.isNotEmpty()) _annonce.update { enAttente -> if (enAttente == null) texte else "$enAttente $texte" }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("Canapilou", "Annonce des badges impossible : ${e.message}")
+        }
     }
 
     // Entretien du catalogue, comme completerFiches sur le site (décisions

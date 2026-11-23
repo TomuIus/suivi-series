@@ -79,6 +79,7 @@ import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
 import io.github.tomuius.canapilou.ui.commun.Etiquette
 import io.github.tomuius.canapilou.ui.commun.afficherPendant
+import io.github.tomuius.canapilou.ui.commun.DUREE_ANNONCE
 import io.github.tomuius.canapilou.ui.fiche.libelleStatut
 import io.github.tomuius.canapilou.ui.profil.pourcentageNiveau
 import kotlinx.coroutines.flow.collectLatest
@@ -101,6 +102,8 @@ fun EcranListe(
     // Aperçu d'une série de TMDB qui n'est pas dans la liste (identifiant TMDB).
     onApercu: (Int) -> Unit,
     onAPropos: () -> Unit,
+    // « Voir » d'une annonce de nouveau badge ou rang : page « Tous les badges ».
+    onTousLesBadges: () -> Unit,
     // Message à afficher en arrivant (série retirée depuis sa fiche), puis oublié.
     messageEnAttente: String?,
     onMessagePris: () -> Unit,
@@ -118,6 +121,7 @@ fun EcranListe(
     val progression by vm.progression.collectAsStateWithLifecycle()
     val filtre by vm.filtre.collectAsStateWithLifecycle()
     val nom by vm.nom.collectAsStateWithLifecycle()
+    val annonce by vm.annonce.collectAsStateWithLifecycle()
     val modeRecherche = vm.recherche.isNotBlank()
 
     // Position de la liste et sections dépliées, gardées ici (et non dans la
@@ -136,14 +140,35 @@ fun EcranListe(
     // nouveau message remplace aussitôt le précédent, comme sur le site.
     val etatMessages = remember { SnackbarHostState() }
     val accessibilite = LocalAccessibilityManager.current
+    // Vrai pendant qu'un de ces messages est affiché : l'annonce attend.
+    var messageEnCours by remember { mutableStateOf(false) }
     LaunchedEffect(vm) {
         vm.messages.collectLatest { m ->
-            val resultat = if (m.annulation != null) {
-                etatMessages.afficherPendant(m.texte, DUREE_ANNULATION, accessibilite, action = "Annuler")
-            } else {
-                etatMessages.afficherPendant(m.texte, DUREE_MESSAGE, accessibilite)
+            messageEnCours = true
+            try {
+                val resultat = if (m.annulation != null) {
+                    etatMessages.afficherPendant(m.texte, DUREE_ANNULATION, accessibilite, action = "Annuler")
+                } else {
+                    etatMessages.afficherPendant(m.texte, DUREE_MESSAGE, accessibilite)
+                }
+                if (resultat == SnackbarResult.ActionPerformed && m.annulation != null) vm.annuler(m.annulation)
+            } finally {
+                messageEnCours = false
             }
-            if (resultat == SnackbarResult.ActionPerformed && m.annulation != null) vm.annuler(m.annulation)
+        }
+    }
+
+    // Annonce d'un nouveau badge ou d'un nouveau rang (décision 96) : au
+    // même endroit, après le message en cours, 8 s, « Voir » ouvre « Tous les
+    // badges ». Interrompue par un autre message (ou si l'on quitte « Ma
+    // liste »), elle revient ensuite : elle n'est oubliée qu'une fois montrée
+    // jusqu'au bout, fermée d'un geste, ou après « Voir ».
+    LaunchedEffect(annonce, messageEnCours) {
+        val texte = annonce
+        if (texte != null && !messageEnCours) {
+            val resultat = etatMessages.afficherPendant(texte, DUREE_ANNONCE, accessibilite, action = "Voir")
+            vm.annonceAffichee(texte)
+            if (resultat == SnackbarResult.ActionPerformed) onTousLesBadges()
         }
     }
 

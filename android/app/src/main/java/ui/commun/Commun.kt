@@ -43,9 +43,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 // Éléments d'affichage communs à plusieurs écrans (liste, fiche…).
 
 // Durée d'affichage des messages en bas de l'écran, comme sur le site
-// (DUREE_MESSAGE et DUREE_ANNULATION de js/app.js).
+// (DUREE_MESSAGE, DUREE_ANNULATION et DUREE_ANNONCE de js/app.js ; la
+// dernière, pour un nouveau badge ou rang, choisie par Claude, à revoir).
 const val DUREE_MESSAGE = 5_000L
 const val DUREE_ANNULATION = 8_000L
+const val DUREE_ANNONCE = 8_000L
 
 /**
  * Affiche un message en bas de l'écran (« snackbar ») pendant [dureeMs], avec
