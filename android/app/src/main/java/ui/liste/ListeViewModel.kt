@@ -11,6 +11,7 @@ import io.github.tomuius.canapilou.donnees.DepotListe
 import io.github.tomuius.canapilou.donnees.DepotTmdb
 import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.donnees.fichesAEntretenir
 import io.github.tomuius.canapilou.donnees.messageErreur
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -128,6 +129,14 @@ class ListeViewModel(
     // fiche), la liste affichée n'est plus à jour.
     private var versionLue = -1L
 
+    // Entretien du catalogue (décisions 42 et 79), une fois par ouverture de
+    // l'appli, comme une fois par visite sur le site : nettoyage lancé, mise
+    // à jour des fiches lancée (seulement s'il y en avait à faire), et la
+    // mise à jour en cours.
+    private var nettoyageLance = false
+    private var miseAJourLancee = false
+    private var miseAJour: Job? = null
+
     init {
         charger()
     }
@@ -140,6 +149,12 @@ class ListeViewModel(
         if (oublierTitres) {
             depotTmdb.oublierTitres()
             _titres.value = emptyMap()
+            // « Actualiser » vaut un rechargement de la page du site : l'entretien
+            // pourra se refaire (sauf si une mise à jour est encore en cours).
+            if (miseAJour?.isActive != true) {
+                nettoyageLance = false
+                miseAJourLancee = false
+            }
         }
         _etat.value = EtatListe.Chargement
         viewModelScope.launch {
@@ -314,8 +329,8 @@ class ListeViewModel(
     }
 
     // Lit la liste et l'affiche (si aucune lecture plus récente n'a été
-    // lancée entre-temps), puis demande les titres qui manquent. Une erreur
-    // remonte à l'appelant.
+    // lancée entre-temps), puis demande les titres qui manquent et lance
+    // l'entretien du catalogue. Une erreur remonte à l'appelant.
     private suspend fun relire() {
         val numero = ++numeroLecture
         val version = depotListe.version.value // relevée AVANT la lecture
@@ -324,6 +339,47 @@ class ListeViewModel(
         versionLue = version
         _etat.value = EtatListe.Pret(regrouperParSection(series), series.size, series)
         chargerTitres(series)
+        entretenirCatalogue(series)
+    }
+
+    // Entretien du catalogue, comme completerFiches sur le site (décisions
+    // 24, 31 et 42) : une fois, retirer du catalogue les séries que plus
+    // personne ne suit (fiches de plus de 5 mois), sans attendre ; et une fois
+    // aussi, remettre à jour depuis TMDB les fiches de la liste qui le
+    // demandent, une par une, en arrière-plan, puis relire la liste. Un échec
+    // n'affiche rien ; réussites et échecs sont notés dans le journal
+    // d'Android (Logcat, étiquette « Canapilou »). Une fiche qui échoue sera
+    // réessayée à la prochaine ouverture de l'appli.
+    private fun entretenirCatalogue(series: List<SerieSuivie>) {
+        if (!nettoyageLance) {
+            nettoyageLance = true
+            viewModelScope.launch {
+                try {
+                    depotListe.nettoyerCatalogue()
+                    Log.i("Canapilou", "Nettoyage du catalogue fait.")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w("Canapilou", "Nettoyage du catalogue impossible : ${e.message}")
+                }
+            }
+        }
+        val aMettreAJour = fichesAEntretenir(series)
+        if (miseAJourLancee || aMettreAJour.isEmpty()) return
+        miseAJourLancee = true
+        miseAJour = viewModelScope.launch {
+            for (s in aMettreAJour) {
+                try {
+                    depotTmdb.importerSerie(s.tmdbId)
+                    Log.i("Canapilou", "Fiche de « ${s.titre} » remise à jour depuis TMDB.")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w("Canapilou", "Mise à jour de « ${s.titre} » impossible : ${e.message}")
+                }
+            }
+            relireSansAttente()?.let { erreur -> _messages.send(Message("Liste non actualisée : $erreur")) }
+        }
     }
 
     // Relecture après « Vu » ou « Annuler », sans l'indicateur d'attente : la

@@ -65,6 +65,17 @@ class DepotListe(private val client: SupabaseClient) {
     }
 
     /**
+     * Retire du catalogue les séries que plus personne ne suit et dont la
+     * fiche TMDB a plus de 5 mois (décision 42), comme nettoyerCatalogue sur
+     * le site. Le travail est fait dans la base par la fonction SQL
+     * « nettoyer_catalogue » : les utilisateurs ne peuvent pas supprimer de
+     * séries eux-mêmes. Ne touche pas à votre liste.
+     */
+    suspend fun nettoyerCatalogue() {
+        client.postgrest.rpc("nettoyer_catalogue")
+    }
+
+    /**
      * Vos séries, de l'activité la plus récente à la plus ancienne. La vue
      * « ma_liste » calcule tout (statut, compteurs, prochain épisode) ; les
      * règles RLS garantissent qu'on ne reçoit que ses propres séries.

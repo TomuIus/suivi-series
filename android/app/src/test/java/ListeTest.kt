@@ -1,6 +1,7 @@
 package io.github.tomuius.canapilou
 
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.donnees.fichesAEntretenir
 import io.github.tomuius.canapilou.donnees.urlAffiche
 import io.github.tomuius.canapilou.ui.liste.CleSaison
 import io.github.tomuius.canapilou.ui.liste.Section
@@ -144,5 +145,25 @@ class ListeTest {
             listOf(false, false, true, true, true),
             Section.entries.map { it.replieeParDefaut },
         )
+    }
+
+    // Fiches à remettre à jour depuis TMDB (décision 79) : résultats attendus
+    // calculés le 23/11/2026 avec le filtre de completerFiches (js/app.js),
+    // recopié tel quel, pour les 27 combinaisons (null, vrai, faux) des trois
+    // colonnes, dans cet ordre de boucles.
+    @Test
+    fun fichesAEntretenirCommeSurLeSite() {
+        val valeurs = listOf(null, true, false)
+        val cas = mutableListOf<SerieSuivie>()
+        for (anime in valeurs) for (durees in listOf(false, true, null)) for (fiche in listOf(false, true, null)) {
+            cas += serie("en_cours", 0, 0, id = cas.size.toLong()).copy(
+                animeDetecte = anime, dureesACalculer = durees, ficheARafraichir = fiche,
+            )
+        }
+        val attendu = "TTTTTTTTT" + "FTFTTTFTF" + "FTFTTTFTF"
+        val retenues = fichesAEntretenir(cas).map { it.serieId }.toSet()
+        assertEquals(attendu, cas.joinToString("") { if (it.serieId in retenues) "T" else "F" })
+        // L'ordre de la liste est gardé.
+        assertEquals(retenues.sorted(), fichesAEntretenir(cas).map { it.serieId })
     }
 }
