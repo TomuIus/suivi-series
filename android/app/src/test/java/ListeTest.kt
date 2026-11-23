@@ -4,11 +4,15 @@ import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.donnees.fichesAEntretenir
 import io.github.tomuius.canapilou.donnees.urlAffiche
 import io.github.tomuius.canapilou.ui.liste.CleSaison
+import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import io.github.tomuius.canapilou.ui.liste.Section
+import io.github.tomuius.canapilou.ui.liste.comptesFiltres
+import io.github.tomuius.canapilou.ui.liste.filtrerTitres
 import io.github.tomuius.canapilou.ui.liste.ligneProgression
 import io.github.tomuius.canapilou.ui.liste.peutCocher
 import io.github.tomuius.canapilou.ui.liste.pourcentage
 import io.github.tomuius.canapilou.ui.liste.regrouperParSection
+import io.github.tomuius.canapilou.ui.liste.texteFiltreVide
 import io.github.tomuius.canapilou.ui.liste.titreProchain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -165,5 +169,32 @@ class ListeTest {
         assertEquals(attendu, cas.joinToString("") { if (it.serieId in retenues) "T" else "F" })
         // L'ordre de la liste est gardé.
         assertEquals(retenues.sorted(), fichesAEntretenir(cas).map { it.serieId })
+    }
+
+    // Filtre « Tout · Séries · Animés » de « Ma liste » (décision 88) :
+    // résultats attendus calculés le 23/11/2026 avec FILTRES, lireFiltre,
+    // « comptes » et filtrerTitres de js/app.js, et le message de index.html.
+    @Test
+    fun filtreCommeSurLeSite() {
+        // Valeur retenue → filtre (une valeur inconnue ou absente vaut « Tout »).
+        assertEquals(FiltreCategorie.TOUT, FiltreCategorie.depuisValeur("tout"))
+        assertEquals(FiltreCategorie.SERIES, FiltreCategorie.depuisValeur("series"))
+        assertEquals(FiltreCategorie.ANIMES, FiltreCategorie.depuisValeur("animes"))
+        assertEquals(FiltreCategorie.TOUT, FiltreCategorie.depuisValeur("autre"))
+        assertEquals(FiltreCategorie.TOUT, FiltreCategorie.depuisValeur(null))
+        assertEquals(FiltreCategorie.TOUT, FiltreCategorie.depuisValeur(""))
+        assertEquals(listOf("tout", "series", "animes"), FiltreCategorie.entries.map { it.valeur })
+
+        val anime = listOf(false, true, false, true, false, false, false, true, true)
+        val liste = anime.mapIndexed { i, a -> serie("en_cours", 0, 0, id = i.toLong()).copy(estAnime = a) }
+        assertEquals(
+            mapOf(FiltreCategorie.TOUT to 9, FiltreCategorie.SERIES to 5, FiltreCategorie.ANIMES to 4),
+            comptesFiltres(liste),
+        )
+        assertEquals(listOf(1L, 3L, 7L, 8L), filtrerTitres(liste, FiltreCategorie.ANIMES).map { it.serieId })
+        assertEquals(listOf(0L, 2L, 4L, 5L, 6L), filtrerTitres(liste, FiltreCategorie.SERIES).map { it.serieId })
+        assertEquals(liste, filtrerTitres(liste, FiltreCategorie.TOUT))
+        assertEquals("Aucun animé dans votre liste.", texteFiltreVide(FiltreCategorie.ANIMES))
+        assertEquals("Aucune série dans votre liste.", texteFiltreVide(FiltreCategorie.SERIES))
     }
 }

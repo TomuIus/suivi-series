@@ -62,6 +62,8 @@ dependencies {
     // Affiches des séries (décision 62).
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    // Mémoire sur le téléphone : filtre de « Ma liste » (décision 88).
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

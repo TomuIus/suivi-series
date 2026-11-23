@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
+import io.github.tomuius.canapilou.donnees.DepotReglages
 import io.github.tomuius.canapilou.donnees.DepotTmdb
 import io.github.tomuius.canapilou.donnees.Progression
 import io.github.tomuius.canapilou.donnees.ResultatTmdb
@@ -22,9 +23,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -34,9 +38,11 @@ import kotlinx.coroutines.sync.withPermit
 sealed interface EtatListe {
     data object Chargement : EtatListe
     data class Erreur(val message: String) : EtatListe
-    /** [series] : toute la liste, activité la plus récente d'abord (sert à la recherche). */
+    /**
+     * [series] : toute la liste, activité la plus récente d'abord ; l'écran la
+     * filtre et la range en sections (décision 88), et la recherche la parcourt.
+     */
     data class Pret(
-        val sections: Map<Section, List<SerieSuivie>>,
         val total: Int,
         val series: List<SerieSuivie>,
     ) : EtatListe
@@ -73,10 +79,22 @@ class ListeViewModel(
     private val depotListe: DepotListe,
     private val depotCompte: DepotCompte,
     private val depotTmdb: DepotTmdb,
+    private val depotReglages: DepotReglages,
 ) : ViewModel() {
 
     private val _etat = MutableStateFlow<EtatListe>(EtatListe.Chargement)
     val etat: StateFlow<EtatListe> = _etat.asStateFlow()
+
+    // Filtre « Tout · Séries · Animés » (décisions 23 et 88), lu dans la
+    // mémoire du téléphone et retenu à chaque changement. « Tout » le temps
+    // de la lecture (quelques millisecondes, en général avant la liste).
+    val filtre: StateFlow<FiltreCategorie> = depotReglages.filtreListe
+        .map { FiltreCategorie.depuisValeur(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, FiltreCategorie.TOUT)
+
+    fun choisirFiltre(f: FiltreCategorie) {
+        viewModelScope.launch { depotReglages.enregistrerFiltreListe(f.valeur) }
+    }
 
     // En-tête (décision 82) : nom (sinon e-mail) et progression (niveau et
     // sa barre), lue avec la liste. null tant qu'elle n'a pas été lue, ou si
@@ -361,7 +379,7 @@ class ListeViewModel(
         val prog = progression.await()
         if (numero != numeroLecture) return@coroutineScope // réponse dépassée
         versionLue = version
-        _etat.value = EtatListe.Pret(regrouperParSection(series), series.size, series)
+        _etat.value = EtatListe.Pret(series.size, series)
         if (prog != null) _progression.value = prog
         chargerTitres(series)
         entretenirCatalogue(series)

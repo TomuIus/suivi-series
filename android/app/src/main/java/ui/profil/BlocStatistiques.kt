@@ -12,10 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.ui.commun.RangeeChoix
+import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import io.github.tomuius.canapilou.ui.liste.Section
 
 // Statistiques du Profil (décisions 28, 34, 35, 36 et 85), partie C, comme la
@@ -67,7 +66,7 @@ private fun couleursStatut(): Map<Section, Color> =
 fun BlocStatistiques(series: List<SerieSuivie>, filtre: FiltreCategorie, onFiltre: (FiltreCategorie) -> Unit) {
     val st = remember(series, filtre) { statistiques(series, filtre) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Filtres(filtre, onFiltre)
+        RangeeChoix(FiltreCategorie.entries, filtre, { it.libelle }, onFiltre)
         BoxWithConstraints {
             GrilleTuiles(st.chiffres, colonnes = if (maxWidth >= 640.dp) 4 else 2) { c, m -> TuileChiffre(c, m) }
         }
@@ -87,26 +86,6 @@ fun BlocStatistiques(series: List<SerieSuivie>, filtre: FiltreCategorie, onFiltr
 @Composable
 private fun TexteNote(texte: String) {
     Text(texte, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-}
-
-// Trois pastilles « Tout · Séries · Animés » ; la choisie est pleine, de la
-// couleur d'accent (comme les boutons du filtre du site).
-@Composable
-private fun Filtres(filtre: FiltreCategorie, onFiltre: (FiltreCategorie) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (f in FiltreCategorie.entries) {
-            FilterChip(
-                selected = f == filtre,
-                onClick = { onFiltre(f) },
-                label = { Text(f.libelle) },
-                shape = CircleShape,
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
-        }
-    }
 }
 
 // Un chiffre clé : le nombre en grand au-dessus de son libellé. Lu « libellé :

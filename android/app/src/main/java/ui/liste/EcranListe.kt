@@ -74,6 +74,7 @@ import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.ui.commun.AfficheSerie
 import io.github.tomuius.canapilou.ui.commun.BarreProgression
 import io.github.tomuius.canapilou.ui.commun.BarreSimple
+import io.github.tomuius.canapilou.ui.commun.RangeeChoix
 import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
 import io.github.tomuius.canapilou.ui.commun.Etiquette
@@ -85,7 +86,9 @@ import kotlinx.coroutines.flow.collectLatest
 // Écran « Ma liste » : vos séries, rangées en sections par statut, comme sur
 // le site : affiches, titre du prochain épisode, bouton « Vu » avec
 // « Annuler », menu (Actualiser, À propos, Se déconnecter) ; un appui sur une
-// série ouvre sa fiche (décision 66). Barre de recherche toujours en haut
+// série ouvre sa fiche (décision 66). Filtre « Tout · Séries · Animés » en
+// haut de la liste, choix retenu sur le téléphone (décisions 23 et 88).
+// Barre de recherche toujours en haut
 // (décision 75) : dès qu'on tape, les résultats remplacent la liste, d'abord
 // « Dans ma liste », puis « Sur TMDB » avec « Ajouter » et « Plus tard »
 // (décisions 44 et 76).
@@ -104,7 +107,7 @@ fun EcranListe(
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant que l'écran
     // est dans l'historique), créé avec les dépôts du Conteneur.
     vm: ListeViewModel = viewModel {
-        ListeViewModel(Conteneur.depotListe, Conteneur.depotCompte, Conteneur.depotTmdb)
+        ListeViewModel(Conteneur.depotListe, Conteneur.depotCompte, Conteneur.depotTmdb, Conteneur.depotReglages)
     },
 ) {
     val etat by vm.etat.collectAsStateWithLifecycle()
@@ -113,6 +116,7 @@ fun EcranListe(
     val rechercheTmdb by vm.rechercheTmdb.collectAsStateWithLifecycle()
     val ajoutsEnCours by vm.ajoutsEnCours.collectAsStateWithLifecycle()
     val progression by vm.progression.collectAsStateWithLifecycle()
+    val filtre by vm.filtre.collectAsStateWithLifecycle()
     val modeRecherche = vm.recherche.isNotBlank()
 
     // Position de la liste et sections dépliées, gardées ici (et non dans la
@@ -220,8 +224,8 @@ fun EcranListe(
                             )
                         } else {
                             ListeEnSections(
-                                e.sections, titres, vusEnCours, ouvertes, defilementListe,
-                                onVu = vm::cocher, onOuvrir = onOuvrirSerie,
+                                e.series, filtre, titres, vusEnCours, ouvertes, defilementListe,
+                                onFiltre = vm::choisirFiltre, onVu = vm::cocher, onOuvrir = onOuvrirSerie,
                             )
                         }
                 }
@@ -529,22 +533,37 @@ private fun BlocCompte(nom: String, progression: Progression?, onProfil: () -> U
     }
 }
 
+// La liste : le filtre « Tout (9) · Séries (5) · Animés (4) », puis les
+// sections de la liste filtrée (les sections vides ne sont pas affichées).
+// L'étiquette « Animé » n'apparaît qu'avec « Tout » (comme sur le site).
 @Composable
 private fun ListeEnSections(
-    sections: Map<Section, List<SerieSuivie>>,
+    series: List<SerieSuivie>,
+    filtre: FiltreCategorie,
     titres: Map<CleSaison, Map<Int, String?>>,
     vusEnCours: Set<Long>,
     ouvertes: Map<Section, MutableState<Boolean>>,
     defilement: LazyListState,
+    onFiltre: (FiltreCategorie) -> Unit,
     onVu: (SerieSuivie) -> Unit,
     onOuvrir: (Long) -> Unit,
 ) {
+    val comptes = remember(series) { comptesFiltres(series) }
+    val sections = remember(series, filtre) { regrouperParSection(filtrerTitres(series, filtre)) }
     LazyColumn(
         state = defilement,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        item(key = "filtre") {
+            RangeeChoix(FiltreCategorie.entries, filtre, { "${it.libelle} (${comptes[it] ?: 0})" }, onFiltre)
+        }
+        if (sections.values.all { it.isEmpty() }) {
+            item(key = "filtre-vide") {
+                Text(texteFiltreVide(filtre), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         for (section in Section.entries) {
             val series = sections[section].orEmpty()
             if (series.isEmpty()) continue // section vide : pas affichée
@@ -560,6 +579,7 @@ private fun ListeEnSections(
                         vuEnCours = serie.serieId in vusEnCours,
                         onVu = { onVu(serie) },
                         onOuvrir = { onOuvrir(serie.serieId) },
+                        etiquetteAnime = filtre == FiltreCategorie.TOUT,
                     )
                 }
             }
@@ -605,6 +625,8 @@ private fun CarteSerie(
     // Dans les résultats de recherche, il n'y a pas de sections : le statut
     // s'affiche alors à côté du titre.
     statutVisible: Boolean = false,
+    // Étiquette « Animé » : dans la liste, seulement avec le filtre « Tout ».
+    etiquetteAnime: Boolean = true,
 ) {
     OutlinedCard(onClick = onOuvrir, modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -628,7 +650,7 @@ private fun CarteSerie(
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    if (s.estAnime) Etiquette("Animé")
+                    if (s.estAnime && etiquetteAnime) Etiquette("Animé")
                     if (statutVisible) Etiquette(libelleStatut(s.statut))
                 }
                 pourcentage(s)?.let { p -> BarreProgression(p) }

@@ -1,27 +1,17 @@
 package io.github.tomuius.canapilou.ui.profil
 
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import io.github.tomuius.canapilou.ui.liste.Section
+import io.github.tomuius.canapilou.ui.liste.filtrerTitres
 
 // Statistiques du Profil (décisions 28, 31, 32, 34, 35 et 36), sans affichage
-// (testables seules), recopiées du site : filtrerTitres, RAYON_ANNEAU,
-// ECART_ANNEAU, la propriété « statistiques » et dureeApprox de js/app.js,
-// textes de la page « profil » de index.html. Calculées à partir de la liste
-// (vue « ma_liste ») : aucune requête en plus.
-
-/** Filtre « Tout · Séries · Animés » des statistiques (propre au Profil, non retenu). */
-enum class FiltreCategorie(val libelle: String) {
-    TOUT("Tout"),
-    SERIES("Séries"),
-    ANIMES("Animés"),
-}
-
-/** Titres gardés par le filtre (classement série / animé de la vue, correction comprise). */
-fun filtrerTitres(series: List<SerieSuivie>, filtre: FiltreCategorie): List<SerieSuivie> = when (filtre) {
-    FiltreCategorie.ANIMES -> series.filter { it.estAnime }
-    FiltreCategorie.SERIES -> series.filter { !it.estAnime }
-    FiltreCategorie.TOUT -> series
-}
+// (testables seules), recopiées du site : RAYON_ANNEAU, ECART_ANNEAU, la
+// propriété « statistiques » et dureeApprox de js/app.js, textes de la page
+// « profil » de index.html. Calculées à partir de la liste (vue
+// « ma_liste ») : aucune requête en plus. Le filtre « Tout · Séries ·
+// Animés » est celui de « Ma liste » (ui/liste/Sections.kt), mais son choix
+// est propre au Profil et n'est pas retenu.
 
 /** Un chiffre clé : « Épisodes vus », « 252 ». */
 data class Chiffre(val libelle: String, val texte: String)

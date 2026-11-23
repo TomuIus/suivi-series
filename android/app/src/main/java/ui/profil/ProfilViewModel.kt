@@ -7,6 +7,7 @@ import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
 import io.github.tomuius.canapilou.donnees.Progression
 import io.github.tomuius.canapilou.donnees.SerieSuivie
+import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

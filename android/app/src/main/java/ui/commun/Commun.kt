@@ -3,13 +3,18 @@ package io.github.tomuius.canapilou.ui.commun
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
@@ -147,6 +152,37 @@ fun BarreSimple(
                 .fillMaxHeight()
                 .background(couleur),
         )
+    }
+}
+
+/**
+ * Rangée de pastilles à choix unique (« Tout · Séries · Animés », plus tard
+ * le thème), comme les boutons « filtre » du site : la choisie est pleine, de
+ * la couleur d'accent ; lue « sélectionné » par les lecteurs d'écran. Passe
+ * à la ligne si la place manque (« FlowRow »).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> RangeeChoix(
+    choix: List<T>,
+    choisi: T,
+    libelle: (T) -> String,
+    onChoix: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FlowRow(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (c in choix) {
+            FilterChip(
+                selected = c == choisi,
+                onClick = { onChoix(c) },
+                label = { Text(libelle(c)) },
+                shape = CircleShape,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
+        }
     }
 }
 

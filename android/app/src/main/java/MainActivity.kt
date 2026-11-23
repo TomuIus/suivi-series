@@ -12,6 +12,7 @@ import io.github.tomuius.canapilou.ui.theme.CanapilouTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Conteneur.demarrer(applicationContext) // avant tout écran
         enableEdgeToEdge() // l'appli dessine aussi sous les barres du téléphone
         setContent {
             CanapilouTheme {

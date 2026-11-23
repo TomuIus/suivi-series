@@ -1,7 +1,7 @@
 package io.github.tomuius.canapilou
 
 import io.github.tomuius.canapilou.donnees.SerieSuivie
-import io.github.tomuius.canapilou.ui.profil.FiltreCategorie
+import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import io.github.tomuius.canapilou.ui.profil.Statistiques
 import io.github.tomuius.canapilou.ui.profil.dureeApprox
 import io.github.tomuius.canapilou.ui.profil.statistiques

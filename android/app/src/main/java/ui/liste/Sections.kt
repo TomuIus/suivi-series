@@ -5,8 +5,9 @@ import kotlin.math.min
 
 // Règles d'affichage de « Ma liste », sans rien dessiner : ce fichier se teste
 // seul (voir app/src/test/java/ListeTest.kt). Mêmes règles que le site
-// (constante SECTIONS et fonctions pourcentage, libelleEpisode, peutCocher,
-// titreProchainListe, progression de js/app.js) : à modifier aux deux endroits.
+// (constantes SECTIONS et FILTRES, fonctions lireFiltre, filtrerTitres,
+// pourcentage, libelleEpisode, peutCocher, titreProchainListe, progression et
+// « comptes » de js/app.js) : à modifier aux deux endroits.
 
 /**
  * Sections de « Ma liste », dans l'ordre d'affichage. « À voir » (pas encore
@@ -20,6 +21,45 @@ enum class Section(val titre: String, val statuts: Set<String>, val replieeParDe
     ABANDONNE("Abandonné", setOf("abandonne"), true),
     PLUS_TARD("Plus tard", setOf("plus_tard"), true),
 }
+
+/**
+ * Filtre « Tout · Séries · Animés » (décision 23), dans « Ma liste » (choix
+ * retenu sur le téléphone, décision 88) et dans les statistiques du Profil
+ * (choix non retenu). [valeur] : ce qui est retenu, les mêmes mots que la
+ * clé « suivi-series.filtre » du site (FILTRES de js/app.js).
+ */
+enum class FiltreCategorie(val libelle: String, val valeur: String) {
+    TOUT("Tout", "tout"),
+    SERIES("Séries", "series"),
+    ANIMES("Animés", "animes"),
+    ;
+
+    companion object {
+        /** Filtre retenu ; une valeur absente ou inconnue vaut « Tout » (comme lireFiltre du site). */
+        fun depuisValeur(valeur: String?): FiltreCategorie = entries.firstOrNull { it.valeur == valeur } ?: TOUT
+    }
+}
+
+/** Titres gardés par le filtre (classement série / animé de la vue, correction comprise). */
+fun filtrerTitres(series: List<SerieSuivie>, filtre: FiltreCategorie): List<SerieSuivie> = when (filtre) {
+    FiltreCategorie.ANIMES -> series.filter { it.estAnime }
+    FiltreCategorie.SERIES -> series.filter { !it.estAnime }
+    FiltreCategorie.TOUT -> series
+}
+
+/** Nombre de titres de chaque filtre, affiché sur ses boutons (« Animés (4) »), comme « comptes » sur le site. */
+fun comptesFiltres(series: List<SerieSuivie>): Map<FiltreCategorie, Int> {
+    val animes = series.count { it.estAnime }
+    return mapOf(
+        FiltreCategorie.TOUT to series.size,
+        FiltreCategorie.SERIES to series.size - animes,
+        FiltreCategorie.ANIMES to animes,
+    )
+}
+
+/** Message quand le filtre ne garde aucun titre (la liste n'étant pas vide). */
+fun texteFiltreVide(filtre: FiltreCategorie): String =
+    if (filtre == FiltreCategorie.ANIMES) "Aucun animé dans votre liste." else "Aucune série dans votre liste."
 
 /** Range les séries par section, en gardant leur ordre (activité la plus récente d'abord). */
 fun regrouperParSection(series: List<SerieSuivie>): Map<Section, List<SerieSuivie>> =
