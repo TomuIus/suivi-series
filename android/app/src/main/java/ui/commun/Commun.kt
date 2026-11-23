@@ -122,13 +122,18 @@ fun BarreProgression(pourcentage: Int, modifier: Modifier = Modifier) {
 }
 
 /**
- * Barre simple, sans pourcentage écrit (niveau du Profil et de l'en-tête),
- * comme les barres du site : fond gris, partie remplie de la couleur
- * d'accent. Elle prend toute la largeur qu'on lui laisse ; pour les lecteurs
- * d'écran, la décrire avec [modifier] si elle n'est pas décorative.
+ * Barre simple, sans pourcentage écrit (niveau, badges), comme les barres du
+ * site : fond gris, partie remplie de la couleur d'accent (ou [couleur]). Elle
+ * prend toute la largeur qu'on lui laisse ; pour les lecteurs d'écran, la
+ * décrire avec [modifier] si elle n'est pas décorative.
  */
 @Composable
-fun BarreSimple(pourcentage: Int, hauteur: Dp, modifier: Modifier = Modifier) {
+fun BarreSimple(
+    pourcentage: Int,
+    hauteur: Dp,
+    modifier: Modifier = Modifier,
+    couleur: Color = MaterialTheme.colorScheme.primary,
+) {
     Box(
         modifier
             .fillMaxWidth()
@@ -140,7 +145,7 @@ fun BarreSimple(pourcentage: Int, hauteur: Dp, modifier: Modifier = Modifier) {
             Modifier
                 .fillMaxWidth(pourcentage.coerceIn(0, 100) / 100f)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.primary),
+                .background(couleur),
         )
     }
 }

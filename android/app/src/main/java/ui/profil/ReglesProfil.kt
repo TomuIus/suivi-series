@@ -3,9 +3,11 @@ package io.github.tomuius.canapilou.ui.profil
 import io.github.tomuius.canapilou.donnees.Badge
 import io.github.tomuius.canapilou.donnees.Progression
 
-// Règles d'affichage du Profil, sans affichage (testables seules), recopiées
-// du site : badgesObtenus, libellePalier et pourcentageNiveau de js/badges.js,
-// nombre de js/app.js, textes de la page « profil » de index.html.
+// Règles d'affichage du Profil et de la page « Tous les badges », sans
+// affichage (testables seules), recopiées du site : badgesObtenus,
+// libellePalier, pourcentageNiveau, pageBadges, compteBadges et
+// texteAvancement de js/badges.js, nombre de js/app.js, textes des pages
+// « profil » et « badges » de index.html.
 // Les calculs eux-mêmes (points, niveau, rang, badges) sont faits par la base.
 
 /** Paliers des badges, du plus bas au plus haut. */
@@ -71,3 +73,119 @@ fun textePoints(p: Progression): String {
 /** « Prochain rang au niveau 5 », ou null au dernier rang (nom du rang caché, décision 48). */
 fun texteProchainRang(p: Progression): String? =
     p.niveauRangSuivant?.takeIf { it != 0 }?.let { "Prochain rang au niveau $it" }
+
+// --- Page « Tous les badges » (décision 48) ---
+
+/** Un palier d'une famille : obtenu (rond en couleur) ou non (rond en pointillé). */
+data class PalierFamille(val palier: String, val obtenu: Boolean)
+
+/**
+ * Tuile d'une famille à paliers. [palier] : palier le plus haut obtenu (null
+ * si aucun : pastille grise) ; [prochain] : premier palier pas encore obtenu
+ * (null quand tout est obtenu) ; [pourcentage] : avancement vers lui (barre) ;
+ * [texte] : « 312 / 500 h pour Or », ou « Tous les paliers obtenus ».
+ */
+data class FamilleBadges(
+    val cle: String,
+    val nom: String,
+    val icone: String,
+    val palier: String?,
+    val nbObtenus: Int,
+    val nbPaliers: Int,
+    val paliers: List<PalierFamille>,
+    val prochain: Badge?,
+    val pourcentage: Int,
+    val texte: String,
+)
+
+/** Contenu de la page : une tuile par famille à paliers, puis les défis un par un. */
+data class PageBadges(val familles: List<FamilleBadges>, val defis: List<Badge>)
+
+/** « 5 badges obtenus sur 18 » : chaque palier compte pour un badge ; pourcentage de la barre. */
+data class CompteBadges(val obtenus: Int, val total: Int, val pourcentage: Int)
+
+/**
+ * Regroupe les badges pour la page « Tous les badges », comme pageBadges sur
+ * le site : familles dans l'ordre de la base, paliers du plus bas au plus haut
+ * dans chaque famille (nom et image de la famille : ceux de son premier badge).
+ */
+fun pageBadges(badges: List<Badge>?): PageBadges {
+    val membres = linkedMapOf<String, MutableList<Badge>>() // garde l'ordre d'arrivée
+    val defis = mutableListOf<Badge>()
+    for (b in badges.orEmpty()) {
+        if (b.palier.isNullOrEmpty()) defis += b else membres.getOrPut(b.famille) { mutableListOf() } += b
+    }
+    val familles = membres.map { (cle, liste) ->
+        val tries = liste.sortedBy { PALIERS.indexOf(it.palier) } // tri stable, comme sur le site
+        val obtenus = tries.filter { it.obtenu }
+        val prochain = tries.firstOrNull { !it.obtenu }
+        FamilleBadges(
+            cle = cle,
+            nom = liste.first().nom,
+            icone = liste.first().icone,
+            palier = obtenus.lastOrNull()?.palier,
+            nbObtenus = obtenus.size,
+            nbPaliers = tries.size,
+            paliers = tries.map { PalierFamille(it.palier.orEmpty(), it.obtenu) },
+            prochain = prochain,
+            pourcentage = if (prochain != null) avancement(prochain) else 100,
+            texte = if (prochain != null) {
+                "${texteAvancement(prochain)} pour ${libellePalier(prochain.palier)}"
+            } else {
+                "Tous les paliers obtenus"
+            },
+        )
+    }
+    return PageBadges(familles, defis)
+}
+
+/** Avancement d'un badge (0 à 100, arrondi vers le bas). */
+private fun avancement(badge: Badge): Int {
+    if (badge.seuil <= 0) return 0
+    if (badge.valeur <= 0) return 0
+    return minOf(100L, 100 * badge.valeur / badge.seuil).toInt()
+}
+
+/** Nombre de badges obtenus sur le total (chaque palier compte), et pourcentage arrondi vers le bas. */
+fun compteBadges(badges: List<Badge>?): CompteBadges {
+    val liste = badges.orEmpty()
+    val obtenus = liste.count { it.obtenu }
+    val total = liste.size
+    return CompteBadges(obtenus, total, if (total > 0) 100 * obtenus / total else 0)
+}
+
+/**
+ * Avancement d'un badge pas encore obtenu : « 312 / 500 h », « 3 / 5 »,
+ * « 87 / 100 épisodes », « 2 / 5 saisons ». Les minutes sont arrondies à
+ * l'heure inférieure (jamais « 500 / 500 h » avant d'y être vraiment). Les
+ * seuils en minutes sont supposés être des heures entières (vrai pour les 4
+ * seuils actuels ; sinon le site écrirait une décimale, et l'appli arrondirait).
+ */
+fun texteAvancement(badge: Badge): String {
+    val v = badge.valeur
+    val s = badge.seuil
+    return when (badge.unite) {
+        "minutes" -> "${nombre(Math.floorDiv(v, 60L))} / ${nombre(s / 60)} h"
+        "episodes" -> "${nombre(v)} / ${nombre(s)} épisode${if (s > 1) "s" else ""}"
+        "saisons" -> "${nombre(v)} / ${nombre(s)} saisons"
+        else -> "${nombre(v)} / ${nombre(s)}" // « titres », « mondes »
+    }
+}
+
+/** « 5 badges obtenus sur 18 », « 1 badge obtenu sur 18 », « 0 badge obtenu sur 18 ». */
+fun texteCompteBadges(c: CompteBadges): String {
+    val s = if (c.obtenus > 1) "s" else ""
+    return "${c.obtenus} badge$s obtenu$s sur ${c.total}"
+}
+
+/** Sous le nom d'une famille : son palier le plus haut, ou « Aucun palier ». */
+fun sousTitreFamille(f: FamilleBadges): String = if (f.palier != null) libellePalier(f.palier) else "Aucun palier"
+
+/** Ce que disent les petits ronds, pour les lecteurs d'écran : « 2 paliers obtenus sur 4. ». */
+fun textePaliersObtenus(f: FamilleBadges): String {
+    val s = if (f.nbObtenus > 1) "s" else ""
+    return "${f.nbObtenus} palier$s obtenu$s sur ${f.nbPaliers}."
+}
+
+/** État d'un défi : « Obtenu », ou son avancement. */
+fun etatDefi(badge: Badge): String = if (badge.obtenu) "Obtenu" else texteAvancement(badge)

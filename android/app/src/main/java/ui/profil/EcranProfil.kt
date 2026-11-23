@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -44,12 +45,13 @@ import io.github.tomuius.canapilou.ui.commun.BarreSimple
 // Écran « Profil » (décisions 81 et 82), partie A, comme la page « profil »
 // du site : nom et Tilou au pop-corn, « Niveau N · rang », barre vers le
 // niveau suivant, points, prochain rang, puis les badges obtenus (pour une
-// famille, le palier le plus haut). À venir : la page « Tous les badges »
-// (partie B) et les statistiques (partie C).
+// famille, le palier le plus haut) et « Voir tous les badges » (partie B,
+// décision 84). À venir : les statistiques (partie C).
 
 @Composable
 fun EcranProfil(
     onRetour: () -> Unit,
+    onTousLesBadges: () -> Unit,
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant qu'il est
     // dans l'historique).
     vm: ProfilViewModel = viewModel { ProfilViewModel(Conteneur.depotListe, Conteneur.depotCompte) },
@@ -90,7 +92,7 @@ fun EcranProfil(
                             modifier = Modifier.size(width = 56.dp, height = 112.dp),
                         )
                     }
-                    (etat as? EtatProgression.Prete)?.let { BadgesObtenus(it.progression) }
+                    (etat as? EtatProgression.Prete)?.let { BadgesObtenus(it.progression, onTousLesBadges) }
                 }
             }
         }
@@ -156,9 +158,9 @@ private fun Niveau(p: Progression) {
 
 // « Badges » : seulement ceux obtenus, en tuiles (3 de front sur téléphone,
 // 4 à partir de 640 dp de large, comme les 40 rem du site), ou une phrase
-// d'invitation s'il n'y en a aucun.
+// d'invitation s'il n'y en a aucun ; puis « Voir tous les badges ».
 @Composable
-private fun BadgesObtenus(p: Progression) {
+private fun BadgesObtenus(p: Progression, onTousLesBadges: () -> Unit) {
     val badges = badgesObtenus(p.badges)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Badges", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -166,8 +168,11 @@ private fun BadgesObtenus(p: Progression) {
             TexteAide("Pas encore de badge : cochez un premier épisode pour gagner « Premier épisode ».")
         } else {
             BoxWithConstraints {
-                GrilleBadges(badges, colonnes = if (maxWidth >= 640.dp) 4 else 3)
+                GrilleTuiles(badges, colonnes = if (maxWidth >= 640.dp) 4 else 3) { b, m -> TuileBadge(b, m) }
             }
+        }
+        OutlinedButton(onClick = onTousLesBadges, modifier = Modifier.padding(top = 4.dp)) {
+            Text("Voir tous les badges")
         }
     }
 }

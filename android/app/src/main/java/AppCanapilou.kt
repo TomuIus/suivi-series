@@ -26,6 +26,7 @@ import io.github.tomuius.canapilou.ui.connexion.EcranConnexion
 import io.github.tomuius.canapilou.ui.fiche.CibleFiche
 import io.github.tomuius.canapilou.ui.fiche.EcranFiche
 import io.github.tomuius.canapilou.ui.liste.EcranListe
+import io.github.tomuius.canapilou.ui.profil.EcranBadges
 import io.github.tomuius.canapilou.ui.profil.EcranProfil
 import kotlinx.serialization.Serializable
 
@@ -49,6 +50,10 @@ data object CleAPropos : NavKey
 /** Profil : niveau, rang, badges (comme « #/profil » sur le site). */
 @Serializable
 data object CleProfil : NavKey
+
+/** Tous les badges (comme « #/badges » sur le site). */
+@Serializable
+data object CleBadges : NavKey
 
 // Racine de l'appli : selon l'état de la connexion, on affiche une attente
 // (lecture de la session enregistrée), l'écran de connexion, ou l'appli.
@@ -134,7 +139,13 @@ private fun NavigationPrincipale() {
                     )
                 }
                 is CleProfil -> NavEntry(cle) {
-                    EcranProfil(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
+                    EcranProfil(
+                        onRetour = { if (historique.size > 1) historique.removeLastOrNull() },
+                        onTousLesBadges = { if (historique.lastOrNull() == CleProfil) historique.add(CleBadges) },
+                    )
+                }
+                is CleBadges -> NavEntry(cle) {
+                    EcranBadges(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
                 }
                 is CleAPropos -> NavEntry(cle) {
                     EcranAPropos(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
