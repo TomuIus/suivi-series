@@ -42,6 +42,12 @@ data class Fiche(
     val resume: String?,       // demandé à TMDB, arrive un instant après
 )
 
+/** Épisodes cochés par un statut (« Terminé », « À jour ») et statut d'avant, pour « Annuler ». */
+data class AnnulationStatut(val titre: String, val episodes: List<Episode>, val ancienStatut: String?)
+
+/** Message affiché un moment en bas de l'écran, avec « Annuler » si [annulation] est fourni. */
+data class MessageFiche(val texte: String, val annulation: AnnulationStatut? = null)
+
 /** Titres et dates des épisodes d'une saison, demandés à TMDB au dépliage. */
 sealed interface TitresSaison {
     data object Chargement : TitresSaison
@@ -50,8 +56,8 @@ sealed interface TitresSaison {
 }
 
 // ViewModel de la fiche d'une série (décision 58), comme utiliserFiche dans
-// js/fiche.js, partie A (décision 66) : lire la fiche et cocher les épisodes.
-// Le statut, la catégorie et le retrait viendront dans la partie B.
+// js/fiche.js : partie A (décision 66), lire la fiche et cocher les
+// épisodes ; partie B (décisions 67 et 68), statut, catégorie et retrait.
 class FicheViewModel(
     private val serieId: Long,
     private val depotListe: DepotListe,
@@ -69,9 +75,26 @@ class FicheViewModel(
     private val _invite = MutableStateFlow<List<Episode>?>(null)
     val invite: StateFlow<List<Episode>?> = _invite.asStateFlow()
 
-    // Messages d'erreur à afficher une fois en bas de l'écran.
-    private val _messages = Channel<String>(Channel.BUFFERED)
-    val messages: Flow<String> = _messages.receiveAsFlow()
+    // Messages à afficher une fois en bas de l'écran (erreurs, épisodes cochés
+    // par un statut avec « Annuler »).
+    private val _messages = Channel<MessageFiche>(Channel.BUFFERED)
+    val messages: Flow<MessageFiche> = _messages.receiveAsFlow()
+
+    // Envoi en cours d'un statut ou d'une catégorie (menu désactivé).
+    private val _statutEnCours = MutableStateFlow(false)
+    val statutEnCours: StateFlow<Boolean> = _statutEnCours.asStateFlow()
+    private val _categorieEnCours = MutableStateFlow(false)
+    val categorieEnCours: StateFlow<Boolean> = _categorieEnCours.asStateFlow()
+
+    // Fenêtre de confirmation du retrait ouverte, et retrait en cours.
+    private val _confirmationRetrait = MutableStateFlow(false)
+    val confirmationRetrait: StateFlow<Boolean> = _confirmationRetrait.asStateFlow()
+    private val _retraitEnCours = MutableStateFlow(false)
+    val retraitEnCours: StateFlow<Boolean> = _retraitEnCours.asStateFlow()
+
+    // Série retirée : message à afficher dans « Ma liste », où l'écran revient.
+    private val _retiree = Channel<String>(Channel.BUFFERED)
+    val retiree: Flow<String> = _retiree.receiveAsFlow()
 
     // Épisodes dont l'envoi est en cours : un nouvel appui est ignoré, pour
     // que « coché » puis « décoché » ne partent pas en même temps (ils
@@ -208,7 +231,7 @@ class FicheViewModel(
                     throw e
                 } catch (e: Exception) {
                     modifierFiche { it.copy(vus = it.vus + ep) }
-                    _messages.send(messageErreur(e))
+                    _messages.send(MessageFiche(messageErreur(e)))
                 } finally {
                     basculesEnCours -= ep
                 }
@@ -224,7 +247,7 @@ class FicheViewModel(
                     throw e
                 } catch (e: Exception) {
                     modifierFiche { it.copy(vus = it.vus - ep) }
-                    _messages.send(messageErreur(e))
+                    _messages.send(MessageFiche(messageErreur(e)))
                 } finally {
                     basculesEnCours -= ep
                 }
@@ -253,7 +276,7 @@ class FicheViewModel(
                 throw e
             } catch (e: Exception) {
                 modifierFiche { it.copy(vus = it.vus - episodes.toSet()) }
-                _messages.send(messageErreur(e))
+                _messages.send(MessageFiche(messageErreur(e)))
             }
             actualiserSuivi()
         }
@@ -262,6 +285,133 @@ class FicheViewModel(
     /** « Non » : on ne coche rien de plus. */
     fun refuserInvite() {
         _invite.value = null
+    }
+
+    // --- Statut choisi à la main ---
+
+    /**
+     * Menu « Statut » : null = automatique. Le choix est confié à la base
+     * (fonction SQL « choisir_statut », décision 51) : pour « Terminé » ou
+     * « À jour », elle coche aussi les épisodes déjà sortis qui ne l'étaient
+     * pas (sauf les spéciaux), et renvoie leur liste ; un message propose
+     * alors « Annuler » pendant 8 s. Le menu montre tout de suite le nouveau
+     * choix, et revient à l'ancien si la base refuse.
+     */
+    fun modifierStatut(valeur: String?) {
+        val fiche = ficheActuelle() ?: return
+        if (_statutEnCours.value) return
+        val nouveau = valeur?.ifEmpty { null }
+        val ancien = fiche.suivi.statutManuel
+        _statutEnCours.value = true
+        modifierFiche { it.copy(suivi = it.suivi.copy(statutManuel = nouveau)) }
+        viewModelScope.launch {
+            try {
+                val coches = depotListe.choisirStatut(serieId, nouveau)
+                if (coches.isNotEmpty()) {
+                    // Les épisodes cochés par la base apparaissent cochés ; la
+                    // proposition « cocher les précédents » n'a plus lieu d'être.
+                    _invite.value = null
+                    modifierFiche { it.copy(vus = it.vus + coches) }
+                    _messages.send(
+                        MessageFiche(
+                            texteEpisodesCoches(fiche.serie.titre, coches.size),
+                            AnnulationStatut(fiche.serie.titre, coches, ancien),
+                        )
+                    )
+                }
+                actualiserSuivi()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                modifierFiche { it.copy(suivi = it.suivi.copy(statutManuel = ancien)) }
+                _messages.send(MessageFiche(messageErreur(e)))
+            } finally {
+                _statutEnCours.value = false
+            }
+        }
+    }
+
+    /**
+     * « Annuler » : décoche les épisodes que le statut venait de cocher (et
+     * seulement eux), puis remet le statut d'avant par une simple mise à jour
+     * (pas par « choisir_statut », qui recocherait des épisodes si c'était
+     * « À jour » ou « Terminé »). Comme annulerToutCocher sur le site.
+     */
+    fun annulerStatut(a: AnnulationStatut) {
+        viewModelScope.launch {
+            try {
+                depotListe.annulerVus(serieId, a.episodes)
+                depotListe.changerStatut(serieId, a.ancienStatut)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _messages.send(MessageFiche(messageErreur(e)))
+                actualiserSuivi()
+                return@launch
+            }
+            modifierFiche { it.copy(vus = it.vus - a.episodes.toSet()) }
+            actualiserSuivi()
+            _messages.send(MessageFiche(texteRemisCommeAvant(a.titre)))
+        }
+    }
+
+    // --- Catégorie corrigée à la main (série ou animé) ---
+
+    /** Menu « Catégorie » : "serie", "anime", ou null = classement automatique. */
+    fun modifierCategorie(valeur: String?) {
+        val fiche = ficheActuelle() ?: return
+        if (_categorieEnCours.value) return
+        val nouvelle = valeur?.ifEmpty { null }
+        val ancienne = fiche.suivi.categorieManuelle
+        _categorieEnCours.value = true
+        modifierFiche { it.copy(suivi = it.suivi.copy(categorieManuelle = nouvelle)) }
+        viewModelScope.launch {
+            try {
+                depotListe.changerCategorie(serieId, nouvelle)
+                actualiserSuivi() // la vue recalcule « Animé » ou non
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                modifierFiche { it.copy(suivi = it.suivi.copy(categorieManuelle = ancienne)) }
+                _messages.send(MessageFiche(messageErreur(e)))
+            } finally {
+                _categorieEnCours.value = false
+            }
+        }
+    }
+
+    // --- Retrait de la liste (avec confirmation, décision 16) ---
+
+    /** « Retirer de ma liste » : ouvre la fenêtre de confirmation. */
+    fun demanderRetrait() {
+        _confirmationRetrait.value = true
+    }
+
+    /** « Garder » (ou fenêtre fermée) : on ne retire rien. */
+    fun annulerRetrait() {
+        if (!_retraitEnCours.value) _confirmationRetrait.value = false
+    }
+
+    /** « Retirer » : retire la série ; l'écran revient alors à « Ma liste », qui affiche un message. */
+    fun confirmerRetrait() {
+        val fiche = ficheActuelle() ?: return
+        if (_retraitEnCours.value) return
+        _retraitEnCours.value = true
+        viewModelScope.launch {
+            try {
+                depotListe.retirerSerie(serieId)
+                _confirmationRetrait.value = false
+                _retiree.send(texteRetire(fiche.serie.titre))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Fenêtre fermée, pour que le message d'erreur soit visible.
+                _confirmationRetrait.value = false
+                _messages.send(MessageFiche(messageErreur(e)))
+            } finally {
+                _retraitEnCours.value = false
+            }
+        }
     }
 
     // Relit compteurs, prochain épisode et statut après une modification (la

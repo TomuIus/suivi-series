@@ -71,6 +71,9 @@ import kotlinx.coroutines.flow.collectLatest
 fun EcranListe(
     onOuvrirSerie: (Long) -> Unit,
     onAPropos: () -> Unit,
+    // Message à afficher en arrivant (série retirée depuis sa fiche), puis oublié.
+    messageEnAttente: String?,
+    onMessagePris: () -> Unit,
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant que l'écran
     // est dans l'historique), créé avec les dépôts du Conteneur.
     vm: ListeViewModel = viewModel {
@@ -99,6 +102,12 @@ fun EcranListe(
     // De retour d'une fiche où l'on a coché des épisodes : la liste se relit
     // (sans l'indicateur d'attente), comme le site au retour sur « Ma liste ».
     LaunchedEffect(vm) { vm.relireSiPerimee() }
+    LaunchedEffect(messageEnAttente) {
+        if (messageEnAttente != null) {
+            vm.annoncer(messageEnAttente)
+            onMessagePris()
+        }
+    }
 
     Scaffold(
         topBar = {

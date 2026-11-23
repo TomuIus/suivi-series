@@ -157,3 +157,68 @@ fun texteDate(date: String?, aVenir: Boolean): String {
 fun texteInvite(nombre: Int): String =
     if (nombre == 1) "Cocher aussi l'épisode précédent non vu ?"
     else "Cocher aussi les $nombre épisodes précédents non vus ?"
+
+// --- Réglages : statut, catégorie, retrait (partie B, décisions 67 et 68) ---
+
+// Libellés des statuts (codes de la base), comme LIBELLES_STATUT dans
+// js/app.js : « a_voir » (pas encore commencée) s'affiche « En cours »
+// depuis la décision 27.
+private val LIBELLES_STATUT = mapOf(
+    "a_voir" to "En cours",
+    "en_cours" to "En cours",
+    "plus_tard" to "Plus tard",
+    "a_jour" to "À jour",
+    "termine" to "Terminé",
+    "abandonne" to "Abandonné",
+)
+
+/** Statuts proposés dans le menu « Statut », dans cet ordre (STATUTS_MANUELS du site). */
+val STATUTS_MANUELS = listOf("en_cours", "plus_tard", "a_jour", "termine", "abandonne")
+
+/** « En cours », « À jour »… ; code inconnu : « — ». */
+fun libelleStatut(code: String?): String = LIBELLES_STATUT[code] ?: "—"
+
+/**
+ * Statut que la base calculerait toute seule (même règle que la vue
+ * « ma_liste »), affiché à côté de « Automatique » dans le menu.
+ */
+fun statutCalcule(serie: SerieCatalogue, suivi: Suivi): String = when {
+    suivi.nbVus == 0 -> "a_voir"
+    suivi.nbVus < suivi.nbDiffuses -> "en_cours"
+    serie.statutDiffusion in SERIES_FINIES -> "termine"
+    else -> "a_jour"
+}
+
+/**
+ * Choix affiché dans le menu « Statut » : null = « Automatique ». Un ancien
+ * statut manuel « À voir » apparaît comme « En cours » (même section depuis
+ * la décision 27).
+ */
+fun valeurStatutManuel(suivi: Suivi): String? = when (val valeur = suivi.statutManuel) {
+    null, "" -> null
+    "a_voir" -> "en_cours"
+    else -> valeur
+}
+
+/** Classement automatique de TMDB, affiché à côté de « Automatique » dans le menu « Catégorie ». */
+fun categorieCalculee(serie: SerieCatalogue): String = if (serie.estAnime == true) "anime" else "serie"
+
+/** « Série » ou « Animé ». */
+fun libelleCategorie(code: String): String = if (code == "anime") "Animé" else "Série"
+
+/** Message après un statut qui a coché des épisodes (avec « Annuler »). */
+fun texteEpisodesCoches(titre: String, nombre: Int): String =
+    "« $titre » : ${if (nombre == 1) "1 épisode coché" else "$nombre épisodes cochés"}."
+
+/** Message après « Annuler ». */
+fun texteRemisCommeAvant(titre: String): String = "« $titre » : épisodes décochés et statut remis comme avant."
+
+/** Phrase de la confirmation de retrait, selon le nombre d'épisodes cochés (perteEpisodes du site). */
+fun perteEpisodes(nombre: Int): String = when (nombre) {
+    0 -> "Aucun épisode n'est coché."
+    1 -> "L'épisode coché sera effacé."
+    else -> "Les $nombre épisodes cochés seront effacés."
+}
+
+/** Message affiché dans « Ma liste » après le retrait. */
+fun texteRetire(titre: String): String = "« $titre » ne fait plus partie de votre liste."

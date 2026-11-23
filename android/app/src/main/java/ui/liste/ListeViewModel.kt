@@ -172,6 +172,11 @@ class ListeViewModel(
         }
     }
 
+    /** Affiche un message venu d'un autre écran (par exemple « … ne fait plus partie de votre liste. »). */
+    fun annoncer(texte: String) {
+        viewModelScope.launch { _messages.send(Message(texte)) }
+    }
+
     /** Déconnexion : l'appli revient d'elle-même à l'écran de connexion. */
     fun seDeconnecter() {
         viewModelScope.launch {

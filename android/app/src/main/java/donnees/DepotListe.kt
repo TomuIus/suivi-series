@@ -2,9 +2,11 @@ package io.github.tomuius.canapilou.donnees
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 // Une ligne à écrire dans la table « episodes_vus ». L'utilisateur n'est pas
 // indiqué : la base le remplit elle-même avec le compte connecté.
@@ -26,8 +30,13 @@ internal data class EpisodeVu(
 // plus par requête (même valeur que LIGNES_PAR_PAGE dans js/base.js).
 private const val LIGNES_PAR_PAGE = 1000
 
+// Nombre de requêtes de suppression envoyées en même temps par annulerVus
+// (même valeur que sur le site : 10).
+private const val SUPPRESSIONS_SIMULTANEES = 10
+
 // Dépôt « liste » : vos séries et vos épisodes cochés (comme listerSuivis,
-// chargerFiche, marquerVus et annulerVu dans js/base.js). C'est ici, et
+// chargerFiche, marquerVus, annulerVu(s), choisirStatut, changerStatut,
+// changerCategorie et retirerSerie dans js/base.js). C'est ici, et
 // seulement ici, qu'on ajoutera plus tard une copie locale et une file
 // d'attente pour l'utilisation hors connexion (décision 58) : les écrans
 // n'auront pas à changer.
@@ -134,6 +143,96 @@ class DepotListe(private val client: SupabaseClient) {
         } finally {
             // Même en cas d'erreur : l'écriture a pu passer malgré tout
             // (réponse perdue), mieux vaut que « Ma liste » se relise.
+            noterChangement()
+        }
+    }
+
+    /**
+     * Décoche plusieurs épisodes (« Annuler » après un statut qui en a coché),
+     * comme annulerVus sur le site : une requête par suite d'épisodes qui se
+     * suivent dans une saison, 10 à la fois au plus. Les autres épisodes ne
+     * sont pas touchés.
+     */
+    suspend fun annulerVus(serieId: Long, episodes: List<Episode>) {
+        try {
+            for (paquet in suitesConsecutives(episodes).chunked(SUPPRESSIONS_SIMULTANEES)) {
+                coroutineScope {
+                    paquet.map { suite ->
+                        async {
+                            client.from("episodes_vus").delete {
+                                filter {
+                                    eq("serie_id", serieId)
+                                    eq("saison", suite.saison)
+                                    gte("episode", suite.debut)
+                                    lte("episode", suite.fin)
+                                }
+                            }
+                        }
+                    }.awaitAll()
+                }
+            }
+        } finally {
+            noterChangement()
+        }
+    }
+
+    /**
+     * Choisit un statut depuis la fiche ; null = revenir au statut
+     * automatique. Passe par la fonction SQL « choisir_statut » (décision 51) :
+     * pour « À jour » et « Terminé », la base coche aussi, dans la même
+     * opération, les épisodes déjà sortis qui ne l'étaient pas (sauf les
+     * spéciaux). Renvoie les épisodes qu'elle vient de cocher (liste vide s'il
+     * n'y en a pas).
+     */
+    suspend fun choisirStatut(serieId: Long, statut: String?): List<Episode> {
+        try {
+            return client.postgrest.rpc(
+                "choisir_statut",
+                buildJsonObject {
+                    put("id_serie", serieId)
+                    // "" plutôt que null pour « automatique » : la fonction
+                    // traite les deux pareil, et le paramètre est ainsi
+                    // toujours envoyé (il n'a pas de valeur par défaut).
+                    put("statut_choisi", statut ?: "")
+                },
+            ).decodeList<Episode>()
+        } finally {
+            noterChangement()
+        }
+    }
+
+    /**
+     * Enregistre un statut tel quel, sans rien cocher ; null = statut
+     * automatique. Sert à remettre l'ancien statut (« Annuler »).
+     */
+    suspend fun changerStatut(serieId: Long, statut: String?) {
+        try {
+            client.from("suivis").update({ set("statut_manuel", statut) }) {
+                filter { eq("serie_id", serieId) }
+            }
+        } finally {
+            noterChangement()
+        }
+    }
+
+    /** Corrige le classement d'une série : "serie" ou "anime" ; null = classement automatique. */
+    suspend fun changerCategorie(serieId: Long, categorie: String?) {
+        try {
+            client.from("suivis").update({ set("categorie_manuelle", categorie) }) {
+                filter { eq("serie_id", serieId) }
+            }
+        } finally {
+            noterChangement()
+        }
+    }
+
+    /** Retire une série de votre liste ; ses épisodes cochés sont effacés avec elle (décision 16). */
+    suspend fun retirerSerie(serieId: Long) {
+        try {
+            client.from("suivis").delete {
+                filter { eq("serie_id", serieId) }
+            }
+        } finally {
             noterChangement()
         }
     }

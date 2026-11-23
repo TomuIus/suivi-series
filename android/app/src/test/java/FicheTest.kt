@@ -3,31 +3,45 @@ package io.github.tomuius.canapilou
 import io.github.tomuius.canapilou.donnees.Episode
 import io.github.tomuius.canapilou.donnees.Saison
 import io.github.tomuius.canapilou.donnees.SerieCatalogue
+import io.github.tomuius.canapilou.donnees.Suite
 import io.github.tomuius.canapilou.donnees.Suivi
+import io.github.tomuius.canapilou.donnees.suitesConsecutives
 import io.github.tomuius.canapilou.ui.fiche.EtatEpisode
+import io.github.tomuius.canapilou.ui.fiche.STATUTS_MANUELS
+import io.github.tomuius.canapilou.ui.fiche.categorieCalculee
 import io.github.tomuius.canapilou.ui.fiche.episodesPrecedentsNonVus
 import io.github.tomuius.canapilou.ui.fiche.estDiffuse
 import io.github.tomuius.canapilou.ui.fiche.etatEpisode
 import io.github.tomuius.canapilou.ui.fiche.ficheAncienne
+import io.github.tomuius.canapilou.ui.fiche.libelleCategorie
 import io.github.tomuius.canapilou.ui.fiche.libelleDiffusion
+import io.github.tomuius.canapilou.ui.fiche.libelleStatut
 import io.github.tomuius.canapilou.ui.fiche.ligneDiffusion
 import io.github.tomuius.canapilou.ui.fiche.nbVusSaison
 import io.github.tomuius.canapilou.ui.fiche.ordonnerSaisons
+import io.github.tomuius.canapilou.ui.fiche.perteEpisodes
 import io.github.tomuius.canapilou.ui.fiche.saisonInitiale
+import io.github.tomuius.canapilou.ui.fiche.statutCalcule
 import io.github.tomuius.canapilou.ui.fiche.texteDate
+import io.github.tomuius.canapilou.ui.fiche.texteEpisodesCoches
 import io.github.tomuius.canapilou.ui.fiche.texteInvite
+import io.github.tomuius.canapilou.ui.fiche.texteRemisCommeAvant
+import io.github.tomuius.canapilou.ui.fiche.texteRetire
 import io.github.tomuius.canapilou.ui.fiche.titreEpisodeAffiche
 import io.github.tomuius.canapilou.ui.fiche.titreSaison
+import io.github.tomuius.canapilou.ui.fiche.valeurStatutManuel
 import java.time.Duration
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-// Règles de la fiche (ui/fiche/ReglesFiche.kt). Les résultats attendus ont été
-// calculés avec les fonctions du site (estDiffuse, etatEpisode, nbVusSaison,
-// proposerPrecedents, preparer de js/fiche.js ; libelleDiffusion de
-// js/app.js ; format des dates de Intl en français), extraites telles quelles
-// et lancées sous Node, pour que l'appli fasse exactement pareil.
+// Règles de la fiche (ui/fiche/ReglesFiche.kt, donnees/Fiche.kt). Les
+// résultats attendus ont été calculés avec les fonctions du site (estDiffuse,
+// etatEpisode, nbVusSaison, proposerPrecedents, preparer, statutCalcule de
+// js/fiche.js ; libelleDiffusion, libelleStatut, valeurStatutManuel,
+// perteEpisodes de js/app.js ; suitesConsecutives de js/base.js ; format des
+// dates de Intl en français), extraites telles quelles et lancées sous Node,
+// pour que l'appli fasse exactement pareil.
 class FicheTest {
 
     private fun serie(
@@ -42,11 +56,16 @@ class FicheTest {
         ficheMajLe = majLe, estAnime = estAnime,
     )
 
-    private fun suivi(nbVus: Int = 0, nbDiffuses: Int = 0, saison: Int? = null, episode: Int? = null) =
-        Suivi(
-            serieId = 1, statut = "en_cours", nbDiffuses = nbDiffuses, nbVus = nbVus,
-            prochaineSaison = saison, prochainEpisode = episode,
-        )
+    private fun suivi(
+        nbVus: Int = 0,
+        nbDiffuses: Int = 0,
+        saison: Int? = null,
+        episode: Int? = null,
+        statutManuel: String? = null,
+    ) = Suivi(
+        serieId = 1, statut = "en_cours", nbDiffuses = nbDiffuses, nbVus = nbVus,
+        prochaineSaison = saison, prochainEpisode = episode, statutManuel = statutManuel,
+    )
 
     private fun saisons(vararg numeros: Int) = numeros.map { Saison(it, 1) }
 
@@ -171,5 +190,69 @@ class FicheTest {
         // Date absente ou illisible : pas ancienne (comme sur le site).
         assertEquals(false, ficheAncienne(serie(null, majLe = null), maintenant))
         assertEquals(false, ficheAncienne(serie(null, majLe = "hier"), maintenant))
+    }
+
+    @Test
+    fun suitesPourDecocherCommeSurLeSite() {
+        fun ep(vararg l: Pair<Int, Int>) = l.map { Episode(it.first, it.second) }
+        assertEquals(
+            listOf(Suite(1, 1, 3), Suite(1, 5, 5)),
+            suitesConsecutives(ep(1 to 1, 1 to 2, 1 to 3, 1 to 5)),
+        )
+        assertEquals( // dans le désordre, avec un doublon
+            listOf(Suite(1, 1, 3), Suite(2, 4, 5)),
+            suitesConsecutives(ep(2 to 4, 1 to 3, 1 to 2, 2 to 5, 2 to 5, 1 to 1)),
+        )
+        assertEquals(
+            listOf(Suite(0, 1, 1), Suite(1, 1, 1), Suite(3, 7, 7)),
+            suitesConsecutives(ep(0 to 1, 1 to 1, 3 to 7)),
+        )
+        assertEquals(emptyList<Suite>(), suitesConsecutives(emptyList()))
+    }
+
+    @Test
+    fun statutsCommeSurLeSite() {
+        assertEquals(listOf("en_cours", "plus_tard", "a_jour", "termine", "abandonne"), STATUTS_MANUELS)
+        assertEquals(
+            listOf("En cours", "En cours", "Plus tard", "À jour", "Terminé", "Abandonné", "—", "—"),
+            listOf("a_voir", "en_cours", "plus_tard", "a_jour", "termine", "abandonne", "bizarre", null)
+                .map { libelleStatut(it) },
+        )
+        // Choix affiché dans le menu (null = « Automatique »).
+        assertEquals(null, valeurStatutManuel(suivi(statutManuel = null)))
+        assertEquals(null, valeurStatutManuel(suivi(statutManuel = "")))
+        assertEquals("en_cours", valeurStatutManuel(suivi(statutManuel = "a_voir")))
+        assertEquals("en_cours", valeurStatutManuel(suivi(statutManuel = "en_cours")))
+        assertEquals("termine", valeurStatutManuel(suivi(statutManuel = "termine")))
+        assertEquals("plus_tard", valeurStatutManuel(suivi(statutManuel = "plus_tard")))
+        // Statut automatique, affiché à côté de « Automatique ».
+        fun calcule(vus: Int, diffuses: Int, diffusion: String?) =
+            statutCalcule(serie(diffusion), suivi(nbVus = vus, nbDiffuses = diffuses))
+        assertEquals("a_voir", calcule(0, 0, "Returning Series"))
+        assertEquals("a_voir", calcule(0, 10, "Ended"))
+        assertEquals("en_cours", calcule(3, 10, "Ended"))
+        assertEquals("termine", calcule(10, 10, "Ended"))
+        assertEquals("termine", calcule(10, 10, "Canceled"))
+        assertEquals("a_jour", calcule(10, 10, "Returning Series"))
+        assertEquals("a_jour", calcule(12, 10, "In Production"))
+        assertEquals("a_jour", calcule(5, 5, null))
+    }
+
+    @Test
+    fun categoriesEtTextesDesReglages() {
+        assertEquals("anime", categorieCalculee(serie(null, estAnime = true)))
+        assertEquals("serie", categorieCalculee(serie(null, estAnime = false)))
+        assertEquals("serie", categorieCalculee(serie(null, estAnime = null)))
+        assertEquals("Animé", libelleCategorie("anime"))
+        assertEquals("Série", libelleCategorie("serie"))
+        // Textes repris de js/fiche.js, js/app.js et index.html.
+        assertEquals("« Bluey » : 1 épisode coché.", texteEpisodesCoches("Bluey", 1))
+        assertEquals("« Bluey » : 12 épisodes cochés.", texteEpisodesCoches("Bluey", 12))
+        assertEquals("« Bluey » : épisodes décochés et statut remis comme avant.", texteRemisCommeAvant("Bluey"))
+        assertEquals("« Bluey » ne fait plus partie de votre liste.", texteRetire("Bluey"))
+        assertEquals("Aucun épisode n'est coché.", perteEpisodes(0))
+        assertEquals("L'épisode coché sera effacé.", perteEpisodes(1))
+        assertEquals("Les 2 épisodes cochés seront effacés.", perteEpisodes(2))
+        assertEquals("Les 57 épisodes cochés seront effacés.", perteEpisodes(57))
     }
 }

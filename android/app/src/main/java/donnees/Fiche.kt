@@ -66,3 +66,25 @@ data class DonneesFiche(
     val suivi: Suivi?,
     val vus: List<Episode>,
 )
+
+/** Suite d'épisodes sans trou dans une saison : « saison 1, épisodes 1 à 12 ». */
+data class Suite(val saison: Int, val debut: Int, val fin: Int)
+
+/**
+ * Regroupe des épisodes en suites sans trou, saison par saison (comme
+ * suitesConsecutives dans js/base.js) : 1x1, 1x2, 1x3, 1x5 → saison 1 de 1 à
+ * 3, et saison 1 de 5 à 5. Sert à décocher beaucoup d'épisodes en peu de
+ * requêtes. Les doublons sont absorbés.
+ */
+fun suitesConsecutives(episodes: List<Episode>): List<Suite> {
+    val suites = mutableListOf<Suite>()
+    for (e in episodes.sortedWith(compareBy<Episode>({ it.saison }, { it.episode }))) {
+        val derniere = suites.lastOrNull()
+        if (derniere != null && derniere.saison == e.saison && e.episode <= derniere.fin + 1) {
+            suites[suites.lastIndex] = derniere.copy(fin = maxOf(derniere.fin, e.episode)) // la suite continue
+        } else {
+            suites += Suite(e.saison, e.episode, e.episode)
+        }
+    }
+    return suites
+}

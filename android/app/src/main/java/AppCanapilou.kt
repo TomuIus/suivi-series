@@ -8,6 +8,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,6 +67,8 @@ fun AppCanapilou() {
 @Composable
 private fun NavigationPrincipale() {
     val historique = rememberNavBackStack(CleMaListe)
+    // Message à afficher dans « Ma liste » en y revenant (série retirée depuis sa fiche).
+    var messagePourLaListe by rememberSaveable { mutableStateOf<String?>(null) }
 
     NavDisplay(
         backStack = historique,
@@ -83,12 +88,18 @@ private fun NavigationPrincipale() {
                         // pas deux fois « À propos » dans l'historique.
                         onOuvrirSerie = { id -> if (historique.lastOrNull() == CleMaListe) historique.add(CleFiche(id)) },
                         onAPropos = { if (historique.lastOrNull() == CleMaListe) historique.add(CleAPropos) },
+                        messageEnAttente = messagePourLaListe,
+                        onMessagePris = { messagePourLaListe = null },
                     )
                 }
                 is CleFiche -> NavEntry(cle) {
                     EcranFiche(
                         serieId = cle.serieId,
                         onRetour = { if (historique.size > 1) historique.removeLastOrNull() },
+                        onRetiree = { message ->
+                            messagePourLaListe = message
+                            if (historique.size > 1) historique.removeLastOrNull()
+                        },
                     )
                 }
                 is CleAPropos -> NavEntry(cle) {

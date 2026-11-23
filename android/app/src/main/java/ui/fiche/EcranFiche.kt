@@ -21,8 +21,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +34,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,6 +44,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -48,6 +54,9 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +70,7 @@ import io.github.tomuius.canapilou.R
 import io.github.tomuius.canapilou.donnees.Saison
 import io.github.tomuius.canapilou.ui.commun.AfficheSerie
 import io.github.tomuius.canapilou.ui.commun.BarreProgression
+import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
 import io.github.tomuius.canapilou.ui.commun.Etiquette
 import io.github.tomuius.canapilou.ui.commun.afficherPendant
@@ -69,15 +79,19 @@ import io.github.tomuius.canapilou.ui.liste.libelleEpisode
 import io.github.tomuius.canapilou.ui.liste.pourcentage
 import kotlinx.coroutines.flow.collectLatest
 
-// Écran « fiche d'une série », partie A (décision 66) : en-tête, résumé,
-// épisodes par saison ; un appui coche ou décoche un épisode, puis la barre du
-// bas propose de cocher aussi les épisodes précédents. Comme la fiche du site
-// (index.html, page « fiche »).
+// Écran « fiche d'une série », comme la fiche du site (index.html, page
+// « fiche ») : en-tête, résumé, épisodes par saison ; un appui coche ou
+// décoche un épisode, puis la barre du bas propose de cocher aussi les
+// épisodes précédents (partie A, décision 66). Menus « Statut » et
+// « Catégorie » sous l'en-tête, « Retirer de ma liste » en bas avec une
+// fenêtre de confirmation (partie B, décisions 67 et 68).
 
 @Composable
 fun EcranFiche(
     serieId: Long,
     onRetour: () -> Unit,
+    // Série retirée : l'écran revient à « Ma liste », qui affiche ce message.
+    onRetiree: (String) -> Unit,
     // Un ViewModel propre à cette fiche (Navigation 3 le garde tant qu'elle
     // est dans l'historique).
     vm: FicheViewModel = viewModel { FicheViewModel(serieId, Conteneur.depotListe, Conteneur.depotTmdb) },
@@ -85,12 +99,27 @@ fun EcranFiche(
     val etat by vm.etat.collectAsStateWithLifecycle()
     val titres by vm.titres.collectAsStateWithLifecycle()
     val invite by vm.invite.collectAsStateWithLifecycle()
+    val statutEnCours by vm.statutEnCours.collectAsStateWithLifecycle()
+    val categorieEnCours by vm.categorieEnCours.collectAsStateWithLifecycle()
+    val confirmationRetrait by vm.confirmationRetrait.collectAsStateWithLifecycle()
+    val retraitEnCours by vm.retraitEnCours.collectAsStateWithLifecycle()
 
-    // Messages d'erreur en bas de l'écran (un nouveau remplace le précédent).
+    // Messages en bas de l'écran (un nouveau remplace le précédent) : erreurs,
+    // et épisodes cochés par un statut, avec « Annuler » pendant 8 s.
     val etatMessages = remember { SnackbarHostState() }
     val accessibilite = LocalAccessibilityManager.current
     LaunchedEffect(vm) {
-        vm.messages.collectLatest { texte -> etatMessages.afficherPendant(texte, DUREE_MESSAGE, accessibilite) }
+        vm.messages.collectLatest { m ->
+            val resultat = if (m.annulation != null) {
+                etatMessages.afficherPendant(m.texte, DUREE_ANNULATION, accessibilite, action = "Annuler")
+            } else {
+                etatMessages.afficherPendant(m.texte, DUREE_MESSAGE, accessibilite)
+            }
+            if (resultat == SnackbarResult.ActionPerformed && m.annulation != null) vm.annulerStatut(m.annulation)
+        }
+    }
+    LaunchedEffect(vm) {
+        vm.retiree.collect { message -> onRetiree(message) }
     }
 
     Scaffold(
@@ -129,12 +158,28 @@ fun EcranFiche(
                     textAlign = TextAlign.Center,
                 )
 
-                is EtatFiche.Prete -> ContenuFiche(
-                    fiche = e.fiche,
-                    titres = titres,
-                    onDeplier = vm::chargerTitres,
-                    onBasculer = vm::basculer,
-                )
+                is EtatFiche.Prete -> {
+                    ContenuFiche(
+                        fiche = e.fiche,
+                        titres = titres,
+                        statutEnCours = statutEnCours,
+                        categorieEnCours = categorieEnCours,
+                        onDeplier = vm::chargerTitres,
+                        onBasculer = vm::basculer,
+                        onStatut = vm::modifierStatut,
+                        onCategorie = vm::modifierCategorie,
+                        onRetirer = vm::demanderRetrait,
+                    )
+                    if (confirmationRetrait) {
+                        FenetreRetrait(
+                            titre = e.fiche.serie.titre,
+                            nbCoches = e.fiche.vus.size,
+                            enCours = retraitEnCours,
+                            onRetirer = vm::confirmerRetrait,
+                            onGarder = vm::annulerRetrait,
+                        )
+                    }
+                }
             }
         }
     }
@@ -183,8 +228,13 @@ private fun BarreInvite(nombre: Int, onOui: () -> Unit, onNon: () -> Unit) {
 private fun ContenuFiche(
     fiche: Fiche,
     titres: Map<Int, TitresSaison>,
+    statutEnCours: Boolean,
+    categorieEnCours: Boolean,
     onDeplier: (Int) -> Unit,
     onBasculer: (Int, Int) -> Unit,
+    onStatut: (String?) -> Unit,
+    onCategorie: (String?) -> Unit,
+    onRetirer: () -> Unit,
 ) {
     // Saison dépliée ou repliée, mémorisé même si Android recrée l'écran ;
     // au départ, seule la saison du prochain épisode est dépliée.
@@ -198,7 +248,7 @@ private fun ContenuFiche(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         item(key = "entete") {
-            EnTeteFiche(fiche, titres)
+            EnTeteFiche(fiche, titres, statutEnCours, categorieEnCours, onStatut, onCategorie)
         }
         fiche.resume?.takeIf { it.isNotBlank() }?.let { resume ->
             item(key = "resume") { CarteResume(resume) }
@@ -246,18 +296,35 @@ private fun ContenuFiche(
                 )
             }
         }
+        item(key = "retrait") {
+            Column(Modifier.padding(top = 16.dp)) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                TextButton(
+                    onClick = onRetirer,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Retirer de ma liste") }
+            }
+        }
     }
 }
 
 // En-tête : grande affiche, titre, titre original, diffusion et compte,
 // barre de progression, prochain épisode.
 @Composable
-private fun EnTeteFiche(fiche: Fiche, titres: Map<Int, TitresSaison>) {
+private fun EnTeteFiche(
+    fiche: Fiche,
+    titres: Map<Int, TitresSaison>,
+    statutEnCours: Boolean,
+    categorieEnCours: Boolean,
+    onStatut: (String?) -> Unit,
+    onCategorie: (String?) -> Unit,
+) {
     val serie = fiche.serie
     val suivi = fiche.suivi
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(start = 12.dp, top = 12.dp, end = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 92 × 138 dp comme les 92 × 138 pixels du site ; taille TMDB w342
@@ -306,7 +373,126 @@ private fun EnTeteFiche(fiche: Fiche, titres: Map<Int, TitresSaison>) {
                 }
             }
         }
+        // Statut et catégorie, sous l'affiche, sur toute la largeur (comme le
+        // site sur téléphone, où la colonne de droite est trop étroite).
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            val statutAuto = "Automatique (${libelleStatut(statutCalcule(serie, suivi))})"
+            ChoixDansMenu(
+                etiquette = "Statut",
+                choix = listOf<Pair<String?, String>>(null to statutAuto) +
+                    STATUTS_MANUELS.map { it to libelleStatut(it) },
+                valeur = valeurStatutManuel(suivi),
+                actif = !statutEnCours,
+                onChoix = onStatut,
+            )
+            val categorieAuto = "Automatique (${libelleCategorie(categorieCalculee(serie))})"
+            ChoixDansMenu(
+                etiquette = "Catégorie",
+                choix = listOf<Pair<String?, String>>(
+                    null to categorieAuto,
+                    "serie" to libelleCategorie("serie"),
+                    "anime" to libelleCategorie("anime"),
+                ),
+                valeur = suivi.categorieManuelle?.ifEmpty { null },
+                actif = !categorieEnCours,
+                onChoix = onCategorie,
+            )
+        }
     }
+}
+
+// Menu déroulant : l'étiquette (« Statut »), puis le choix actuel dans un
+// cadre ; un appui ouvre la liste des choix, le choix actuel coché.
+// Désactivé pendant l'envoi d'un choix.
+@Composable
+private fun ChoixDansMenu(
+    etiquette: String,
+    choix: List<Pair<String?, String>>,
+    valeur: String?,
+    actif: Boolean,
+    onChoix: (String?) -> Unit,
+) {
+    var ouvert by remember { mutableStateOf(false) }
+    val couleurs = MaterialTheme.colorScheme
+    val forme = RoundedCornerShape(8.dp)
+    val libelleActuel = choix.firstOrNull { it.first == valeur }?.second ?: choix.first().second
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(etiquette, style = MaterialTheme.typography.labelLarge, color = couleurs.onSurfaceVariant)
+        Box {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clip(forme)
+                    .border(1.dp, couleurs.outline, forme)
+                    .clickable(enabled = actif, role = Role.DropdownList) { ouvert = true }
+                    .semantics { contentDescription = "$etiquette : $libelleActuel" }
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    libelleActuel,
+                    color = if (actif) couleurs.onSurface else couleurs.onSurfaceVariant,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clearAndSetSemantics {},
+                )
+                Icon(painterResource(R.drawable.chevron), contentDescription = null)
+            }
+            DropdownMenu(expanded = ouvert, onDismissRequest = { ouvert = false }) {
+                for ((code, libelle) in choix) {
+                    DropdownMenuItem(
+                        text = { Text(libelle) },
+                        onClick = {
+                            ouvert = false
+                            if (code != valeur) onChoix(code)
+                        },
+                        // Coche devant le choix actuel.
+                        leadingIcon = {
+                            if (code == valeur) {
+                                Icon(painterResource(R.drawable.coche), contentDescription = "Choix actuel")
+                            } else {
+                                Spacer(Modifier.size(24.dp))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Fenêtre de confirmation du retrait, comme sur le site : « Retirer
+// « … » de votre liste ? », ce qui sera effacé, et le conseil de choisir
+// plutôt « Abandonné ».
+@Composable
+private fun FenetreRetrait(
+    titre: String,
+    nbCoches: Int,
+    enCours: Boolean,
+    onRetirer: () -> Unit,
+    onGarder: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onGarder,
+        title = { Text("Retirer « $titre » de votre liste ?") },
+        text = {
+            Text("${perteEpisodes(nbCoches)} Pour en garder une trace, choisissez plutôt le statut « Abandonné ».")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onRetirer,
+                enabled = !enCours,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) { Text(if (enCours) "Retrait…" else "Retirer") }
+        },
+        dismissButton = {
+            TextButton(onClick = onGarder, enabled = !enCours) { Text("Garder") }
+        },
+    )
 }
 
 @Composable
