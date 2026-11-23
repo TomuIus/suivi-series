@@ -32,6 +32,12 @@ data class SerieSuivie(
     @SerialName("anime_detecte") val animeDetecte: Boolean? = null,
     @SerialName("durees_a_calculer") val dureesACalculer: Boolean? = null,
     @SerialName("fiche_a_rafraichir") val ficheARafraichir: Boolean? = null,
+    // Statistiques du Profil (décisions 28, 31 et 32) : minutes vues et
+    // épisodes vus sans durée connue (épisodes spéciaux cochés compris),
+    // épisodes spéciaux cochés. Vides = 0, comme « ?? 0 » sur le site.
+    @SerialName("minutes_vues") val minutesVues: Long? = null,
+    @SerialName("nb_vus_sans_duree") val nbVusSansDuree: Int? = null,
+    @SerialName("nb_speciaux_vus") val nbSpeciauxVus: Int? = null,
 )
 
 // Colonnes demandées à la base : exactement celles ci-dessus.
@@ -39,6 +45,7 @@ internal val COLONNES_SERIE_SUIVIE = listOf(
     "serie_id", "tmdb_id", "titre", "affiche_chemin", "statut_diffusion", "statut_manuel",
     "statut", "nb_diffuses", "nb_vus", "prochaine_saison", "prochain_episode",
     "derniere_activite", "est_anime", "anime_detecte", "durees_a_calculer", "fiche_a_rafraichir",
+    "minutes_vues", "nb_vus_sans_duree", "nb_speciaux_vus",
 )
 
 /**

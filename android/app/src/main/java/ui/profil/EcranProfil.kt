@@ -45,8 +45,8 @@ import io.github.tomuius.canapilou.ui.commun.BarreSimple
 // Écran « Profil » (décisions 81 et 82), partie A, comme la page « profil »
 // du site : nom et Tilou au pop-corn, « Niveau N · rang », barre vers le
 // niveau suivant, points, prochain rang, puis les badges obtenus (pour une
-// famille, le palier le plus haut) et « Voir tous les badges » (partie B,
-// décision 84). À venir : les statistiques (partie C).
+// famille, le palier le plus haut), « Voir tous les badges » (partie B,
+// décision 84), puis les statistiques (partie C, décision 86).
 
 @Composable
 fun EcranProfil(
@@ -54,9 +54,13 @@ fun EcranProfil(
     onTousLesBadges: () -> Unit,
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant qu'il est
     // dans l'historique).
-    vm: ProfilViewModel = viewModel { ProfilViewModel(Conteneur.depotListe, Conteneur.depotCompte) },
+    vm: ProfilViewModel = viewModel {
+        ProfilViewModel(Conteneur.depotListe, Conteneur.depotCompte, avecStatistiques = true)
+    },
 ) {
     val etat by vm.progression.collectAsStateWithLifecycle()
+    val etatStats by vm.statistiques.collectAsStateWithLifecycle()
+    val filtre by vm.filtre.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { BarreRetour(onRetour) }) { marges ->
         Column(
@@ -93,6 +97,18 @@ fun EcranProfil(
                         )
                     }
                     (etat as? EtatProgression.Prete)?.let { BadgesObtenus(it.progression, onTousLesBadges) }
+                    // Statistiques : indépendantes du niveau (et de sa lecture).
+                    Text(
+                        "Statistiques",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    when (val s = etatStats) {
+                        EtatStatistiques.Chargement -> TexteAide("Chargement…")
+                        EtatStatistiques.Indisponible -> TexteAide("Statistiques indisponibles pour le moment.")
+                        is EtatStatistiques.Pretes -> BlocStatistiques(s.series, filtre, vm::choisirFiltre)
+                    }
                 }
             }
         }
