@@ -1,0 +1,3111 @@
+{
+ "maintenant": "2026-11-23T12:34:56.789Z",
+ "tailleMax": 10485760,
+ "dates": [
+  [
+   "2026-11-19T10:00:00.123456+00:00",
+   "2026-11-19T10:00:00.123Z"
+  ],
+  [
+   "2026-11-19T10:00:00+00:00",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00.1239Z",
+   "2026-11-19T10:00:00.123Z"
+  ],
+  [
+   "2026-11-19T10:00:00.9999999Z",
+   "2026-11-19T10:00:00.999Z"
+  ],
+  [
+   "2026-11-19T10:00:00.5Z",
+   "2026-11-19T10:00:00.500Z"
+  ],
+  [
+   "2026-11-19T10:00:00Z",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00Z",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19",
+   "2026-11-19T00:00:00.000Z"
+  ],
+  [
+   "2026-11",
+   "2026-11-01T00:00:00.000Z"
+  ],
+  [
+   "2026",
+   "2026-01-01T00:00:00.000Z"
+  ],
+  [
+   "2026-02-30",
+   "2026-03-02T00:00:00.000Z"
+  ],
+  [
+   "2026-02-29",
+   "2026-03-01T00:00:00.000Z"
+  ],
+  [
+   "2024-02-29",
+   "2024-02-29T00:00:00.000Z"
+  ],
+  [
+   "2026-02-31T10:00:00Z",
+   "2026-03-03T10:00:00.000Z"
+  ],
+  [
+   "2026-13-01",
+   null
+  ],
+  [
+   "2026-11-00",
+   null
+  ],
+  [
+   "2026-00-10",
+   null
+  ],
+  [
+   "2026-11-32",
+   null
+  ],
+  [
+   "2026-11-19T24:00:00Z",
+   "2026-11-20T00:00:00.000Z"
+  ],
+  [
+   "2026-11-19T24:00:00.000Z",
+   "2026-11-20T00:00:00.000Z"
+  ],
+  [
+   "2026-11-19T24:00Z",
+   "2026-11-20T00:00:00.000Z"
+  ],
+  [
+   "2026-11-19T24:00:01Z",
+   null
+  ],
+  [
+   "2026-11-19T24:00:00.001Z",
+   null
+  ],
+  [
+   "2026-11-19T25:00:00Z",
+   null
+  ],
+  [
+   "2026-11-19T10:60:00Z",
+   null
+  ],
+  [
+   "2026-11-19T10:00:60Z",
+   null
+  ],
+  [
+   "2026-11-19t10:00:00z",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00.123z",
+   "2026-11-19T10:00:00.123Z"
+  ],
+  [
+   "2026-11-19t10:00",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00+0100",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00.123+0530",
+   "2026-11-19T04:30:00.123Z"
+  ],
+  [
+   "2026-11-19T10:00+0100",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00+01",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00+05:30",
+   "2026-11-19T04:30:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00-23:59",
+   "2026-11-20T09:59:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00.123+23:59",
+   "2026-11-18T10:01:00.123Z"
+  ],
+  [
+   "2026-11-19T10:00:00+24:00",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00-00:00",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10:00:00+01:00:00",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00+1:00",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00 +01:00",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00Z ",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00.123456+00:00\n",
+   null
+  ],
+  [
+   "2026-11-19T23:59:59.9999+00:00",
+   "2026-11-19T23:59:59.999Z"
+  ],
+  [
+   "2026-11-19T10:00:00.123456789012Z",
+   "2026-11-19T10:00:00.123Z"
+  ],
+  [
+   "2026-11-19T10:00:00.Z",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00.+00:00",
+   null
+  ],
+  [
+   "2026-11-19T10:00:00,123Z",
+   null
+  ],
+  [
+   "2026-11-19Z",
+   "2026-11-19T00:00:00.000Z"
+  ],
+  [
+   "2026-11T10:00Z",
+   "2026-11-01T10:00:00.000Z"
+  ],
+  [
+   "2026T10:00Z",
+   "2026-01-01T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19T10Z",
+   null
+  ],
+  [
+   "2026-11-19+01:00",
+   null
+  ],
+  [
+   "2026-11+01:00",
+   null
+  ],
+  [
+   "2026Z",
+   "2026-01-01T00:00:00.000Z"
+  ],
+  [
+   "2026-11Z",
+   "2026-11-01T00:00:00.000Z"
+  ],
+  [
+   "20261119",
+   null
+  ],
+  [
+   "2026-1-19",
+   "2026-01-18T23:00:00.000Z"
+  ],
+  [
+   "2026-11-19T1:00:00Z",
+   null
+  ],
+  [
+   "+002026-11-19T00:00:00Z",
+   "2026-11-19T00:00:00.000Z"
+  ],
+  [
+   "+002026-11-19",
+   "2026-11-19T00:00:00.000Z"
+  ],
+  [
+   "+002026-11-19T10:00",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "-000001-01-01",
+   "-000001-01-01T00:00:00.000Z"
+  ],
+  [
+   "-000001-01-01T00:00:00Z",
+   "-000001-01-01T00:00:00.000Z"
+  ],
+  [
+   "-000000-01-01T00:00:00Z",
+   null
+  ],
+  [
+   "+010000-01-01T00:00:00Z",
+   "+010000-01-01T00:00:00.000Z"
+  ],
+  [
+   "+275760-09-13T00:00:00Z",
+   "+275760-09-13T00:00:00.000Z"
+  ],
+  [
+   "+275760-09-13T00:00:00.001Z",
+   null
+  ],
+  [
+   "-271821-04-20T00:00:00Z",
+   "-271821-04-20T00:00:00.000Z"
+  ],
+  [
+   "-271821-04-19T23:59:59.999Z",
+   null
+  ],
+  [
+   "0000-01-01T00:00:00Z",
+   "0000-01-01T00:00:00.000Z"
+  ],
+  [
+   "1969-12-31T23:59:59.999Z",
+   "1969-12-31T23:59:59.999Z"
+  ],
+  [
+   "2026-07-01T12:00:00",
+   "2026-07-01T10:00:00.000Z"
+  ],
+  [
+   "2026-03-29T02:30:00",
+   "2026-03-29T01:30:00.000Z"
+  ],
+  [
+   "2026-10-25T02:30:00",
+   "2026-10-25T00:30:00.000Z"
+  ],
+  [
+   "2026-10-25T01:30:00",
+   "2026-10-24T23:30:00.000Z"
+  ],
+  [
+   "2026-02-29T10:00:00",
+   "2026-03-01T09:00:00.000Z"
+  ],
+  [
+   "2026-04-31",
+   "2026-05-01T00:00:00.000Z"
+  ],
+  [
+   "",
+   null
+  ],
+  [
+   "abc",
+   null
+  ],
+  [
+   "Nov 19 2026",
+   "2026-11-18T23:00:00.000Z"
+  ],
+  [
+   "2026/11/19",
+   "2026-11-18T23:00:00.000Z"
+  ],
+  [
+   " 2026-11-19",
+   "2026-11-18T23:00:00.000Z"
+  ],
+  [
+   "2026-11-19 10:00:00",
+   "2026-11-19T09:00:00.000Z"
+  ],
+  [
+   "2026-11-19 10:00:00Z",
+   "2026-11-19T10:00:00.000Z"
+  ],
+  [
+   "2026-11-19 10:00:00.123456+00",
+   "2026-11-19T10:00:00.123Z"
+  ],
+  [
+   "2026-11-19 24:00",
+   "2026-11-19T23:00:00.000Z"
+  ]
+ ],
+ "titres": [
+  [
+   "Titre",
+   "Titre"
+  ],
+  [
+   "  Titre  ",
+   "Titre"
+  ],
+  [
+   " ﻿Espaces JS 　",
+   "Espaces JS"
+  ],
+  [
+   "\u001cPas des espaces JS\u001f",
+   "\u001cPas des espaces JS\u001f"
+  ],
+  [
+   "\t\n\r\u000b\fA",
+   "A"
+  ],
+  [
+   "               B",
+   "B"
+  ],
+  [
+   "​C᠎",
+   "​C᠎"
+  ],
+  [
+   "   ",
+   "(sans titre)"
+  ],
+  [
+   "",
+   "(sans titre)"
+  ]
+ ],
+ "lectures": [
+  {
+   "texte": "{\n  \"format\": \"suivi-series\",\n  \"version\": 1,\n  \"exporte_le\": \"2026-11-19T23:30:00.123456+00:00\",\n  \"series\": [\n    { \"tmdb_id\": 1399, \"imdb_id\": \"tt0944947\", \"titre\": \"Game of Thrones\", \"statut_manuel\": \"termine\",\n      \"categorie_manuelle\": null, \"ajoute_le\": \"2026-11-13T18:00:00.123456+00:00\",\n      \"episodes_vus\": [ { \"saison\": 1, \"episode\": 1, \"vu_le\": \"2026-11-14T20:00:00+00:00\" },\n                        { \"saison\": 1, \"episode\": 2, \"vu_le\": null },\n                        { \"saison\": 0, \"episode\": 1, \"vu_le\": \"2026-11-15T10:00:00Z\" } ] },\n    { \"tmdb_id\": \"1400\", \"titre\": \"  Texte au lieu d'un nombre  \", \"episodes_vus\": [] },\n    { \"tmdb_id\": 0, \"titre\": \"Zéro\" },\n    { \"tmdb_id\": -5, \"titre\": 42 },\n    { \"tmdb_id\": 1.5, \"titre\": \"   \" },\n    { \"tmdb_id\": null, \"titre\": \"\\u00a0\\ufeffEspaces JS\\u2028\\u3000\" },\n    { \"titre\": \"\\u001cSans identifiant\\u001f\" },\n    null, 5, \"texte\", [], true, [1, 2],\n    { \"tmdb_id\": 1e3, \"titre\": \"Mille\", \"statut_manuel\": \"en_pause\", \"categorie_manuelle\": \"Anime\",\n      \"ajoute_le\": \"pas une date\", \"episodes_vus\": { \"saison\": 1, \"episode\": 1 } },\n    { \"tmdb_id\": 2.0, \"titre\": \"\\tDeux\\n\", \"statut_manuel\": 1, \"categorie_manuelle\": \"anime\", \"ajoute_le\": \"2026-11-19\",\n      \"episodes_vus\": [ null, 3, \"x\", [1, 2], { \"saison\": \"1\", \"episode\": 1 }, { \"saison\": 1, \"episode\": 1.5 },\n        { \"saison\": -1, \"episode\": 2 }, { \"saison\": 1, \"episode\": -1 }, { \"saison\": 1 },\n        { \"saison\": 2, \"episode\": -0, \"vu_le\": \"2026-11-19T10:00:00\" },\n        { \"saison\": 1e0, \"episode\": 3, \"vu_le\": \"2026-02-30T10:00:00Z\" },\n        { \"saison\": 1, \"episode\": 4, \"vu_le\": 17 },\n        { \"saison\": 1.0, \"episode\": 5, \"vu_le\": \"2026-11-19T10:00:00.9999999+05:30\" },\n        { \"saison\": 1, \"episode\": 6, \"vu_le\": \"2026-11-19T10:00:00Z\", \"autre\": \"ignoré\" } ] },\n    { \"tmdb_id\": 1399, \"titre\": \"Doublon\", \"statut_manuel\": \"abandonne\", \"categorie_manuelle\": \"anime\",\n      \"ajoute_le\": \"2020-01-01T00:00:00Z\",\n      \"episodes_vus\": [ { \"saison\": 1, \"episode\": 2, \"vu_le\": \"2026-11-16T00:00:00Z\" },\n                        { \"saison\": 2, \"episode\": 1, \"vu_le\": \"2026-11-17T00:00:00Z\" } ] },\n    { \"tmdb_id\": 2, \"titre\": \"Deux encore\",\n      \"episodes_vus\": [ { \"saison\": 2, \"episode\": 0 }, { \"saison\": 1, \"episode\": 3, \"vu_le\": \"2026-01-01T00:00:00Z\" },\n                        { \"saison\": 3, \"episode\": 1 } ] },\n    { \"tmdb_id\": 31910, \"titre\": \"L'Attaque des Titans « 進撃の巨人 » 🎬\", \"statut_manuel\": \"plus_tard\",\n      \"categorie_manuelle\": \"anime\", \"ajoute_le\": \"2026-11-20T08:15:00.5+00:00\", \"episodes_vus\": [] },\n    { \"tmdb_id\": 76479, \"titre\": \"The Boys\", \"statut_manuel\": null, \"categorie_manuelle\": \"serie\",\n      \"ajoute_le\": \"2026-11-21T09:00:00+01:00\",\n      \"episodes_vus\": [ { \"saison\": 1, \"episode\": 1, \"vu_le\": \"2026-11-21T21:00:00+01:00\" },\n                        { \"saison\": 1, \"episode\": 2, \"vu_le\": \"2026-11-21T22:00:00+01:00\" } ] }\n  ]\n}",
+   "resultat": {
+    "exporteLe": "2026-11-19T23:30:00.123Z",
+    "series": [
+     {
+      "tmdbId": 1399,
+      "titre": "Game of Thrones",
+      "statutManuel": "termine",
+      "categorieManuelle": null,
+      "ajouteLe": "2026-11-13T18:00:00.123Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-14T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": null
+       },
+       {
+        "saison": 0,
+        "episode": 1,
+        "vuLe": "2026-11-15T10:00:00.000Z"
+       },
+       {
+        "saison": 2,
+        "episode": 1,
+        "vuLe": "2026-11-17T00:00:00.000Z"
+       }
+      ]
+     },
+     {
+      "tmdbId": 1000,
+      "titre": "Mille",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 2,
+      "titre": "Deux",
+      "statutManuel": null,
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-19T00:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 2,
+        "episode": 0,
+        "vuLe": "2026-11-19T09:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 3,
+        "vuLe": "2026-03-02T10:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 4,
+        "vuLe": null
+       },
+       {
+        "saison": 1,
+        "episode": 5,
+        "vuLe": "2026-11-19T04:30:00.999Z"
+       },
+       {
+        "saison": 1,
+        "episode": 6,
+        "vuLe": "2026-11-19T10:00:00.000Z"
+       },
+       {
+        "saison": 3,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     },
+     {
+      "tmdbId": 31910,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » 🎬",
+      "statutManuel": "plus_tard",
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-20T08:15:00.500Z",
+      "episodes": []
+     },
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": "serie",
+      "ajouteLe": "2026-11-21T08:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-21T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": "2026-11-21T21:00:00.000Z"
+       }
+      ]
+     }
+    ],
+    "ignorees": [
+     "Texte au lieu d'un nombre",
+     "Zéro",
+     "(sans titre)",
+     "(sans titre)",
+     "Espaces JS",
+     "\u001cSans identifiant\u001f",
+     "(sans titre)",
+     "(sans titre)"
+    ]
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"exporte_le\":null,\"series\":[{\"tmdb_id\":76479,\"titre\":\"The Boys\",\"episodes_vus\":[{\"saison\":1,\"episode\":1}]}]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     }
+    ],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "abc",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "[]",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "5",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "null",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "\"texte\"",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "﻿{\"format\":\"suivi-series\",\"version\":1,\"exporte_le\":null,\"series\":[{\"tmdb_id\":76479,\"titre\":\"The Boys\",\"episodes_vus\":[{\"saison\":1,\"episode\":1}]}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"exporte_le\":null,\"series\":[{\"tmdb_id\":76479,\"titre\":\"The Boys\",\"episodes_vus\":[{\"saison\":1,\"episode\":1}]}]} x",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"autre\",\"version\":1,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"autre\",\"format\":\"suivi-series\",\"version\":1,\"series\":[]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":{}}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":2,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (2)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":\"1\",\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (1)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":null,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (null)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (undefined)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1.5,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (1.5)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":[1,[2,null],{}],\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (1,2,,[object Object])."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":{\"a\":1},\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue ([object Object])."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":true,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (true)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1e20,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (100000000000000000000)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":-3,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (-3)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":-0,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue (0)."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":\"\",\"series\":[]}",
+   "resultat": null,
+   "erreur": "Cette sauvegarde est d'une version inconnue ()."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1.0,\"series\":[]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1e0,\"series\":[]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":10e-1,\"series\":[]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":01}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":NaN}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":+1}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":tru}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":.5}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":1.}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":1,\"titre\":\"a\tb\"}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":1,\"titre\":\"a\nb\"}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":1,\"titre\":\"a\\\"b\\\\\"}]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [
+     {
+      "tmdbId": 1,
+      "titre": "a\"b\\",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     }
+    ],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":1,\"titre\":\"\\x41\"}]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[1,]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[]} ",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "\f{\"format\":\"suivi-series\",\"version\":1,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": " \n\t{\"format\":\"suivi-series\",\"version\":1,\"series\":[]}\r\n ",
+   "resultat": {
+    "exporteLe": null,
+    "series": [],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "/* note */{\"format\":\"suivi-series\",\"version\":1,\"series\":[]}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{'format':'suivi-series'}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{format:\"suivi-series\"}",
+   "resultat": null,
+   "erreur": "Ce fichier n'est pas lisible : ce n'est pas une sauvegarde du site."
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":5,\"titre\":\"Accent \\u00e9 et \\\"guillemets\\\"\"}]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [
+     {
+      "tmdbId": 5,
+      "titre": "Accent é et \"guillemets\"",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     }
+    ],
+    "ignorees": []
+   },
+   "erreur": null
+  },
+  {
+   "texte": "{\"format\":\"suivi-series\",\"version\":1,\"series\":[{\"tmdb_id\":3000000000,\"titre\":\"Trop grand pour l'appli\"},{\"tmdb_id\":7,\"titre\":\"Sept\"}]}",
+   "resultat": {
+    "exporteLe": null,
+    "series": [
+     {
+      "tmdbId": 3000000000,
+      "titre": "Trop grand pour l'appli",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 7,
+      "titre": "Sept",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     }
+    ],
+    "ignorees": []
+   },
+   "erreur": null
+  }
+ ],
+ "listes": {
+  "A": {
+   "suivis": [
+    {
+     "serie_id": 10,
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-01T10:00:00.5+00:00",
+     "series": {
+      "tmdb_id": 1399,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": "Game of Thrones",
+      "titre_original": "Game of Thrones"
+     }
+    },
+    {
+     "serie_id": 11,
+     "statut_manuel": "plus_tard",
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-02T10:00:00+00:00",
+     "series": {
+      "tmdb_id": 2,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": "Deux",
+      "titre_original": "Deux"
+     }
+    },
+    {
+     "serie_id": 12,
+     "statut_manuel": "abandonne",
+     "categorie_manuelle": "serie",
+     "ajoute_le": "2026-11-03T10:00:00+00:00",
+     "series": {
+      "tmdb_id": 76479,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": "The Boys",
+      "titre_original": "The Boys"
+     }
+    },
+    {
+     "serie_id": 13,
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-04T10:00:00+00:00",
+     "series": null
+    },
+    {
+     "serie_id": 14,
+     "statut_manuel": "en_cours",
+     "categorie_manuelle": "anime",
+     "ajoute_le": "2026-11-05T10:00:00+00:00",
+     "series": {
+      "tmdb_id": 999,
+      "imdb_id": null,
+      "tvdb_id": null,
+      "titre": "Autre",
+      "titre_original": "Autre"
+     }
+    }
+   ],
+   "vus": [
+    {
+     "serie_id": 10,
+     "saison": 1,
+     "episode": 1,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 11,
+     "saison": 1,
+     "episode": 3,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 12,
+     "saison": 1,
+     "episode": 1,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 12,
+     "saison": 1,
+     "episode": 2,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 13,
+     "saison": 1,
+     "episode": 1,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 14,
+     "saison": 1,
+     "episode": 1,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 14,
+     "saison": 1,
+     "episode": 2,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    },
+    {
+     "serie_id": 99,
+     "saison": 1,
+     "episode": 1,
+     "vu_le": "2026-11-10T10:00:00+00:00"
+    }
+   ]
+  },
+  "vide": {
+   "suivis": [],
+   "vus": []
+  }
+ },
+ "plans": [
+  {
+   "lecture": 0,
+   "liste": "A",
+   "actuelles": [
+    {
+     "tmdb_id": 1399,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Game of Thrones",
+     "titre_original": "Game of Thrones",
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-01T10:00:00.5+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 2,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Deux",
+     "titre_original": "Deux",
+     "statut_manuel": "plus_tard",
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-02T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 76479,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "The Boys",
+     "titre_original": "The Boys",
+     "statut_manuel": "abandonne",
+     "categorie_manuelle": "serie",
+     "ajoute_le": "2026-11-03T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      },
+      {
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": null,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": null,
+     "titre_original": null,
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-04T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 999,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Autre",
+     "titre_original": "Autre",
+     "statut_manuel": "en_cours",
+     "categorie_manuelle": "anime",
+     "ajoute_le": "2026-11-05T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      },
+      {
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    }
+   ],
+   "ajout": {
+    "nouvelles": [
+     {
+      "tmdbId": 1000,
+      "titre": "Mille",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 31910,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » 🎬",
+      "statutManuel": "plus_tard",
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-20T08:15:00.500Z",
+      "episodes": []
+     }
+    ],
+    "completees": [
+     {
+      "tmdbId": 1399,
+      "titre": "Game of Thrones",
+      "statutActuel": null,
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": null
+       },
+       {
+        "saison": 0,
+        "episode": 1,
+        "vuLe": "2026-11-15T10:00:00.000Z"
+       },
+       {
+        "saison": 2,
+        "episode": 1,
+        "vuLe": "2026-11-17T00:00:00.000Z"
+       }
+      ]
+     },
+     {
+      "tmdbId": 2,
+      "titre": "Deux",
+      "statutActuel": "plus_tard",
+      "episodes": [
+       {
+        "saison": 2,
+        "episode": 0,
+        "vuLe": "2026-11-19T09:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 4,
+        "vuLe": null
+       },
+       {
+        "saison": 1,
+        "episode": 5,
+        "vuLe": "2026-11-19T04:30:00.999Z"
+       },
+       {
+        "saison": 1,
+        "episode": 6,
+        "vuLe": "2026-11-19T10:00:00.000Z"
+       },
+       {
+        "saison": 3,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     }
+    ],
+    "nbEpisodes": 8,
+    "nbRetirees": 0
+   },
+   "remplacement": {
+    "nouvelles": [
+     {
+      "tmdbId": 1399,
+      "titre": "Game of Thrones",
+      "statutManuel": "termine",
+      "categorieManuelle": null,
+      "ajouteLe": "2026-11-13T18:00:00.123Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-14T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": null
+       },
+       {
+        "saison": 0,
+        "episode": 1,
+        "vuLe": "2026-11-15T10:00:00.000Z"
+       },
+       {
+        "saison": 2,
+        "episode": 1,
+        "vuLe": "2026-11-17T00:00:00.000Z"
+       }
+      ]
+     },
+     {
+      "tmdbId": 1000,
+      "titre": "Mille",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 2,
+      "titre": "Deux",
+      "statutManuel": null,
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-19T00:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 2,
+        "episode": 0,
+        "vuLe": "2026-11-19T09:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 3,
+        "vuLe": "2026-03-02T10:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 4,
+        "vuLe": null
+       },
+       {
+        "saison": 1,
+        "episode": 5,
+        "vuLe": "2026-11-19T04:30:00.999Z"
+       },
+       {
+        "saison": 1,
+        "episode": 6,
+        "vuLe": "2026-11-19T10:00:00.000Z"
+       },
+       {
+        "saison": 3,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     },
+     {
+      "tmdbId": 31910,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » 🎬",
+      "statutManuel": "plus_tard",
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-20T08:15:00.500Z",
+      "episodes": []
+     },
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": "serie",
+      "ajouteLe": "2026-11-21T08:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-21T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": "2026-11-21T21:00:00.000Z"
+       }
+      ]
+     }
+    ],
+    "completees": [],
+    "nbEpisodes": 12,
+    "nbRetirees": 5
+   },
+   "variantes": [
+    {
+     "bilan": null,
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": null,
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "2 nouvelles séries et 8 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    }
+   ]
+  },
+  {
+   "lecture": 0,
+   "liste": "vide",
+   "actuelles": [],
+   "ajout": {
+    "nouvelles": [
+     {
+      "tmdbId": 1399,
+      "titre": "Game of Thrones",
+      "statutManuel": "termine",
+      "categorieManuelle": null,
+      "ajouteLe": "2026-11-13T18:00:00.123Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-14T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": null
+       },
+       {
+        "saison": 0,
+        "episode": 1,
+        "vuLe": "2026-11-15T10:00:00.000Z"
+       },
+       {
+        "saison": 2,
+        "episode": 1,
+        "vuLe": "2026-11-17T00:00:00.000Z"
+       }
+      ]
+     },
+     {
+      "tmdbId": 1000,
+      "titre": "Mille",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 2,
+      "titre": "Deux",
+      "statutManuel": null,
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-19T00:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 2,
+        "episode": 0,
+        "vuLe": "2026-11-19T09:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 3,
+        "vuLe": "2026-03-02T10:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 4,
+        "vuLe": null
+       },
+       {
+        "saison": 1,
+        "episode": 5,
+        "vuLe": "2026-11-19T04:30:00.999Z"
+       },
+       {
+        "saison": 1,
+        "episode": 6,
+        "vuLe": "2026-11-19T10:00:00.000Z"
+       },
+       {
+        "saison": 3,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     },
+     {
+      "tmdbId": 31910,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » 🎬",
+      "statutManuel": "plus_tard",
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-20T08:15:00.500Z",
+      "episodes": []
+     },
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": "serie",
+      "ajouteLe": "2026-11-21T08:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-21T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": "2026-11-21T21:00:00.000Z"
+       }
+      ]
+     }
+    ],
+    "completees": [],
+    "nbEpisodes": 12,
+    "nbRetirees": 0
+   },
+   "remplacement": {
+    "nouvelles": [
+     {
+      "tmdbId": 1399,
+      "titre": "Game of Thrones",
+      "statutManuel": "termine",
+      "categorieManuelle": null,
+      "ajouteLe": "2026-11-13T18:00:00.123Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-14T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": null
+       },
+       {
+        "saison": 0,
+        "episode": 1,
+        "vuLe": "2026-11-15T10:00:00.000Z"
+       },
+       {
+        "saison": 2,
+        "episode": 1,
+        "vuLe": "2026-11-17T00:00:00.000Z"
+       }
+      ]
+     },
+     {
+      "tmdbId": 1000,
+      "titre": "Mille",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": []
+     },
+     {
+      "tmdbId": 2,
+      "titre": "Deux",
+      "statutManuel": null,
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-19T00:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 2,
+        "episode": 0,
+        "vuLe": "2026-11-19T09:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 3,
+        "vuLe": "2026-03-02T10:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 4,
+        "vuLe": null
+       },
+       {
+        "saison": 1,
+        "episode": 5,
+        "vuLe": "2026-11-19T04:30:00.999Z"
+       },
+       {
+        "saison": 1,
+        "episode": 6,
+        "vuLe": "2026-11-19T10:00:00.000Z"
+       },
+       {
+        "saison": 3,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     },
+     {
+      "tmdbId": 31910,
+      "titre": "L'Attaque des Titans « 進撃の巨人 » 🎬",
+      "statutManuel": "plus_tard",
+      "categorieManuelle": "anime",
+      "ajouteLe": "2026-11-20T08:15:00.500Z",
+      "episodes": []
+     },
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": "serie",
+      "ajouteLe": "2026-11-21T08:00:00.000Z",
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": "2026-11-21T20:00:00.000Z"
+       },
+       {
+        "saison": 1,
+        "episode": 2,
+        "vuLe": "2026-11-21T21:00:00.000Z"
+       }
+      ]
+     }
+    ],
+    "completees": [],
+    "nbEpisodes": 12,
+    "nbRetirees": 0
+   },
+   "variantes": [
+    {
+     "bilan": null,
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": null,
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde du 20/11/2026 : 5 séries, 12 épisodes cochés.",
+      "ignorees": "8 séries ignorées (sans identifiant TMDB) : Texte au lieu d'un nombre, Zéro, (sans titre), (sans titre), Espaces JS, \u001cSans identifiant\u001f, (sans titre), (sans titre).",
+      "listeActuelle": "Votre liste contient déjà 0 série. Que voulez-vous faire ?",
+      "ajoutVide": false,
+      "ajout": "5 nouvelles séries et 12 épisodes à cocher. Vos séries actuelles, leurs statuts et leurs épisodes cochés sont gardés.",
+      "remplacement": "Votre liste actuelle (0 série) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (0 série, 0 épisode coché) sera retirée, puis remplacée par la sauvegarde (5 séries, 12 épisodes cochés). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    }
+   ]
+  },
+  {
+   "lecture": 1,
+   "liste": "A",
+   "actuelles": [
+    {
+     "tmdb_id": 1399,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Game of Thrones",
+     "titre_original": "Game of Thrones",
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-01T10:00:00.5+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 2,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Deux",
+     "titre_original": "Deux",
+     "statut_manuel": "plus_tard",
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-02T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 76479,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "The Boys",
+     "titre_original": "The Boys",
+     "statut_manuel": "abandonne",
+     "categorie_manuelle": "serie",
+     "ajoute_le": "2026-11-03T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      },
+      {
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": null,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": null,
+     "titre_original": null,
+     "statut_manuel": null,
+     "categorie_manuelle": null,
+     "ajoute_le": "2026-11-04T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    },
+    {
+     "tmdb_id": 999,
+     "imdb_id": null,
+     "tvdb_id": null,
+     "titre": "Autre",
+     "titre_original": "Autre",
+     "statut_manuel": "en_cours",
+     "categorie_manuelle": "anime",
+     "ajoute_le": "2026-11-05T10:00:00+00:00",
+     "episodes_vus": [
+      {
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      },
+      {
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-10T10:00:00+00:00"
+      }
+     ]
+    }
+   ],
+   "ajout": {
+    "nouvelles": [],
+    "completees": [],
+    "nbEpisodes": 0,
+    "nbRetirees": 0
+   },
+   "remplacement": {
+    "nouvelles": [
+     {
+      "tmdbId": 76479,
+      "titre": "The Boys",
+      "statutManuel": null,
+      "categorieManuelle": null,
+      "ajouteLe": null,
+      "episodes": [
+       {
+        "saison": 1,
+        "episode": 1,
+        "vuLe": null
+       }
+      ]
+     }
+    ],
+    "completees": [],
+    "nbEpisodes": 1,
+    "nbRetirees": 5
+   },
+   "variantes": [
+    {
+     "bilan": null,
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": null,
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 3,
+      "completees": 2,
+      "episodes": 12,
+      "introuvables": [
+       "Une",
+       "Deux"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 3 séries ajoutées, 2 séries complétées, 12 épisodes cochés.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Une, Deux.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 1,
+      "completees": 0,
+      "episodes": 0,
+      "introuvables": []
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 1 série ajoutée, 0 épisode coché.",
+      "introuvables": "",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": false,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Vous pouvez relancer l'import : ce qui a déjà été ajouté ne sera pas compté deux fois."
+     }
+    },
+    {
+     "bilan": {
+      "series": 0,
+      "completees": 1,
+      "episodes": 1,
+      "introuvables": [
+       "Seule"
+      ]
+     },
+     "listeVidee": true,
+     "textes": {
+      "resume": "Sauvegarde : 1 série, 1 épisode coché.",
+      "ignorees": "",
+      "listeActuelle": "Votre liste contient déjà 5 séries. Que voulez-vous faire ?",
+      "ajoutVide": true,
+      "ajout": "Rien à ajouter : tout est déjà dans votre liste.",
+      "remplacement": "Votre liste actuelle (5 séries) est retirée, puis la sauvegarde est remise telle quelle. Une copie de votre liste actuelle est d'abord téléchargée.",
+      "confirmation": "Votre liste actuelle (5 séries, 7 épisodes cochés) sera retirée, puis remplacée par la sauvegarde (1 série, 1 épisode coché). Une copie de votre liste actuelle sera téléchargée juste avant : gardez-la, elle permet de revenir en arrière.",
+      "bilan": "Import terminé : 0 série ajoutée, 1 série complétée, 1 épisode coché.",
+      "introuvables": "Non importées (introuvables sur TMDB) : Seule.",
+      "apresErreur": "Votre liste a déjà été vidée : réimportez la copie « avant-remplacement » téléchargée juste avant, ou relancez cet import."
+     }
+    }
+   ]
+  }
+ ],
+ "imports": [
+  {
+   "plan": 0,
+   "mode": "ajout",
+   "panne": null,
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1000,
+      31910,
+      1399,
+      2
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 0,
+       "episode": 1,
+       "vu_le": "2026-11-15T10:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 2,
+       "episode": 1,
+       "vu_le": "2026-11-17T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 2,
+       "episode": 0,
+       "vu_le": "2026-11-19T09:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 4,
+       "vu_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 5,
+       "vu_le": "2026-11-19T04:30:00.999Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 6,
+       "vu_le": "2026-11-19T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 3,
+       "episode": 1,
+       "vu_le": "2026-11-23T12:34:56.789Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "statuts…"
+    ],
+    [
+     "changerStatut",
+     11,
+     "plus_tard"
+    ]
+   ],
+   "etape": "fini",
+   "bilan": {
+    "series": 1,
+    "completees": 2,
+    "episodes": 8,
+    "introuvables": [
+     "L'Attaque des Titans « 進撃の巨人 » 🎬"
+    ]
+   },
+   "listeVidee": null
+  },
+  {
+   "plan": 0,
+   "mode": "remplacement",
+   "panne": null,
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1399,
+      1000,
+      2,
+      31910,
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "retrait de la liste actuelle…"
+    ],
+    [
+     "viderListe"
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 10,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 11,
+       "categorie_manuelle": "anime",
+       "ajoute_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "categorie_manuelle": "serie",
+       "ajoute_le": "2026-11-21T08:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-14T20:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 0,
+       "episode": 1,
+       "vu_le": "2026-11-15T10:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 2,
+       "episode": 1,
+       "vu_le": "2026-11-17T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 2,
+       "episode": 0,
+       "vu_le": "2026-11-19T09:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-03-02T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 4,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 5,
+       "vu_le": "2026-11-19T04:30:00.999Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 6,
+       "vu_le": "2026-11-19T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 3,
+       "episode": 1,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-21T20:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-21T21:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "statuts…"
+    ],
+    [
+     "changerStatut",
+     10,
+     "termine"
+    ]
+   ],
+   "etape": "fini",
+   "bilan": {
+    "series": 4,
+    "completees": 0,
+    "episodes": 12,
+    "introuvables": [
+     "L'Attaque des Titans « 進撃の巨人 » 🎬"
+    ]
+   },
+   "listeVidee": null
+  },
+  {
+   "plan": 1,
+   "mode": "ajout",
+   "panne": null,
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1399,
+      1000,
+      2,
+      31910,
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 10,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 11,
+       "categorie_manuelle": "anime",
+       "ajoute_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "categorie_manuelle": "serie",
+       "ajoute_le": "2026-11-21T08:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-14T20:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 0,
+       "episode": 1,
+       "vu_le": "2026-11-15T10:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 2,
+       "episode": 1,
+       "vu_le": "2026-11-17T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 2,
+       "episode": 0,
+       "vu_le": "2026-11-19T09:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-03-02T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 4,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 5,
+       "vu_le": "2026-11-19T04:30:00.999Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 6,
+       "vu_le": "2026-11-19T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 3,
+       "episode": 1,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-21T20:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-21T21:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "statuts…"
+    ],
+    [
+     "changerStatut",
+     10,
+     "termine"
+    ]
+   ],
+   "etape": "fini",
+   "bilan": {
+    "series": 4,
+    "completees": 0,
+    "episodes": 12,
+    "introuvables": [
+     "L'Attaque des Titans « 進撃の巨人 » 🎬"
+    ]
+   },
+   "listeVidee": null
+  },
+  {
+   "plan": 2,
+   "mode": "remplacement",
+   "panne": null,
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "retrait de la liste actuelle…"
+    ],
+    [
+     "viderListe"
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 12,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-23T12:34:56.789Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "statuts…"
+    ]
+   ],
+   "etape": "fini",
+   "bilan": {
+    "series": 1,
+    "completees": 0,
+    "episodes": 1,
+    "introuvables": []
+   },
+   "listeVidee": null
+  },
+  {
+   "plan": 0,
+   "mode": "ajout",
+   "panne": "idsCatalogue",
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1000,
+      31910,
+      1399,
+      2
+     ]
+    ]
+   ],
+   "etape": "erreur",
+   "bilan": null,
+   "listeVidee": false
+  },
+  {
+   "plan": 0,
+   "mode": "remplacement",
+   "panne": "viderListe",
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1399,
+      1000,
+      2,
+      31910,
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "retrait de la liste actuelle…"
+    ],
+    [
+     "viderListe"
+    ]
+   ],
+   "etape": "erreur",
+   "bilan": null,
+   "listeVidee": false
+  },
+  {
+   "plan": 0,
+   "mode": "remplacement",
+   "panne": "cocherEpisodesImportes",
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1399,
+      1000,
+      2,
+      31910,
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "retrait de la liste actuelle…"
+    ],
+    [
+     "viderListe"
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 10,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 11,
+       "categorie_manuelle": "anime",
+       "ajoute_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "categorie_manuelle": "serie",
+       "ajoute_le": "2026-11-21T08:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-14T20:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 0,
+       "episode": 1,
+       "vu_le": "2026-11-15T10:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 2,
+       "episode": 1,
+       "vu_le": "2026-11-17T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 2,
+       "episode": 0,
+       "vu_le": "2026-11-19T09:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-03-02T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 4,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 5,
+       "vu_le": "2026-11-19T04:30:00.999Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 6,
+       "vu_le": "2026-11-19T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 3,
+       "episode": 1,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-21T20:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-21T21:00:00.000Z"
+      }
+     ]
+    ]
+   ],
+   "etape": "erreur",
+   "bilan": null,
+   "listeVidee": true
+  },
+  {
+   "plan": 0,
+   "mode": "remplacement",
+   "panne": "changerStatut",
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1399,
+      1000,
+      2,
+      31910,
+      76479
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "retrait de la liste actuelle…"
+    ],
+    [
+     "viderListe"
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 10,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      },
+      {
+       "serie_id": 11,
+       "categorie_manuelle": "anime",
+       "ajoute_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "categorie_manuelle": "serie",
+       "ajoute_le": "2026-11-21T08:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "épisodes cochés…"
+    ],
+    [
+     "cocherEpisodesImportes",
+     [
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-14T20:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-13T18:00:00.123Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 0,
+       "episode": 1,
+       "vu_le": "2026-11-15T10:00:00.000Z"
+      },
+      {
+       "serie_id": 10,
+       "saison": 2,
+       "episode": 1,
+       "vu_le": "2026-11-17T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 2,
+       "episode": 0,
+       "vu_le": "2026-11-19T09:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 3,
+       "vu_le": "2026-03-02T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 4,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 5,
+       "vu_le": "2026-11-19T04:30:00.999Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 1,
+       "episode": 6,
+       "vu_le": "2026-11-19T10:00:00.000Z"
+      },
+      {
+       "serie_id": 11,
+       "saison": 3,
+       "episode": 1,
+       "vu_le": "2026-11-19T00:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 1,
+       "vu_le": "2026-11-21T20:00:00.000Z"
+      },
+      {
+       "serie_id": 12,
+       "saison": 1,
+       "episode": 2,
+       "vu_le": "2026-11-21T21:00:00.000Z"
+      }
+     ]
+    ],
+    [
+     "progression",
+     "statuts…"
+    ],
+    [
+     "changerStatut",
+     10,
+     "termine"
+    ]
+   ],
+   "etape": "erreur",
+   "bilan": null,
+   "listeVidee": true
+  },
+  {
+   "plan": 0,
+   "mode": "ajout",
+   "panne": "suivreSeriesImportees",
+   "appels": [
+    [
+     "progression",
+     "recherche des séries dans le catalogue…"
+    ],
+    [
+     "idsCatalogue",
+     [
+      1000,
+      31910,
+      1399,
+      2
+     ]
+    ],
+    [
+     "progression",
+     "fiches TMDB 1 / 2 (« Mille »)…"
+    ],
+    [
+     "importerSerie",
+     1000
+    ],
+    [
+     "progression",
+     "fiches TMDB 2 / 2 (« L'Attaque des Titans « 進撃の巨人 » 🎬 »)…"
+    ],
+    [
+     "importerSerie",
+     31910
+    ],
+    [
+     "progression",
+     "ajout des séries…"
+    ],
+    [
+     "suivreSeriesImportees",
+     [
+      {
+       "serie_id": 500,
+       "categorie_manuelle": null,
+       "ajoute_le": "2026-11-23T12:34:56.789Z"
+      }
+     ]
+    ]
+   ],
+   "etape": "erreur",
+   "bilan": null,
+   "listeVidee": false
+  }
+ ],
+ "catalogue": {
+  "2": 11,
+  "999": 14,
+  "1399": 10,
+  "76479": 12
+ },
+ "tmdb": {
+  "1000": 500,
+  "31910": null
+ }
+}
