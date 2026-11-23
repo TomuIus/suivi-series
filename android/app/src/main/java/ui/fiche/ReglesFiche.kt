@@ -55,11 +55,16 @@ fun ordonnerSaisons(saisons: List<Saison>): List<Saison> =
     saisons.filter { it.numero > 0 } + saisons.filter { it.numero == 0 }
 
 /**
- * Saison dépliée à l'ouverture : celle du prochain épisode, sinon la
- * dernière saison normale, sinon les spéciaux (0).
+ * Saison dépliée à l'ouverture. Série suivie : celle du prochain épisode,
+ * sinon la dernière saison normale, sinon les spéciaux (0). Aperçu (pas de
+ * suivi) : la première saison normale, sinon les spéciaux.
  */
 fun saisonInitiale(saisons: List<Saison>, suivi: Suivi?): Int =
-    suivi?.prochaineSaison ?: saisons.lastOrNull { it.numero > 0 }?.numero ?: 0
+    if (suivi != null) {
+        suivi.prochaineSaison ?: saisons.lastOrNull { it.numero > 0 }?.numero ?: 0
+    } else {
+        saisons.firstOrNull { it.numero > 0 }?.numero ?: 0
+    }
 
 /** Nombre d'épisodes cochés dans une saison (seulement ceux que la saison compte). */
 fun nbVusSaison(saison: Saison, vus: Set<Episode>): Int =
@@ -213,6 +218,35 @@ fun texteEpisodesCoches(titre: String, nombre: Int): String =
 
 /** Message après « Annuler ». */
 fun texteRemisCommeAvant(titre: String): String = "« $titre » : épisodes décochés et statut remis comme avant."
+
+// --- Aperçu (décision 77) ---
+
+/** « 3 saisons », « 1 saison », « Aucune saison annoncée » (sans compter les spéciaux), comme nombreSaisons sur le site. */
+fun nombreSaisons(saisons: List<Saison>): String {
+    val n = saisons.count { it.numero > 0 }
+    return when (n) {
+        0 -> "Aucune saison annoncée"
+        1 -> "1 saison"
+        else -> "$n saisons"
+    }
+}
+
+/** Ligne de l'aperçu sous le titre : « En diffusion | 3 saisons ». */
+fun ligneApercu(serie: SerieCatalogue, saisons: List<Saison>): String =
+    "${libelleDiffusion(serie.statutDiffusion)} | ${nombreSaisons(saisons)}"
+
+/**
+ * Étiquette « Animé » de la fiche (estAnimeFiche du site) : la correction de
+ * l'utilisateur pour une série suivie, sinon le classement automatique.
+ */
+fun estAnimeFiche(serie: SerieCatalogue, suivi: Suivi?): Boolean =
+    suivi?.estAnime ?: (serie.estAnime == true)
+
+/**
+ * Compte d'une saison dans l'aperçu : « 10 épisodes », « 1 épisode »,
+ * « 0 épisode » (le site écrit encore « 1 épisodes » : à corriger de son côté).
+ */
+fun nombreEpisodes(n: Int): String = if (n <= 1) "$n épisode" else "$n épisodes"
 
 /** Phrase de la confirmation de retrait, selon le nombre d'épisodes cochés (perteEpisodes du site). */
 fun perteEpisodes(nombre: Int): String = when (nombre) {

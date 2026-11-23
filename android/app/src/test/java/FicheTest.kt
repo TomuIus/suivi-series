@@ -10,14 +10,18 @@ import io.github.tomuius.canapilou.ui.fiche.EtatEpisode
 import io.github.tomuius.canapilou.ui.fiche.STATUTS_MANUELS
 import io.github.tomuius.canapilou.ui.fiche.categorieCalculee
 import io.github.tomuius.canapilou.ui.fiche.episodesPrecedentsNonVus
+import io.github.tomuius.canapilou.ui.fiche.estAnimeFiche
 import io.github.tomuius.canapilou.ui.fiche.estDiffuse
 import io.github.tomuius.canapilou.ui.fiche.etatEpisode
 import io.github.tomuius.canapilou.ui.fiche.ficheAncienne
 import io.github.tomuius.canapilou.ui.fiche.libelleCategorie
 import io.github.tomuius.canapilou.ui.fiche.libelleDiffusion
 import io.github.tomuius.canapilou.ui.fiche.libelleStatut
+import io.github.tomuius.canapilou.ui.fiche.ligneApercu
 import io.github.tomuius.canapilou.ui.fiche.ligneDiffusion
 import io.github.tomuius.canapilou.ui.fiche.nbVusSaison
+import io.github.tomuius.canapilou.ui.fiche.nombreEpisodes
+import io.github.tomuius.canapilou.ui.fiche.nombreSaisons
 import io.github.tomuius.canapilou.ui.fiche.ordonnerSaisons
 import io.github.tomuius.canapilou.ui.fiche.perteEpisodes
 import io.github.tomuius.canapilou.ui.fiche.saisonInitiale
@@ -134,6 +138,38 @@ class FicheTest {
         assertEquals(listOf(1, 2, 0), ordonnerSaisons(saisons(0, 1, 2)).map { it.numero })
         assertEquals(listOf(0), ordonnerSaisons(saisons(0)).map { it.numero })
         assertEquals(listOf(1, 2, 3), ordonnerSaisons(saisons(1, 2, 3)).map { it.numero })
+    }
+
+    // Aperçu d'une série qui n'est pas dans la liste (valeurs obtenues avec
+    // preparer, nombreSaisons, libelleDiffusion et estAnimeFiche du site).
+    @Test
+    fun apercuCommeSurLeSite() {
+        assertEquals(1, saisonInitiale(saisons(0, 1, 2), null))
+        assertEquals(2, saisonInitiale(saisons(2, 1), null))
+        assertEquals(0, saisonInitiale(saisons(0), null))
+        assertEquals(0, saisonInitiale(emptyList(), null))
+        assertEquals(3, saisonInitiale(saisons(3, 0, 4), null))
+        assertEquals("Aucune saison annoncée", nombreSaisons(emptyList()))
+        assertEquals("Aucune saison annoncée", nombreSaisons(saisons(0)))
+        assertEquals("1 saison", nombreSaisons(saisons(1)))
+        assertEquals("1 saison", nombreSaisons(saisons(0, 1)))
+        assertEquals("3 saisons", nombreSaisons(saisons(1, 2, 3)))
+        assertEquals("2 saisons", nombreSaisons(saisons(0, 1, 2)))
+        assertEquals("Terminée | 2 saisons", ligneApercu(serie("Ended"), saisons(1, 2)))
+        assertEquals("En diffusion | 1 saison", ligneApercu(serie("Returning Series"), saisons(1)))
+        assertEquals("Statut de diffusion inconnu | Aucune saison annoncée", ligneApercu(serie(null), emptyList()))
+        assertEquals("Bizarre | 1 saison", ligneApercu(serie("Bizarre"), saisons(0, 1)))
+        // Le site écrit « 1 épisodes » et « 0 épisodes » : l'appli accorde
+        // (même règle que « épisode vu »), différence voulue.
+        assertEquals("0 épisode", nombreEpisodes(0))
+        assertEquals("1 épisode", nombreEpisodes(1))
+        assertEquals("2 épisodes", nombreEpisodes(2))
+        assertEquals("10 épisodes", nombreEpisodes(10))
+        assertEquals(true, estAnimeFiche(serie(null, estAnime = true), null))
+        assertEquals(false, estAnimeFiche(serie(null, estAnime = false), null))
+        assertEquals(false, estAnimeFiche(serie(null, estAnime = null), null))
+        assertEquals(false, estAnimeFiche(serie(null, estAnime = true), suivi().copy(estAnime = false)))
+        assertEquals(true, estAnimeFiche(serie(null, estAnime = false), suivi().copy(estAnime = true)))
     }
 
     @Test

@@ -33,3 +33,6 @@ data class ResultatTmdb(
     val pays: List<String> = emptyList(),
     val anime: Boolean = false,
 )
+
+/** Aperçu d'une série lu chez TMDB sans rien enregistrer (action « fiche ») : fiche, saisons, résumé. */
+data class ApercuTmdb(val serie: SerieCatalogue, val saisons: List<Saison>, val resume: String?)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -44,9 +46,9 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -84,17 +86,24 @@ import kotlinx.coroutines.flow.collectLatest
 // décoche un épisode, puis la barre du bas propose de cocher aussi les
 // épisodes précédents (partie A, décision 66). Menus « Statut » et
 // « Catégorie » sous l'en-tête, « Retirer de ma liste » en bas avec une
-// fenêtre de confirmation (partie B, décisions 67 et 68).
+// fenêtre de confirmation (partie B, décisions 67 et 68). Pour une série qui
+// n'est pas dans votre liste : aperçu, sans cases à cocher, avec « + Ajouter
+// à ma liste » et « Plus tard » (décision 77).
 
 @Composable
 fun EcranFiche(
-    serieId: Long,
+    cible: CibleFiche,
     onRetour: () -> Unit,
     // Série retirée : l'écran revient à « Ma liste », qui affiche ce message.
     onRetiree: (String) -> Unit,
+    // Aperçu d'une série TMDB ajoutée : l'écran est remplacé par sa fiche.
+    onAjoutee: (SerieAjoutee) -> Unit = {},
+    // Message à afficher en arrivant (série tout juste ajoutée), puis oublié.
+    messageEnAttente: String? = null,
+    onMessagePris: () -> Unit = {},
     // Un ViewModel propre à cette fiche (Navigation 3 le garde tant qu'elle
     // est dans l'historique).
-    vm: FicheViewModel = viewModel { FicheViewModel(serieId, Conteneur.depotListe, Conteneur.depotTmdb) },
+    vm: FicheViewModel = viewModel { FicheViewModel(cible, Conteneur.depotListe, Conteneur.depotTmdb) },
 ) {
     val etat by vm.etat.collectAsStateWithLifecycle()
     val titres by vm.titres.collectAsStateWithLifecycle()
@@ -103,6 +112,7 @@ fun EcranFiche(
     val categorieEnCours by vm.categorieEnCours.collectAsStateWithLifecycle()
     val confirmationRetrait by vm.confirmationRetrait.collectAsStateWithLifecycle()
     val retraitEnCours by vm.retraitEnCours.collectAsStateWithLifecycle()
+    val ajoutEnCours by vm.ajoutEnCours.collectAsStateWithLifecycle()
 
     // Messages en bas de l'écran (un nouveau remplace le précédent) : erreurs,
     // et épisodes cochés par un statut, avec « Annuler » pendant 8 s.
@@ -120,6 +130,15 @@ fun EcranFiche(
     }
     LaunchedEffect(vm) {
         vm.retiree.collect { message -> onRetiree(message) }
+    }
+    LaunchedEffect(vm) {
+        vm.ajoutee.collect { ajout -> onAjoutee(ajout) }
+    }
+    LaunchedEffect(messageEnAttente) {
+        if (messageEnAttente != null) {
+            vm.annoncer(messageEnAttente)
+            onMessagePris()
+        }
     }
 
     Scaffold(
@@ -164,6 +183,8 @@ fun EcranFiche(
                         titres = titres,
                         statutEnCours = statutEnCours,
                         categorieEnCours = categorieEnCours,
+                        ajoutEnCours = ajoutEnCours,
+                        onAjouter = vm::ajouterALaListe,
                         onDeplier = vm::chargerTitres,
                         onBasculer = vm::basculer,
                         onStatut = vm::modifierStatut,
@@ -230,14 +251,18 @@ private fun ContenuFiche(
     titres: Map<Int, TitresSaison>,
     statutEnCours: Boolean,
     categorieEnCours: Boolean,
+    ajoutEnCours: String?,
+    onAjouter: (Boolean) -> Unit,
     onDeplier: (Int) -> Unit,
     onBasculer: (Int, Int) -> Unit,
     onStatut: (String?) -> Unit,
     onCategorie: (String?) -> Unit,
     onRetirer: () -> Unit,
 ) {
+    val suivie = fiche.suivi != null
     // Saison dépliée ou repliée, mémorisé même si Android recrée l'écran ;
-    // au départ, seule la saison du prochain épisode est dépliée.
+    // au départ, seule la saison du prochain épisode est dépliée (la
+    // première pour un aperçu).
     val ouvertes: Map<Int, MutableState<Boolean>> = fiche.saisons.associate { s ->
         s.numero to key(s.numero) { rememberSaveable { mutableStateOf(s.numero == fiche.saisonInitiale) } }
     }
@@ -248,7 +273,7 @@ private fun ContenuFiche(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         item(key = "entete") {
-            EnTeteFiche(fiche, titres, statutEnCours, categorieEnCours, onStatut, onCategorie)
+            EnTeteFiche(fiche, titres, statutEnCours, categorieEnCours, ajoutEnCours, onAjouter, onStatut, onCategorie)
         }
         fiche.resume?.takeIf { it.isNotBlank() }?.let { resume ->
             item(key = "resume") { CarteResume(resume) }
@@ -257,7 +282,8 @@ private fun ContenuFiche(
             Column(Modifier.padding(top = 8.dp)) {
                 Text("Épisodes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    "Touchez un épisode pour le cocher ou le décocher.",
+                    if (suivie) "Touchez un épisode pour le cocher ou le décocher."
+                    else "Ajoutez la série à votre liste pour cocher des épisodes.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -266,7 +292,10 @@ private fun ContenuFiche(
         for (saison in fiche.saisons) {
             val ouverte = ouvertes.getValue(saison.numero)
             item(key = "saison-${saison.numero}") {
-                TitreSaison(saison, nbVusSaison(saison, fiche.vus), ouverte.value) {
+                // « (3 / 10) » pour une série suivie, « (10 épisodes) » pour un aperçu.
+                val compte = if (suivie) "${nbVusSaison(saison, fiche.vus)} / ${saison.nbEpisodes}"
+                else nombreEpisodes(saison.nbEpisodes)
+                TitreSaison(saison, compte, ouverte.value) {
                     ouverte.value = !ouverte.value
                     if (ouverte.value) onDeplier(saison.numero) // déplier charge les titres
                 }
@@ -292,11 +321,12 @@ private fun ContenuFiche(
                     titre = titreEpisodeAffiche(infos?.titre, titresSaison is TitresSaison.Chargement, numero),
                     date = texteDate(infos?.date, aVenir = etatEp == EtatEpisode.A_VENIR),
                     etat = etatEp,
+                    cochable = suivie,
                     onBasculer = { onBasculer(saison.numero, numero) },
                 )
             }
         }
-        item(key = "retrait") {
+        if (suivie) item(key = "retrait") {
             Column(Modifier.padding(top = 16.dp)) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 TextButton(
@@ -317,6 +347,8 @@ private fun EnTeteFiche(
     titres: Map<Int, TitresSaison>,
     statutEnCours: Boolean,
     categorieEnCours: Boolean,
+    ajoutEnCours: String?,
+    onAjouter: (Boolean) -> Unit,
     onStatut: (String?) -> Unit,
     onCategorie: (String?) -> Unit,
 ) {
@@ -344,38 +376,51 @@ private fun EnTeteFiche(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    if (suivi.estAnime) Etiquette("Animé")
+                    if (estAnimeFiche(serie, suivi)) Etiquette("Animé")
                 }
                 serie.titreOriginal?.takeIf { it.isNotEmpty() && it != serie.titre }?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(
-                    ligneDiffusion(serie, suivi),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                pourcentage(suivi.nbVus, suivi.nbDiffuses)?.let { BarreProgression(it) }
-                val saison = suivi.prochaineSaison
-                val episode = suivi.prochainEpisode
-                if (saison != null && episode != null) {
-                    // Titre du prochain épisode, dès que sa saison a été chargée
-                    // (sur la fiche, le site l'affiche tel quel, même « Épisode 6 »).
-                    val titre = (titres[saison] as? TitresSaison.Recus)?.episodes?.get(episode)?.titre
+                if (suivi == null) {
+                    // Aperçu : diffusion et nombre de saisons, puis les boutons d'ajout.
                     Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                                append("Prochain : ${libelleEpisode(saison, episode)}")
-                            }
-                            if (!titre.isNullOrEmpty()) append(" \"$titre\"")
-                        },
+                        ligneApercu(serie, fiche.saisons),
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    BoutonsAjout(ajoutEnCours, onAjouter)
+                } else {
+                    Text(
+                        ligneDiffusion(serie, suivi),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    pourcentage(suivi.nbVus, suivi.nbDiffuses)?.let { BarreProgression(it) }
+                    val saison = suivi.prochaineSaison
+                    val episode = suivi.prochainEpisode
+                    if (saison != null && episode != null) {
+                        // Titre du prochain épisode, dès que sa saison a été chargée
+                        // (sur la fiche, le site l'affiche tel quel, même « Épisode 6 »).
+                        val titre = (titres[saison] as? TitresSaison.Recus)?.episodes?.get(episode)?.titre
+                        Text(
+                            buildAnnotatedString {
+                                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                                    append("Prochain : ${libelleEpisode(saison, episode)}")
+                                }
+                                if (!titre.isNullOrEmpty()) append(" \"$titre\"")
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
         }
         // Statut et catégorie, sous l'affiche, sur toute la largeur (comme le
         // site sur téléphone, où la colonne de droite est trop étroite).
-        Column(
+        // Rien pour un aperçu (juste la marge du bas).
+        if (suivi == null) {
+            Spacer(Modifier.height(12.dp))
+        } else Column(
             modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -400,6 +445,20 @@ private fun EnTeteFiche(
                 actif = !categorieEnCours,
                 onChoix = onCategorie,
             )
+        }
+    }
+}
+
+// Aperçu : « + Ajouter à ma liste » et « Plus tard » (« Ajout… » pendant
+// l'envoi), comme sur le site.
+@Composable
+private fun BoutonsAjout(ajoutEnCours: String?, onAjouter: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+        Button(onClick = { onAjouter(false) }, enabled = ajoutEnCours == null) {
+            Text(if (ajoutEnCours == "liste") "Ajout…" else "+ Ajouter à ma liste")
+        }
+        OutlinedButton(onClick = { onAjouter(true) }, enabled = ajoutEnCours == null) {
+            Text(if (ajoutEnCours == "plus_tard") "Ajout…" else "Plus tard")
         }
     }
 }
@@ -511,7 +570,7 @@ private fun CarteResume(resume: String) {
 // Titre d'une saison, « Saison 1 (3 / 10) », avec une flèche ; un appui la
 // déplie ou la replie.
 @Composable
-private fun TitreSaison(saison: Saison, nbVus: Int, ouverte: Boolean, onBasculer: () -> Unit) {
+private fun TitreSaison(saison: Saison, compte: String, ouverte: Boolean, onBasculer: () -> Unit) {
     Column {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Row(
@@ -522,7 +581,7 @@ private fun TitreSaison(saison: Saison, nbVus: Int, ouverte: Boolean, onBasculer
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "${titreSaison(saison.numero)} ($nbVus / ${saison.nbEpisodes})",
+                "${titreSaison(saison.numero)} ($compte)",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -540,7 +599,14 @@ private fun TitreSaison(saison: Saison, nbVus: Int, ouverte: Boolean, onBasculer
 // zone d'appui) ; les lecteurs d'écran l'annoncent comme une case à cocher.
 // Pas encore sorti : contour en pointillé, pas cochable.
 @Composable
-private fun LigneEpisode(numero: Int, titre: String, date: String, etat: EtatEpisode, onBasculer: () -> Unit) {
+private fun LigneEpisode(
+    numero: Int,
+    titre: String,
+    date: String,
+    etat: EtatEpisode,
+    cochable: Boolean, // faux dans un aperçu : ni case ni appui
+    onBasculer: () -> Unit,
+) {
     val couleurs = MaterialTheme.colorScheme
     val forme = RoundedCornerShape(8.dp)
     val aVenir = etat == EtatEpisode.A_VENIR
@@ -557,17 +623,23 @@ private fun LigneEpisode(numero: Int, titre: String, date: String, etat: EtatEpi
             .heightIn(min = 48.dp)
             .then(contour)
             .clip(forme)
-            .toggleable(
-                value = etat == EtatEpisode.VU,
-                enabled = !aVenir,
-                role = Role.Checkbox,
-                onValueChange = { onBasculer() },
+            .then(
+                if (cochable) {
+                    Modifier.toggleable(
+                        value = etat == EtatEpisode.VU,
+                        enabled = !aVenir,
+                        role = Role.Checkbox,
+                        onValueChange = { onBasculer() },
+                    )
+                } else {
+                    Modifier
+                }
             )
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        CaseEpisode(etat)
+        if (cochable) CaseEpisode(etat)
         Text(
             "$numero",
             fontWeight = FontWeight.SemiBold,

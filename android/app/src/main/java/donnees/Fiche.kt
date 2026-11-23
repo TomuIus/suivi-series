@@ -5,10 +5,14 @@ import kotlinx.serialization.Serializable
 
 // Données de la fiche d'une série, lues comme chargerFiche dans js/base.js.
 
-/** Une série du catalogue (table « series », fiche TMDB partagée par tous les comptes). */
+/**
+ * Une série du catalogue (table « series », fiche TMDB partagée par tous les
+ * comptes). Sert aussi pour l'aperçu d'une série lue directement chez TMDB :
+ * [id] vaut alors null (elle n'est pas encore dans le catalogue).
+ */
 @Serializable
 data class SerieCatalogue(
-    val id: Long,
+    val id: Long? = null,
     @SerialName("tmdb_id") val tmdbId: Int,
     val titre: String,
     @SerialName("titre_original") val titreOriginal: String? = null,

@@ -86,6 +86,8 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun EcranListe(
     onOuvrirSerie: (Long) -> Unit,
+    // Aperçu d'une série de TMDB qui n'est pas dans la liste (identifiant TMDB).
+    onApercu: (Int) -> Unit,
     onAPropos: () -> Unit,
     // Message à afficher en arrivant (série retirée depuis sa fiche), puis oublié.
     messageEnAttente: String?,
@@ -176,6 +178,7 @@ fun EcranListe(
                         vusEnCours = vusEnCours,
                         onVu = vm::cocher,
                         onOuvrir = onOuvrirSerie,
+                        onApercu = onApercu,
                         onAjouter = vm::ajouter,
                     )
                 } else when (val e = etat) {
@@ -262,6 +265,7 @@ private fun ResultatsRecherche(
     vusEnCours: Set<Long>,
     onVu: (SerieSuivie) -> Unit,
     onOuvrir: (Long) -> Unit,
+    onApercu: (Int) -> Unit,
     onAjouter: (ResultatTmdb, Boolean) -> Unit,
 ) {
     val tropCourte = texte.trim().length < LONGUEUR_MIN
@@ -303,7 +307,7 @@ private fun ResultatsRecherche(
         }
         if (info != null) item(key = "info") { TexteInfo(info) }
         items(autres, key = { "tmdb-${it.tmdbId}" }) { r ->
-            CarteResultat(r, suivies[r.tmdbId], ajoutsEnCours[r.tmdbId], onAjouter, onOuvrir)
+            CarteResultat(r, suivies[r.tmdbId], ajoutsEnCours[r.tmdbId], onAjouter, onOuvrir, onApercu)
         }
     }
 }
@@ -325,8 +329,8 @@ private fun TexteInfo(texte: String) {
 
 // Un résultat TMDB : affiche, titre, année · pays · titre original, début du
 // résumé ; puis « Ajouter » et « Plus tard » (« Ajout… » pendant l'envoi),
-// ou « Dans ma liste » si la série est déjà suivie (un appui ouvre alors sa
-// fiche). L'aperçu d'une série non suivie viendra ensuite (décision 74).
+// ou « Dans ma liste » si la série est déjà suivie. Un appui sur la carte
+// ouvre la fiche d'une série suivie, sinon son aperçu (décisions 74 et 77).
 @Composable
 private fun CarteResultat(
     r: ResultatTmdb,
@@ -334,6 +338,7 @@ private fun CarteResultat(
     ajoutEnCours: String?,
     onAjouter: (ResultatTmdb, Boolean) -> Unit,
     onOuvrir: (Long) -> Unit,
+    onApercu: (Int) -> Unit,
 ) {
     val contenu: @Composable () -> Unit = {
         Row(
@@ -411,11 +416,10 @@ private fun CarteResultat(
             }
         }
     }
-    if (suivie != null) {
-        OutlinedCard(onClick = { onOuvrir(suivie.serieId) }, modifier = Modifier.fillMaxWidth()) { contenu() }
-    } else {
-        OutlinedCard(modifier = Modifier.fillMaxWidth()) { contenu() }
-    }
+    OutlinedCard(
+        onClick = { if (suivie != null) onOuvrir(suivie.serieId) else onApercu(r.tmdbId) },
+        modifier = Modifier.fillMaxWidth(),
+    ) { contenu() }
 }
 
 // Haut de l'écran : le nom de l'appli et un menu (trois points).

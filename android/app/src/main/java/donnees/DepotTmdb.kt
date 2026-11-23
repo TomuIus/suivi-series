@@ -6,7 +6,10 @@ import io.ktor.client.statement.bodyAsText
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 // Forme de la réponse de l'action « saison » : { "episodes": [ … ] }.
@@ -18,12 +21,10 @@ private data class ReponseSaison(val episodes: List<EpisodeTmdb> = emptyList())
 private data class ReponseRecherche(val resultats: List<ResultatTmdb> = emptyList())
 
 // Réponse de l'action « fiche » : { "serie": { …, "resume": … }, "saisons": [ … ] }.
-// Pour l'instant, seul le résumé sert (l'aperçu complet viendra avec la recherche).
+// La série a les mêmes champs que la table « series » (sans identifiant
+// interne), plus le résumé.
 @Serializable
-private data class ResumeSeul(val resume: String? = null)
-
-@Serializable
-private data class ReponseApercu(val serie: ResumeSeul)
+private data class ReponseApercu(val serie: JsonObject, val saisons: List<Saison> = emptyList())
 
 // Dépôt « TMDB » : tout ce qui passe par la fonction serveur « tmdb », comme
 // js/tmdb.js sur le site. La clé TMDB reste sur le serveur (décision 8) ;
@@ -90,8 +91,11 @@ class DepotTmdb(private val client: SupabaseClient) {
         return json.decodeFromString(SerieImportee.serializer(), reponse.bodyAsText())
     }
 
-    /** Résumé d'une série, demandé à TMDB sans rien enregistrer (action « fiche »). */
-    suspend fun resume(tmdbId: Int): String? {
+    /**
+     * Aperçu d'une série demandé à TMDB sans rien enregistrer (action
+     * « fiche ») : sa fiche, ses saisons et son résumé.
+     */
+    suspend fun apercu(tmdbId: Int): ApercuTmdb {
         val reponse = client.functions.invoke(
             function = "tmdb",
             body = buildJsonObject {
@@ -99,8 +103,16 @@ class DepotTmdb(private val client: SupabaseClient) {
                 put("tmdbId", tmdbId)
             },
         )
-        return json.decodeFromString(ReponseApercu.serializer(), reponse.bodyAsText()).serie.resume
+        val brut = json.decodeFromString(ReponseApercu.serializer(), reponse.bodyAsText())
+        return ApercuTmdb(
+            serie = json.decodeFromJsonElement(SerieCatalogue.serializer(), brut.serie),
+            saisons = brut.saisons,
+            resume = brut.serie["resume"]?.jsonPrimitive?.contentOrNull,
+        )
     }
+
+    /** Résumé d'une série, demandé à TMDB sans rien enregistrer (action « fiche »). */
+    suspend fun resume(tmdbId: Int): String? = apercu(tmdbId).resume
 
     /** Oublie les titres reçus (bouton « Actualiser », comme un rechargement de la page du site). */
     fun oublierTitres() {

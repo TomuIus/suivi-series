@@ -12,6 +12,7 @@ import io.github.tomuius.canapilou.donnees.Saison
 import io.github.tomuius.canapilou.donnees.SerieCatalogue
 import io.github.tomuius.canapilou.donnees.Suivi
 import io.github.tomuius.canapilou.donnees.messageErreur
+import io.github.tomuius.canapilou.ui.liste.messageAjout
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -32,18 +33,36 @@ sealed interface EtatFiche {
     data class Prete(val fiche: Fiche) : EtatFiche
 }
 
-/** Une fiche prête à afficher (série suivie). */
+/** Quelle fiche ouvrir : une série du catalogue (suivie ou non), ou l'aperçu d'une série TMDB. */
+sealed interface CibleFiche {
+    data class Catalogue(val serieId: Long) : CibleFiche
+    data class Tmdb(val tmdbId: Int) : CibleFiche
+}
+
+/**
+ * Une fiche prête à afficher. [suivi] vaut null quand la série n'est pas dans
+ * votre liste : c'est alors un aperçu (épisodes non cochables, boutons
+ * « Ajouter » et « Plus tard »).
+ */
 data class Fiche(
     val serie: SerieCatalogue,
     val saisons: List<Saison>, // dans l'ordre d'affichage (spéciaux en dernier)
-    val suivi: Suivi,
+    val suivi: Suivi?,
     val vus: Set<Episode>,     // épisodes cochés
     val saisonInitiale: Int,   // saison dépliée à l'ouverture
     val resume: String?,       // demandé à TMDB, arrive un instant après
 )
 
 /** Épisodes cochés par un statut (« Terminé », « À jour ») et statut d'avant, pour « Annuler ». */
-data class AnnulationStatut(val titre: String, val episodes: List<Episode>, val ancienStatut: String?)
+data class AnnulationStatut(
+    val serieId: Long,
+    val titre: String,
+    val episodes: List<Episode>,
+    val ancienStatut: String?,
+)
+
+/** Série ajoutée depuis l'aperçu : son identifiant interne et le message à afficher. */
+data class SerieAjoutee(val serieId: Long, val message: String)
 
 /** Message affiché un moment en bas de l'écran, avec « Annuler » si [annulation] est fourni. */
 data class MessageFiche(val texte: String, val annulation: AnnulationStatut? = null)
@@ -57,9 +76,11 @@ sealed interface TitresSaison {
 
 // ViewModel de la fiche d'une série (décision 58), comme utiliserFiche dans
 // js/fiche.js : partie A (décision 66), lire la fiche et cocher les
-// épisodes ; partie B (décisions 67 et 68), statut, catégorie et retrait.
+// épisodes ; partie B (décisions 67 et 68), statut, catégorie et retrait ;
+// aperçu d'une série non suivie, avec « Ajouter » et « Plus tard »
+// (décision 77).
 class FicheViewModel(
-    private val serieId: Long,
+    private val cible: CibleFiche,
     private val depotListe: DepotListe,
     private val depotTmdb: DepotTmdb,
 ) : ViewModel() {
@@ -96,6 +117,14 @@ class FicheViewModel(
     private val _retiree = Channel<String>(Channel.BUFFERED)
     val retiree: Flow<String> = _retiree.receiveAsFlow()
 
+    // Ajout depuis l'aperçu en cours : "liste" ou "plus_tard" (bouton appuyé), sinon null.
+    private val _ajoutEnCours = MutableStateFlow<String?>(null)
+    val ajoutEnCours: StateFlow<String?> = _ajoutEnCours.asStateFlow()
+
+    // Aperçu d'une série TMDB ajouté : l'écran est alors remplacé par la vraie fiche.
+    private val _ajoutee = Channel<SerieAjoutee>(Channel.BUFFERED)
+    val ajoutee: Flow<SerieAjoutee> = _ajoutee.receiveAsFlow()
+
     // Épisodes dont l'envoi est en cours : un nouvel appui est ignoré, pour
     // que « coché » puis « décoché » ne partent pas en même temps (ils
     // pourraient arriver dans le désordre). Choix de Claude, à revoir.
@@ -113,14 +142,29 @@ class FicheViewModel(
         _etat.value = EtatFiche.Chargement
         viewModelScope.launch {
             try {
-                val fiche = preparer(depotListe.chargerFiche(serieId))
-                if (fiche == null) {
-                    _etat.value = EtatFiche.Introuvable
-                    return@launch
+                when (cible) {
+                    // Série du catalogue, suivie ou non : lue dans la base,
+                    // puis complétée avec TMDB en arrière-plan.
+                    is CibleFiche.Catalogue -> {
+                        val fiche = preparer(depotListe.chargerFiche(cible.serieId))
+                        if (fiche == null) {
+                            _etat.value = EtatFiche.Introuvable
+                            return@launch
+                        }
+                        _etat.value = EtatFiche.Prete(fiche)
+                        chargerTitres(fiche.saisonInitiale)
+                        completerDepuisTmdb(fiche.serie)
+                    }
+                    // Aperçu d'une série TMDB : lu directement chez TMDB (action
+                    // « fiche »), rien n'est enregistré (décision 21).
+                    is CibleFiche.Tmdb -> {
+                        val apercu = depotTmdb.apercu(cible.tmdbId)
+                        val fiche = preparer(DonneesFiche(apercu.serie, apercu.saisons, null, emptyList()))!!
+                            .copy(resume = apercu.resume)
+                        _etat.value = EtatFiche.Prete(fiche)
+                        chargerTitres(fiche.saisonInitiale)
+                    }
                 }
-                _etat.value = EtatFiche.Prete(fiche)
-                chargerTitres(fiche.saisonInitiale)
-                completerDepuisTmdb(fiche.serie)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -129,18 +173,16 @@ class FicheViewModel(
         }
     }
 
-    // Met les données reçues en forme. null si la série n'existe pas ou n'est
-    // pas dans votre liste (sur le site, ce second cas ouvre l'aperçu, qui
-    // viendra avec la recherche).
+    // Met les données reçues en forme ; null si la série n'existe pas. Sans
+    // suivi (série pas dans votre liste) : aperçu.
     private fun preparer(d: DonneesFiche): Fiche? {
         val serie = d.serie ?: return null
-        val suivi = d.suivi ?: return null
         return Fiche(
             serie = serie,
             saisons = ordonnerSaisons(d.saisons),
-            suivi = suivi,
+            suivi = d.suivi,
             vus = d.vus.toSet(),
-            saisonInitiale = saisonInitiale(d.saisons, suivi),
+            saisonInitiale = saisonInitiale(d.saisons, d.suivi),
             resume = null,
         )
     }
@@ -165,17 +207,17 @@ class FicheViewModel(
                     modifierFiche { it.copy(resume = resume) }
                     return@launch
                 }
+                val id = serie.id ?: return@launch // série du catalogue : toujours un identifiant
                 val importee = depotTmdb.importerSerie(serie.tmdbId)
                 depotListe.noterChangement() // nouveaux épisodes possibles : « Ma liste » se relira
-                val d = depotListe.chargerFiche(serieId)
+                val d = depotListe.chargerFiche(id)
                 val nouvelleSerie = d.serie ?: return@launch
-                val nouveauSuivi = d.suivi ?: return@launch
                 // On garde la saison ouverte et les cases cochées entre-temps.
                 modifierFiche {
                     it.copy(
                         serie = nouvelleSerie,
                         saisons = ordonnerSaisons(d.saisons),
-                        suivi = nouveauSuivi,
+                        suivi = d.suivi,
                         resume = importee.resume,
                     )
                 }
@@ -216,6 +258,7 @@ class FicheViewModel(
      */
     fun basculer(saison: Int, episode: Int) {
         val fiche = ficheActuelle() ?: return
+        val serieId = fiche.suivi?.serieId ?: return // aperçu : rien à cocher
         val ep = Episode(saison, episode)
         if (ep in basculesEnCours) return
         val etat = etatEpisode(fiche.serie, fiche.vus, saison, episode)
@@ -266,6 +309,7 @@ class FicheViewModel(
 
     /** « Oui, les cocher » : coche d'un coup les épisodes proposés. */
     fun cocherPrecedents() {
+        val serieId = ficheActuelle()?.suivi?.serieId ?: return
         val episodes = _invite.value ?: return
         _invite.value = null
         modifierFiche { it.copy(vus = it.vus + episodes) }
@@ -299,11 +343,13 @@ class FicheViewModel(
      */
     fun modifierStatut(valeur: String?) {
         val fiche = ficheActuelle() ?: return
+        val suivi = fiche.suivi ?: return
+        val serieId = suivi.serieId
         if (_statutEnCours.value) return
         val nouveau = valeur?.ifEmpty { null }
-        val ancien = fiche.suivi.statutManuel
+        val ancien = suivi.statutManuel
         _statutEnCours.value = true
-        modifierFiche { it.copy(suivi = it.suivi.copy(statutManuel = nouveau)) }
+        modifierFiche { it.copy(suivi = it.suivi?.copy(statutManuel = nouveau)) }
         viewModelScope.launch {
             try {
                 val coches = depotListe.choisirStatut(serieId, nouveau)
@@ -315,7 +361,7 @@ class FicheViewModel(
                     _messages.send(
                         MessageFiche(
                             texteEpisodesCoches(fiche.serie.titre, coches.size),
-                            AnnulationStatut(fiche.serie.titre, coches, ancien),
+                            AnnulationStatut(serieId, fiche.serie.titre, coches, ancien),
                         )
                     )
                 }
@@ -323,7 +369,7 @@ class FicheViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                modifierFiche { it.copy(suivi = it.suivi.copy(statutManuel = ancien)) }
+                modifierFiche { it.copy(suivi = it.suivi?.copy(statutManuel = ancien)) }
                 _messages.send(MessageFiche(messageErreur(e)))
             } finally {
                 _statutEnCours.value = false
@@ -340,8 +386,8 @@ class FicheViewModel(
     fun annulerStatut(a: AnnulationStatut) {
         viewModelScope.launch {
             try {
-                depotListe.annulerVus(serieId, a.episodes)
-                depotListe.changerStatut(serieId, a.ancienStatut)
+                depotListe.annulerVus(a.serieId, a.episodes)
+                depotListe.changerStatut(a.serieId, a.ancienStatut)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -359,12 +405,13 @@ class FicheViewModel(
 
     /** Menu « Catégorie » : "serie", "anime", ou null = classement automatique. */
     fun modifierCategorie(valeur: String?) {
-        val fiche = ficheActuelle() ?: return
+        val suivi = ficheActuelle()?.suivi ?: return
+        val serieId = suivi.serieId
         if (_categorieEnCours.value) return
         val nouvelle = valeur?.ifEmpty { null }
-        val ancienne = fiche.suivi.categorieManuelle
+        val ancienne = suivi.categorieManuelle
         _categorieEnCours.value = true
-        modifierFiche { it.copy(suivi = it.suivi.copy(categorieManuelle = nouvelle)) }
+        modifierFiche { it.copy(suivi = it.suivi?.copy(categorieManuelle = nouvelle)) }
         viewModelScope.launch {
             try {
                 depotListe.changerCategorie(serieId, nouvelle)
@@ -372,7 +419,7 @@ class FicheViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                modifierFiche { it.copy(suivi = it.suivi.copy(categorieManuelle = ancienne)) }
+                modifierFiche { it.copy(suivi = it.suivi?.copy(categorieManuelle = ancienne)) }
                 _messages.send(MessageFiche(messageErreur(e)))
             } finally {
                 _categorieEnCours.value = false
@@ -395,6 +442,7 @@ class FicheViewModel(
     /** « Retirer » : retire la série ; l'écran revient alors à « Ma liste », qui affiche un message. */
     fun confirmerRetrait() {
         val fiche = ficheActuelle() ?: return
+        val serieId = fiche.suivi?.serieId ?: return
         if (_retraitEnCours.value) return
         _retraitEnCours.value = true
         viewModelScope.launch {
@@ -414,9 +462,56 @@ class FicheViewModel(
         }
     }
 
+    // --- Ajout à la liste depuis l'aperçu (décision 77) ---
+
+    /**
+     * « + Ajouter à ma liste » ou « Plus tard » (plusTard) dans l'aperçu,
+     * comme ajouterALaListe sur le site. Série déjà dans le catalogue : on a
+     * son identifiant ; sinon, on l'y copie d'abord. Ensuite, l'aperçu devient
+     * la vraie fiche : rechargée ici pour une série du catalogue, ou remplacée
+     * par l'écran de la fiche pour un aperçu venu de TMDB.
+     */
+    fun ajouterALaListe(plusTard: Boolean) {
+        val fiche = ficheActuelle() ?: return
+        if (fiche.suivi != null || _ajoutEnCours.value != null) return
+        _ajoutEnCours.value = if (plusTard) "plus_tard" else "liste"
+        viewModelScope.launch {
+            try {
+                val connue = fiche.serie.id
+                val (id, titre) = if (connue != null) {
+                    connue to fiche.serie.titre
+                } else {
+                    depotTmdb.importerSerie(fiche.serie.tmdbId).let { it.id to it.titre }
+                }
+                val nouvelle = depotListe.suivreSerie(id, plusTard)
+                // Comme sur le site : « … est maintenant dans votre liste. »
+                // (ou « … dans « Plus tard ». » si elle y a vraiment été mise).
+                val message = messageAjout(titre, nouvelle = true, plusTard = plusTard && nouvelle)
+                if (cible is CibleFiche.Catalogue) {
+                    ouvrir()
+                    _messages.send(MessageFiche(message))
+                } else {
+                    _ajoutee.send(SerieAjoutee(id, message))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _messages.send(MessageFiche(messageErreur(e)))
+            } finally {
+                _ajoutEnCours.value = null
+            }
+        }
+    }
+
+    /** Affiche un message venu d'un autre écran (série ajoutée depuis l'aperçu). */
+    fun annoncer(texte: String) {
+        viewModelScope.launch { _messages.send(MessageFiche(texte)) }
+    }
+
     // Relit compteurs, prochain épisode et statut après une modification (la
     // vue « ma_liste » les recalcule). Un échec n'affiche rien.
     private suspend fun actualiserSuivi() {
+        val serieId = ficheActuelle()?.suivi?.serieId ?: return
         val numero = ++numeroSuivi
         try {
             val suivi = depotListe.lireSuivi(serieId)
