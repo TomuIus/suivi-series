@@ -65,6 +65,16 @@ class DepotListe(private val client: SupabaseClient) {
     }
 
     /**
+     * Points, niveau, rang et badges (vue « ma_progression », décision 43),
+     * comme lireProgression sur le site : une seule ligne, entièrement
+     * calculée par la base à partir des épisodes cochés.
+     */
+    suspend fun lireProgression(): Progression =
+        client.from("ma_progression")
+            .select(columns = Columns.list(*COLONNES_PROGRESSION.toTypedArray()))
+            .decodeSingle<Progression>()
+
+    /**
      * Retire du catalogue les séries que plus personne ne suit et dont la
      * fiche TMDB a plus de 5 mois (décision 42), comme nettoyerCatalogue sur
      * le site. Le travail est fait dans la base par la fonction SQL

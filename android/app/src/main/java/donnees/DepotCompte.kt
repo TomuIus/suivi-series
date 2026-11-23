@@ -6,6 +6,8 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /** Où en est la connexion : l'appli affiche l'écran qui correspond. */
 enum class EtatConnexion { CHARGEMENT, CONNECTE, DECONNECTE }
@@ -35,6 +37,17 @@ class DepotCompte(private val client: SupabaseClient) {
             this.email = email
             password = motDePasse
         }
+    }
+
+    /**
+     * Nom affiché en haut de « Ma liste » et sur le Profil, comme nomAffiche
+     * sur le site : le nom d'utilisateur choisi dans les Paramètres du site
+     * (rangé dans les informations du compte, décision 25), sinon l'e-mail.
+     */
+    fun nomAffiche(): String {
+        val utilisateur = client.auth.currentUserOrNull() ?: return ""
+        val nom = (utilisateur.userMetadata?.get("nom_utilisateur") as? JsonPrimitive)?.contentOrNull
+        return nom?.takeIf { it.isNotEmpty() } ?: utilisateur.email.orEmpty()
     }
 
     /** Déconnexion (la session enregistrée sur le téléphone est effacée). */

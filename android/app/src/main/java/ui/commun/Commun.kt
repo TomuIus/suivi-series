@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,6 +118,30 @@ fun BarreProgression(pourcentage: Int, modifier: Modifier = Modifier) {
         )
         // Espace insécable ( ) avant « % », comme en français sur le site.
         Text("$pourcentage %", style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+/**
+ * Barre simple, sans pourcentage écrit (niveau du Profil et de l'en-tête),
+ * comme les barres du site : fond gris, partie remplie de la couleur
+ * d'accent. Elle prend toute la largeur qu'on lui laisse ; pour les lecteurs
+ * d'écran, la décrire avec [modifier] si elle n'est pas décorative.
+ */
+@Composable
+fun BarreSimple(pourcentage: Int, hauteur: Dp, modifier: Modifier = Modifier) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(hauteur)
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth(pourcentage.coerceIn(0, 100) / 100f)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.primary),
+        )
     }
 }
 

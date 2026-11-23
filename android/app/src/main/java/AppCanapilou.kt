@@ -26,6 +26,7 @@ import io.github.tomuius.canapilou.ui.connexion.EcranConnexion
 import io.github.tomuius.canapilou.ui.fiche.CibleFiche
 import io.github.tomuius.canapilou.ui.fiche.EcranFiche
 import io.github.tomuius.canapilou.ui.liste.EcranListe
+import io.github.tomuius.canapilou.ui.profil.EcranProfil
 import kotlinx.serialization.Serializable
 
 // Les « clés » des écrans pour Navigation 3 (décision 59) : chaque écran de
@@ -44,6 +45,10 @@ data class CleApercu(val tmdbId: Int) : NavKey
 
 @Serializable
 data object CleAPropos : NavKey
+
+/** Profil : niveau, rang, badges (comme « #/profil » sur le site). */
+@Serializable
+data object CleProfil : NavKey
 
 // Racine de l'appli : selon l'état de la connexion, on affiche une attente
 // (lecture de la session enregistrée), l'écran de connexion, ou l'appli.
@@ -95,6 +100,7 @@ private fun NavigationPrincipale() {
                         onOuvrirSerie = { id -> if (historique.lastOrNull() == CleMaListe) historique.add(CleFiche(id)) },
                         onApercu = { tmdbId -> if (historique.lastOrNull() == CleMaListe) historique.add(CleApercu(tmdbId)) },
                         onAPropos = { if (historique.lastOrNull() == CleMaListe) historique.add(CleAPropos) },
+                        onProfil = { if (historique.lastOrNull() == CleMaListe) historique.add(CleProfil) },
                         messageEnAttente = messagePourLaListe,
                         onMessagePris = { messagePourLaListe = null },
                     )
@@ -126,6 +132,9 @@ private fun NavigationPrincipale() {
                             }
                         },
                     )
+                }
+                is CleProfil -> NavEntry(cle) {
+                    EcranProfil(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
                 }
                 is CleAPropos -> NavEntry(cle) {
                     EcranAPropos(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })

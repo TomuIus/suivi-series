@@ -4,12 +4,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -48,10 +50,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,15 +68,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.tomuius.canapilou.Conteneur
 import io.github.tomuius.canapilou.R
+import io.github.tomuius.canapilou.donnees.Progression
 import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.ui.commun.AfficheSerie
 import io.github.tomuius.canapilou.ui.commun.BarreProgression
+import io.github.tomuius.canapilou.ui.commun.BarreSimple
 import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
 import io.github.tomuius.canapilou.ui.commun.Etiquette
 import io.github.tomuius.canapilou.ui.commun.afficherPendant
 import io.github.tomuius.canapilou.ui.fiche.libelleStatut
+import io.github.tomuius.canapilou.ui.profil.pourcentageNiveau
 import kotlinx.coroutines.flow.collectLatest
 
 // Écran « Ma liste » : vos séries, rangées en sections par statut, comme sur
@@ -86,6 +93,8 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun EcranListe(
     onOuvrirSerie: (Long) -> Unit,
+    // Appui sur le nom et le niveau de l'en-tête (décision 82).
+    onProfil: () -> Unit,
     // Aperçu d'une série de TMDB qui n'est pas dans la liste (identifiant TMDB).
     onApercu: (Int) -> Unit,
     onAPropos: () -> Unit,
@@ -103,6 +112,7 @@ fun EcranListe(
     val vusEnCours by vm.vusEnCours.collectAsStateWithLifecycle()
     val rechercheTmdb by vm.rechercheTmdb.collectAsStateWithLifecycle()
     val ajoutsEnCours by vm.ajoutsEnCours.collectAsStateWithLifecycle()
+    val progression by vm.progression.collectAsStateWithLifecycle()
     val modeRecherche = vm.recherche.isNotBlank()
 
     // Position de la liste et sections dépliées, gardées ici (et non dans la
@@ -145,6 +155,9 @@ fun EcranListe(
     Scaffold(
         topBar = {
             EnTete(
+                nom = vm.nom,
+                progression = progression,
+                onProfil = onProfil,
                 onActualiser = { vm.charger(oublierTitres = true) },
                 onAPropos = onAPropos,
                 onDeconnexion = { vm.seDeconnecter() },
@@ -422,9 +435,17 @@ private fun CarteResultat(
     ) { contenu() }
 }
 
-// Haut de l'écran : le nom de l'appli et un menu (trois points).
+// Haut de l'écran : le nom de l'appli, votre nom et votre niveau (un appui
+// ouvre le Profil, décision 82), et un menu (trois points).
 @Composable
-private fun EnTete(onActualiser: () -> Unit, onAPropos: () -> Unit, onDeconnexion: () -> Unit) {
+private fun EnTete(
+    nom: String,
+    progression: Progression?,
+    onProfil: () -> Unit,
+    onActualiser: () -> Unit,
+    onAPropos: () -> Unit,
+    onDeconnexion: () -> Unit,
+) {
     var menuOuvert by remember { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
@@ -439,8 +460,16 @@ private fun EnTete(onActualiser: () -> Unit, onAPropos: () -> Unit, onDeconnexio
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f),
             )
+            // Le reste de la largeur, aligné à droite ; un nom trop long finit par « … ».
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                BlocCompte(nom, progression, onProfil)
+            }
             // Le menu s'ouvre sous le bouton (Box : point d'ancrage du menu).
             Box {
                 IconButton(onClick = { menuOuvert = true }) {
@@ -460,6 +489,41 @@ private fun EnTete(onActualiser: () -> Unit, onAPropos: () -> Unit, onDeconnexio
                         onClick = { menuOuvert = false; onDeconnexion() },
                     )
                 }
+            }
+        }
+    }
+}
+
+// Nom (sinon e-mail), puis « Niveau N » et sa petite barre, de la largeur du
+// texte, centrés sous le nom (comme l'en-tête du site, décisions 34 et 36).
+// Sans progression (pas encore lue, ou illisible) : le nom seul. La barre est
+// décorative pour les lecteurs d'écran ; le détail est sur le Profil.
+@Composable
+private fun BlocCompte(nom: String, progression: Progression?, onProfil: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClickLabel = "Ouvrir le profil", role = Role.Button, onClick = onProfil)
+            .heightIn(min = 48.dp) // zone d'appui assez grande
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    ) {
+        Text(nom, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (progression != null) {
+            Column(
+                modifier = Modifier
+                    .width(IntrinsicSize.Max) // largeur du texte « Niveau N »
+                    .padding(top = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    "Niveau ${progression.niveau}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                BarreSimple(pourcentageNiveau(progression), 5.dp)
             }
         }
     }

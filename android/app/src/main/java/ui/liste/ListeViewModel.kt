@@ -9,13 +9,16 @@ import androidx.lifecycle.viewModelScope
 import io.github.tomuius.canapilou.donnees.DepotCompte
 import io.github.tomuius.canapilou.donnees.DepotListe
 import io.github.tomuius.canapilou.donnees.DepotTmdb
+import io.github.tomuius.canapilou.donnees.Progression
 import io.github.tomuius.canapilou.donnees.ResultatTmdb
 import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.donnees.fichesAEntretenir
 import io.github.tomuius.canapilou.donnees.messageErreur
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +77,13 @@ class ListeViewModel(
 
     private val _etat = MutableStateFlow<EtatListe>(EtatListe.Chargement)
     val etat: StateFlow<EtatListe> = _etat.asStateFlow()
+
+    // En-tête (décision 82) : nom (sinon e-mail) et progression (niveau et
+    // sa barre), lue avec la liste. null tant qu'elle n'a pas été lue, ou si
+    // la lecture échoue : la liste reste utilisable, seul le niveau manque.
+    val nom: String = depotCompte.nomAffiche()
+    private val _progression = MutableStateFlow<Progression?>(null)
+    val progression: StateFlow<Progression?> = _progression.asStateFlow()
 
     // Titres des prochains épisodes, par saison (décision 38). Ils arrivent un
     // instant après la liste ; l'écran les affiche dès qu'ils sont là.
@@ -330,14 +340,29 @@ class ListeViewModel(
 
     // Lit la liste et l'affiche (si aucune lecture plus récente n'a été
     // lancée entre-temps), puis demande les titres qui manquent et lance
-    // l'entretien du catalogue. Une erreur remonte à l'appelant.
-    private suspend fun relire() {
+    // l'entretien du catalogue. La progression (niveau de l'en-tête) est lue
+    // en même temps, comme chargerListe sur le site ; si elle échoue, la
+    // liste s'affiche quand même et l'ancienne progression reste. Une erreur
+    // de la liste remonte à l'appelant.
+    private suspend fun relire(): Unit = coroutineScope {
         val numero = ++numeroLecture
         val version = depotListe.version.value // relevée AVANT la lecture
+        val progression = async {
+            try {
+                depotListe.lireProgression()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("Canapilou", "Progression (niveau, badges) illisible : ${e.message}")
+                null
+            }
+        }
         val series = depotListe.lireMaListe()
-        if (numero != numeroLecture) return // réponse dépassée
+        val prog = progression.await()
+        if (numero != numeroLecture) return@coroutineScope // réponse dépassée
         versionLue = version
         _etat.value = EtatListe.Pret(regrouperParSection(series), series.size, series)
+        if (prog != null) _progression.value = prog
         chargerTitres(series)
         entretenirCatalogue(series)
     }
