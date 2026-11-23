@@ -99,7 +99,8 @@ class ListeViewModel(
     // En-tête (décision 82) : nom (sinon e-mail) et progression (niveau et
     // sa barre), lue avec la liste. null tant qu'elle n'a pas été lue, ou si
     // la lecture échoue : la liste reste utilisable, seul le niveau manque.
-    val nom: String = depotCompte.nomAffiche()
+    val nom: StateFlow<String> = depotCompte.nom
+        .stateIn(viewModelScope, SharingStarted.Eagerly, depotCompte.nomAffiche())
     private val _progression = MutableStateFlow<Progression?>(null)
     val progression: StateFlow<Progression?> = _progression.asStateFlow()
 

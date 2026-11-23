@@ -10,8 +10,10 @@ import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.ui.liste.FiltreCategorie
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** Où en est la lecture de la progression (points, niveau, rang, badges). */
@@ -41,8 +43,9 @@ class ProfilViewModel(
     avecStatistiques: Boolean = false,
 ) : ViewModel() {
 
-    /** Nom d'utilisateur, sinon e-mail (comme nomAffiche sur le site). */
-    val nom: String = depotCompte.nomAffiche()
+    /** Nom d'utilisateur, sinon e-mail (comme nomAffiche sur le site) ; suit les changements des Paramètres. */
+    val nom: StateFlow<String> = depotCompte.nom
+        .stateIn(viewModelScope, SharingStarted.Eagerly, depotCompte.nomAffiche())
 
     private val _progression = MutableStateFlow<EtatProgression>(EtatProgression.Chargement)
     val progression: StateFlow<EtatProgression> = _progression.asStateFlow()

@@ -52,6 +52,7 @@ import io.github.tomuius.canapilou.ui.commun.BarreSimple
 fun EcranProfil(
     onRetour: () -> Unit,
     onTousLesBadges: () -> Unit,
+    onParametres: () -> Unit,
     // Un ViewModel propre à cet écran (Navigation 3 le garde tant qu'il est
     // dans l'historique).
     vm: ProfilViewModel = viewModel {
@@ -61,8 +62,9 @@ fun EcranProfil(
     val etat by vm.progression.collectAsStateWithLifecycle()
     val etatStats by vm.statistiques.collectAsStateWithLifecycle()
     val filtre by vm.filtre.collectAsStateWithLifecycle()
+    val nom by vm.nom.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { BarreRetour(onRetour) }) { marges ->
+    Scaffold(topBar = { BarreRetour(onRetour, onParametres) }) { marges ->
         Column(
             modifier = Modifier
                 .padding(marges)
@@ -81,7 +83,7 @@ fun EcranProfil(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(vm.nom, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(nom, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             when (val e = etat) {
                                 EtatProgression.Chargement -> TexteAide("Chargement…")
                                 EtatProgression.Indisponible -> TexteAide("Niveau et badges indisponibles pour le moment.")
@@ -115,9 +117,11 @@ fun EcranProfil(
     }
 }
 
-// Haut de l'écran : « ← Ma liste », comme sur la fiche.
+// Haut de l'écran : « ← Ma liste » (comme sur la fiche) à gauche,
+// « Paramètres » à droite (comme le site, sans le caractère « ⚙ », dont le
+// dessin dépend de la police du téléphone).
 @Composable
-private fun BarreRetour(onRetour: () -> Unit) {
+private fun BarreRetour(onRetour: () -> Unit, onParametres: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
@@ -130,6 +134,8 @@ private fun BarreRetour(onRetour: () -> Unit) {
                 Spacer(Modifier.width(6.dp))
                 Text("Ma liste")
             }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = onParametres) { Text("Paramètres") }
         }
     }
 }

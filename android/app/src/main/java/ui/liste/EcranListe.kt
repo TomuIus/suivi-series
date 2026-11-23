@@ -117,6 +117,7 @@ fun EcranListe(
     val ajoutsEnCours by vm.ajoutsEnCours.collectAsStateWithLifecycle()
     val progression by vm.progression.collectAsStateWithLifecycle()
     val filtre by vm.filtre.collectAsStateWithLifecycle()
+    val nom by vm.nom.collectAsStateWithLifecycle()
     val modeRecherche = vm.recherche.isNotBlank()
 
     // Position de la liste et sections dépliées, gardées ici (et non dans la
@@ -159,7 +160,7 @@ fun EcranListe(
     Scaffold(
         topBar = {
             EnTete(
-                nom = vm.nom,
+                nom = nom,
                 progression = progression,
                 onProfil = onProfil,
                 onActualiser = { vm.charger(oublierTitres = true) },

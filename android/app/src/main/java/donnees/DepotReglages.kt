@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 // Petite mémoire sur le téléphone (décision 88), l'équivalent du stockage
-// local du navigateur sur le site : des réglages propres à cet appareil,
+// local du navigateur sur le site (filtre de « Ma liste », thème) : des
+// réglages propres à cet appareil,
 // jamais envoyés à la base. Bibliothèque DataStore « Preferences » de
 // Jetpack : des paires clé-valeur, lues comme un Flow (la valeur arrive, puis
 // chaque changement).
@@ -51,7 +52,25 @@ class DepotReglages(private val contexte: Context) {
         }
     }
 
+    /**
+     * Thème choisi (« clair » ou « sombre » ; null = Automatique), comme la
+     * clé « suivi-series.theme » du site (décision 48).
+     */
+    val theme: Flow<String?> = donnees.map { it[CLE_THEME] }
+
+    /** Retient le thème ; « auto » efface le réglage (comme le site). Un échec n'est pas grave. */
+    suspend fun enregistrerTheme(valeur: String) {
+        try {
+            contexte.reglages.edit {
+                if (valeur == "clair" || valeur == "sombre") it[CLE_THEME] = valeur else it.remove(CLE_THEME)
+            }
+        } catch (e: IOException) {
+            Log.w("Canapilou", "Thème non retenu : ${e.message}")
+        }
+    }
+
     private companion object {
         val CLE_FILTRE_LISTE = stringPreferencesKey("filtre_liste")
+        val CLE_THEME = stringPreferencesKey("theme")
     }
 }

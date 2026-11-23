@@ -75,7 +75,8 @@ val LocalCouleurSucces = staticCompositionLocalOf { SuccesClair }
 
 @Composable
 fun CanapilouTheme(
-    // Clair ou sombre : suit le réglage du téléphone (choix dans l'appli : plus tard).
+    // Clair ou sombre : choisi dans les Paramètres (Automatique = réglage du
+    // téléphone), voir MainActivity.
     sombre: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
