@@ -1,10 +1,13 @@
 package io.github.tomuius.canapilou.ui.connexion
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,10 +29,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.tomuius.canapilou.Conteneur
+import io.github.tomuius.canapilou.R
+
+// Proportions de l'image de Tilou sur son canapé (320 × 295 pixels, celle du site).
+private const val PROPORTIONS_CANAPE = 320f / 295f
 
 // Écran de connexion : e-mail et mot de passe du compte du site (les
 // inscriptions sont fermées, décision 15). Affiché seulement si aucune
-// session n'est enregistrée sur le téléphone.
+// session n'est enregistrée sur le téléphone. En haut, Tilou sur son canapé,
+// comme au-dessus du formulaire de connexion du site (décisions 39 et 106).
 @Composable
 fun EcranConnexion(
     vm: ConnexionViewModel = viewModel { ConnexionViewModel(Conteneur.depotCompte) },
@@ -43,6 +52,16 @@ fun EcranConnexion(
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Même image que le site (img/tilou-canape.png), à la même taille :
+            // 160 dp de large (160 px sur le site). Décorative pour les lecteurs
+            // d'écran. Taille : choix de Claude, à revoir après des tests.
+            Image(
+                painter = painterResource(R.drawable.tilou_canape),
+                contentDescription = null,
+                modifier = Modifier
+                    .width(160.dp)
+                    .aspectRatio(PROPORTIONS_CANAPE),
+            )
             Text(
                 "Canapilou",
                 style = MaterialTheme.typography.headlineMedium,

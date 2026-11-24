@@ -1,6 +1,7 @@
 package io.github.tomuius.canapilou.ui.liste
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -247,13 +250,7 @@ fun EcranListe(
 
                         is EtatListe.Pret ->
                             if (e.total == 0) {
-                                ZoneTirable {
-                                    Text(
-                                        "Votre liste est vide pour l'instant.",
-                                        modifier = Modifier.padding(24.dp),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                                ZoneTirable { ListeVide() }
                             } else {
                                 ListeEnSections(
                                     e.series, filtre, titres, vusEnCours, ouvertes, defilementListe,
@@ -282,6 +279,32 @@ private fun ZoneTirable(contenu: @Composable BoxScope.() -> Unit) {
         }
     }
 }
+
+// Liste vide : Tilou au pop-corn à gauche du message, comme sur le site
+// (décisions 39 et 106). Même image que le site (img/tilou-popcorn.png,
+// 145 × 288 px), à la même taille (72 × 144 dp) ; intégrée à l'appli, donc
+// visible aussi sans réseau. Décorative pour les lecteurs d'écran.
+@Composable
+private fun ListeVide() {
+    Row(
+        modifier = Modifier.padding(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Image(
+            painter = painterResource(R.drawable.tilou_popcorn),
+            contentDescription = null,
+            modifier = Modifier.size(width = 72.dp, height = 144.dp),
+        )
+        Text(
+            "Votre liste est vide pour l'instant.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// Proportions du logo de Tilou (image de 107 × 132 pixels, celle du site).
+private const val PROPORTIONS_LOGO_TILOU = 107f / 132f
 
 // Barre de recherche : loupe, texte, croix pour effacer. La touche
 // « Rechercher » du clavier lance la recherche tout de suite (Entrée sur le site).
@@ -488,8 +511,9 @@ private fun CarteResultat(
     ) { contenu() }
 }
 
-// Haut de l'écran : le nom de l'appli, puis votre nom et votre niveau (un
-// appui ouvre le Profil, décision 82). Plus de menu « ⋮ » (décisions 103 et
+// Haut de l'écran : Tilou au pop-corn et le nom de l'appli, comme le logo du
+// site (décision 106), puis votre nom et votre niveau (un appui ouvre le
+// Profil, décision 82). Plus de menu « ⋮ » (décisions 103 et
 // 104) : « Actualiser » se fait en tirant la liste vers le bas, « À propos » et
 // « Se déconnecter » sont dans les Paramètres.
 @Composable
@@ -507,6 +531,18 @@ private fun EnTete(
                 .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Même image que le logo du site (img/tilou-logo.png, 107 × 132 px),
+            // décorative pour les lecteurs d'écran (le nom est écrit à côté).
+            // 40 dp de haut : choix de Claude, à revoir après des tests (le site
+            // l'affiche à 44 px à côté d'un mot de 24 px de haut).
+            Image(
+                painter = painterResource(R.drawable.tilou_logo),
+                contentDescription = null,
+                modifier = Modifier
+                    .height(40.dp)
+                    .aspectRatio(PROPORTIONS_LOGO_TILOU),
+            )
+            Spacer(Modifier.width(8.dp))
             Text(
                 "Canapilou",
                 style = MaterialTheme.typography.titleLarge,
