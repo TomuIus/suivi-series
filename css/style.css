@@ -280,7 +280,8 @@ input:focus-visible,
 .element-liste:first-child { border-top: none; padding-top: 0; }
 .titre-liste { font-weight: 600; }
 
-/* --- Pied de page : attribution TMDB obligatoire --- */
+/* --- Pied de page : lien « À propos » (décision 109 ; l'attribution TMDB
+   est dans la page « À propos » depuis la v35) --- */
 .pied {
   max-width: 40rem;
   margin: 2rem auto 1rem;
@@ -289,7 +290,7 @@ input:focus-visible,
   color: var(--texte-doux);
   font-size: 0.75rem;
 }
-.pied p { margin: 0.35rem 0 0; }
+.pied a { color: var(--texte-doux); }
 .logo-tmdb { height: 12px; width: auto; vertical-align: middle; }
 
 /* --- Message de secours (si l'application ne démarre pas) --- */

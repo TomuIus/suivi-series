@@ -54,12 +54,12 @@
     })();
   </script>
   <!--
-    NUMÉRO DE VERSION DU SITE : « ?v=34 » ci-dessous et dans la carte des imports.
+    NUMÉRO DE VERSION DU SITE : « ?v=35 » ci-dessous et dans la carte des imports.
     À augmenter à chaque modification d'un fichier .js ou .css : l'adresse
     change, donc le navigateur ne peut pas réutiliser une ancienne copie gardée
     en mémoire (sinon il risque de mélanger ancienne et nouvelle version).
   -->
-  <link rel="stylesheet" href="css/style.css?v=34">
+  <link rel="stylesheet" href="css/style.css?v=35">
 
   <!--
     Filet de sécurité : si l'application ne démarre pas (fichier introuvable,
@@ -96,14 +96,14 @@
     "imports": {
       "vue": "https://cdn.jsdelivr.net/npm/vue@3.5.45/dist/vue.esm-browser.prod.js",
       "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm",
-      "./js/app.js": "./js/app.js?v=34",
-      "./js/badges.js": "./js/badges.js?v=34",
-      "./js/base.js": "./js/base.js?v=34",
-      "./js/config.js": "./js/config.js?v=34",
-      "./js/fiche.js": "./js/fiche.js?v=34",
-      "./js/import.js": "./js/import.js?v=34",
-      "./js/recherche.js": "./js/recherche.js?v=34",
-      "./js/tmdb.js": "./js/tmdb.js?v=34"
+      "./js/app.js": "./js/app.js?v=35",
+      "./js/badges.js": "./js/badges.js?v=35",
+      "./js/base.js": "./js/base.js?v=35",
+      "./js/config.js": "./js/config.js?v=35",
+      "./js/fiche.js": "./js/fiche.js?v=35",
+      "./js/import.js": "./js/import.js?v=35",
+      "./js/recherche.js": "./js/recherche.js?v=35",
+      "./js/tmdb.js": "./js/tmdb.js?v=35"
     }
   }
   </script>
@@ -162,6 +162,43 @@
       <p v-if="erreur" class="erreur" role="alert">{{ erreur }}</p>
 
       <p v-if="chargement" class="info">Chargement…</p>
+
+      <!-- ================= Page : à propos (décision 110) =================
+           Ouverte par le lien du pied de page, même sans être connecté : d'où
+           sa place avant l'écran de connexion. Comme l'écran « À propos » de
+           l'appli : Tilou au pop-corn, mention de TMDB (exigée par TMDB dans
+           une section « À propos » ou « Crédits », décision 63 ; logo officiel
+           non modifié, moins visible que le nom du site), licence. -->
+      <template v-else-if="route.page === 'apropos'">
+        <nav class="retour">
+          <a href="#/" class="bouton bouton-discret" @click.prevent="retourListe">← Accueil</a>
+        </nav>
+
+        <section class="carte page-compte">
+          <!-- Texte à gauche, Tilou au pop-corn à droite (image déplacée du
+               Profil, décision 108) -->
+          <div class="profil-haut">
+            <div class="profil-texte">
+              <h2>À propos de Canapilou</h2>
+              <p>Suivez les séries et les animés que vous regardez.</p>
+            </div>
+            <img src="img/tilou-popcorn.png" alt="" class="illustration illustration-profil" width="56" height="112">
+          </div>
+
+          <h3>Données des séries</h3>
+          <p>
+            <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">
+              <img src="img/tmdb-logo.svg" alt="TMDB" class="logo-tmdb" width="92" height="12">
+            </a>
+          </p>
+          <p>Ce site utilise TMDB et les API de TMDB, sans être approuvé, certifié ni validé par TMDB.</p>
+          <p lang="en" class="details">This website uses TMDB and the TMDB APIs but is not endorsed, certified,
+            or otherwise approved by TMDB.</p>
+
+          <h3>Licence</h3>
+          <p>Logiciel libre, sous licence GNU AGPL-3.0.</p>
+        </section>
+      </template>
 
       <!-- Écran de connexion -->
       <form v-else-if="!utilisateur" class="carte connexion" @submit.prevent="connexion">
@@ -891,16 +928,13 @@
   </div>
 
   <!--
-    Attribution TMDB, exigée par les conditions d'utilisation de l'API TMDB :
-    logo officiel (non modifié, moins visible que le nom du site) + mention.
+    Pied de page : lien vers la page « À propos » (décision 109), sur toutes
+    les pages, même sans être connecté. L'attribution TMDB exigée par les
+    conditions d'utilisation de l'API (logo officiel + mention) est dans cette
+    page depuis la v35 (décision 110).
   -->
   <footer class="pied">
-    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">
-      <img src="img/tmdb-logo.svg" alt="TMDB" class="logo-tmdb" width="92" height="12">
-    </a>
-    <p>Ce site utilise TMDB et les API de TMDB, sans être approuvé, certifié ni validé par TMDB.</p>
-    <p lang="en">This website uses TMDB and the TMDB APIs but is not endorsed, certified,
-      or otherwise approved by TMDB.</p>
+    <a href="#/apropos">À propos</a>
   </footer>
 </body>
 </html>

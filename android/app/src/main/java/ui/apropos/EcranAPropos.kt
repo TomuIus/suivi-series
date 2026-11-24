@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,7 +45,8 @@ import io.github.tomuius.canapilou.R
 // visible que celui de l'appli. Ouvert depuis le bas de la page Paramètres
 // (décision 103) ; liens vers le site et vers le code source retirés à la
 // demande de l'utilisateur (24/11/2026), à remettre si l'appli était un jour
-// proposée au public.
+// proposée au public. En haut, Tilou au pop-corn, déplacé ici depuis le
+// Profil (décision 108), comme sur la page « À propos » du site.
 
 private const val ADRESSE_TMDB = "https://www.themoviedb.org/"
 
@@ -71,14 +73,31 @@ fun EcranAPropos(onRetour: () -> Unit) {
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                "Canapilou",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text("Version $version", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Suivez les séries et les animés que vous regardez, avec le même compte que sur le site.")
+            // Nom, version et présentation à gauche, Tilou au pop-corn à droite
+            // (56 × 112 dp, comme dans le Profil jusqu'ici ; image décorative).
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        "Canapilou",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text("Version $version", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Suivez les séries et les animés que vous regardez, avec le même compte que sur le site.")
+                }
+                Image(
+                    painter = painterResource(R.drawable.tilou_popcorn),
+                    contentDescription = null,
+                    modifier = Modifier.size(width = 56.dp, height = 112.dp),
+                )
+            }
 
             HorizontalDivider()
             Text("Données des séries", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

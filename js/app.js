@@ -146,6 +146,7 @@ const LIBELLES_DIFFUSION = {
 // Quelle page afficher, d'après l'adresse :
 //   « #/serie/42 »    = fiche de la série 42 du catalogue (identifiant interne) ;
 //   « #/apercu/1399 » = aperçu d'une série TMDB pas encore ajoutée ;
+//   « #/apropos »     = page « À propos », même sans être connecté (décision 110) ;
 //   toute autre adresse = « Ma liste ».
 // Passer par l'adresse permet au bouton retour du navigateur (ou au geste
 // retour du téléphone) de marcher.
@@ -157,6 +158,7 @@ function lireRoute() {
   if (location.hash === '#/profil') return { page: 'profil' };          // décision 29
   if (location.hash === '#/parametres') return { page: 'parametres' };
   if (location.hash === '#/badges') return { page: 'badges' };          // décision 43
+  if (location.hash === '#/apropos') return { page: 'apropos' };        // décision 110
   return { page: 'liste' };
 }
 
@@ -539,6 +541,12 @@ createApp({
 
     // À chaque changement de page : on charge ce qu'il faut.
     watch(route, async (r) => {
+      // « À propos » (décision 110) : rien à charger, connecté ou non.
+      if (r.page === 'apropos') {
+        if (utilisateur.value) ecranFiche.fermerFiche();
+        window.scrollTo(0, 0);
+        return;
+      }
       if (!utilisateur.value) return;
       if (r.page === 'fiche') {
         // Aperçu d'une série qu'on suit déjà : on va directement à sa fiche.
