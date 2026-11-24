@@ -22,6 +22,13 @@ android {
 
     buildTypes {
         release {
+            // Signée avec la clé de débogage du PC (décision 100) : version
+            // optimisée installée par câble depuis Android Studio, comme la
+            // version de mise au point (décision 99). Cette clé n'est pas sûre
+            // (faite pour la mise au point) : sans importance tant que l'appli
+            // ne sort pas du téléphone de l'utilisateur ; à remplacer par une
+            // vraie clé si l'appli était un jour distribuée.
+            signingConfig = signingConfigs.getByName("debug")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")

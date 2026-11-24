@@ -10,3 +10,11 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# Décision 101 : ne pas déplacer les classes de Kotlin d'un paquet à l'autre.
+# Sans cette règle, R8 (avec le réglage « packageScope » de build.gradle.kts)
+# a sorti kotlin.text.StringsKt__StringBuilderKt du paquet kotlin.text alors
+# que sa classe mère, non publique, y restait : plantage au démarrage
+# (IllegalAccessError, 24/11/2026). Correction reprise d'un autre projet qui
+# a eu le même plantage (fingerprintjs/flutter, demande de fusion n° 203).
+-keeppackagenames kotlin,kotlin.**
