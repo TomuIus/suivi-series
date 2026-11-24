@@ -1,5 +1,15 @@
 package io.github.tomuius.canapilou
 
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +23,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -61,6 +73,28 @@ data object CleBadges : NavKey
 @Serializable
 data object CleParametres : NavKey
 
+// Animation entre les écrans (décision 105) : « axe horizontal partagé » de
+// Material Design, à la place du fondu de 700 ms de Navigation 3. À l'aller,
+// le nouvel écran arrive de la droite, décalé de 30 dp, en apparaissant, et
+// l'ancien part d'autant vers la gauche en s'effaçant ; au retour (bouton ou
+// geste), l'inverse. L'ancien écran s'efface d'abord, puis le nouveau
+// apparaît : les deux ne se voient presque jamais l'un sur l'autre.
+// Durées courtes, à la demande de l'utilisateur (« il faut que le déplacement
+// soit rapide ») : choix de Claude, à revoir après des tests.
+private const val DUREE_TRANSITION = 250 // ms : glissement, et fin de l'apparition
+private const val DUREE_EFFACEMENT = 90 // ms : effacement de l'ancien écran, au début
+private val DECALAGE_TRANSITION = 30.dp
+
+// [versAvant] : vrai à l'aller (nouvel écran à droite), faux au retour.
+private fun transitionAxeHorizontal(decalagePx: Int, versAvant: Boolean): ContentTransform {
+    val sens = if (versAvant) 1 else -1
+    val entree = slideInHorizontally(tween(DUREE_TRANSITION, easing = FastOutSlowInEasing)) { sens * decalagePx } +
+        fadeIn(tween(DUREE_TRANSITION - DUREE_EFFACEMENT, delayMillis = DUREE_EFFACEMENT, easing = LinearOutSlowInEasing))
+    val sortie = slideOutHorizontally(tween(DUREE_TRANSITION, easing = FastOutSlowInEasing)) { -sens * decalagePx } +
+        fadeOut(tween(DUREE_EFFACEMENT, easing = FastOutLinearInEasing))
+    return entree togetherWith sortie
+}
+
 // Racine de l'appli : selon l'état de la connexion, on affiche une attente
 // (lecture de la session enregistrée), l'écran de connexion, ou l'appli.
 // L'écran de connexion est hors de l'historique : le bouton retour depuis
@@ -91,9 +125,22 @@ private fun NavigationPrincipale() {
     var messagePourLaListe by rememberSaveable { mutableStateOf<String?>(null) }
     // Message à afficher sur la fiche qui remplace un aperçu (série tout juste ajoutée).
     var messagePourLaFiche by rememberSaveable { mutableStateOf<String?>(null) }
+    // Décalage de l'animation en pixels de l'écran du téléphone.
+    val decalage = with(LocalDensity.current) { DECALAGE_TRANSITION.roundToPx() }
 
     NavDisplay(
         backStack = historique,
+        // Fond du thème derrière les écrans : pendant l'animation, quand les
+        // deux écrans sont à moitié effacés, on voit ce fond et non celui de la
+        // fenêtre (clair, même en thème sombre : themes.xml).
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        // Aller, retour, et retour par le geste du téléphone (retour
+        // « prédictif », qui suit le doigt) : même animation (décision 105).
+        transitionSpec = { transitionAxeHorizontal(decalage, versAvant = true) },
+        popTransitionSpec = { transitionAxeHorizontal(decalage, versAvant = false) },
+        predictivePopTransitionSpec = { _ -> transitionAxeHorizontal(decalage, versAvant = false) },
         // Retour : on enlève le dernier écran (au premier écran, Android ferme l'appli).
         onBack = { if (historique.size > 1) historique.removeLastOrNull() },
         entryDecorators = listOf(
