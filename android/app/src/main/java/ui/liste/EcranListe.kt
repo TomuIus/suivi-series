@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,8 +26,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +39,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -86,14 +87,18 @@ import kotlinx.coroutines.flow.collectLatest
 
 // Écran « Ma liste » : vos séries, rangées en sections par statut, comme sur
 // le site : affiches, titre du prochain épisode, bouton « Vu » avec
-// « Annuler », menu (Actualiser, À propos, Se déconnecter) ; un appui sur une
-// série ouvre sa fiche (décision 66). Filtre « Tout · Séries · Animés » en
+// « Annuler » ; un appui sur une série ouvre sa fiche (décision 66). La liste
+// tirée vers le bas, tout en haut, l'actualise (décision 104 ; « À propos » et
+// « Se déconnecter » sont dans les Paramètres). Filtre « Tout · Séries · Animés » en
 // haut de la liste, choix retenu sur le téléphone (décisions 23 et 88).
 // Barre de recherche toujours en haut
 // (décision 75) : dès qu'on tape, les résultats remplacent la liste, d'abord
 // « Dans ma liste », puis « Sur TMDB » avec « Ajouter » et « Plus tard »
 // (décisions 44 et 76).
 
+// PullToRefreshBox est marqué « expérimental » dans certaines versions de
+// Material 3 : on accepte ce statut ici (« OptIn »).
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EcranListe(
     onOuvrirSerie: (Long) -> Unit,
@@ -101,7 +106,6 @@ fun EcranListe(
     onProfil: () -> Unit,
     // Aperçu d'une série de TMDB qui n'est pas dans la liste (identifiant TMDB).
     onApercu: (Int) -> Unit,
-    onAPropos: () -> Unit,
     // « Voir » d'une annonce de nouveau badge ou rang : page « Tous les badges ».
     onTousLesBadges: () -> Unit,
     // Message à afficher en arrivant (série retirée depuis sa fiche), puis oublié.
@@ -122,6 +126,7 @@ fun EcranListe(
     val filtre by vm.filtre.collectAsStateWithLifecycle()
     val nom by vm.nom.collectAsStateWithLifecycle()
     val annonce by vm.annonce.collectAsStateWithLifecycle()
+    val actualisation by vm.actualisation.collectAsStateWithLifecycle()
     val modeRecherche = vm.recherche.isNotBlank()
 
     // Position de la liste et sections dépliées, gardées ici (et non dans la
@@ -184,14 +189,7 @@ fun EcranListe(
 
     Scaffold(
         topBar = {
-            EnTete(
-                nom = nom,
-                progression = progression,
-                onProfil = onProfil,
-                onActualiser = { vm.charger(oublierTitres = true) },
-                onAPropos = onAPropos,
-                onDeconnexion = { vm.seDeconnecter() },
-            )
+            EnTete(nom = nom, progression = progression, onProfil = onProfil)
         },
         snackbarHost = { SnackbarHost(etatMessages) },
     ) { marges ->
@@ -224,38 +222,63 @@ fun EcranListe(
                         onApercu = onApercu,
                         onAjouter = vm::ajouter,
                     )
-                } else when (val e = etat) {
-                    EtatListe.Chargement ->
-                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+                } else PullToRefreshBox(
+                    // « Actualiser » (décision 104) : tout en haut de la liste, on la
+                    // tire vers le bas ; l'indicateur tourne pendant la relecture.
+                    // Pas pendant une recherche (résultats à la place de la liste).
+                    isRefreshing = actualisation,
+                    onRefresh = vm::actualiser,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    when (val e = etat) {
+                        EtatListe.Chargement ->
+                            CircularProgressIndicator(Modifier.align(Alignment.Center))
 
-                    is EtatListe.Erreur -> Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        Text(e.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        Button(onClick = { vm.charger() }) { Text("Réessayer") }
-                    }
-
-                    is EtatListe.Pret ->
-                        if (e.total == 0) {
-                            Text(
-                                "Votre liste est vide pour l'instant.",
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .padding(24.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        } else {
-                            ListeEnSections(
-                                e.series, filtre, titres, vusEnCours, ouvertes, defilementListe,
-                                onFiltre = vm::choisirFiltre, onVu = vm::cocher, onOuvrir = onOuvrirSerie,
-                            )
+                        is EtatListe.Erreur -> ZoneTirable {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                Text(e.message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                                Button(onClick = { vm.charger() }) { Text("Réessayer") }
+                            }
                         }
+
+                        is EtatListe.Pret ->
+                            if (e.total == 0) {
+                                ZoneTirable {
+                                    Text(
+                                        "Votre liste est vide pour l'instant.",
+                                        modifier = Modifier.padding(24.dp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else {
+                                ListeEnSections(
+                                    e.series, filtre, titres, vusEnCours, ouvertes, defilementListe,
+                                    onFiltre = vm::choisirFiltre, onVu = vm::cocher, onOuvrir = onOuvrirSerie,
+                                )
+                            }
+                    }
                 }
             }
+        }
+    }
+}
+
+// Zone qu'on peut tirer vers le bas pour actualiser même sans liste (erreur,
+// liste vide) : le glissement de Material 3 ne réagit qu'à un contenu qui
+// défile. Une liste d'un seul élément, de la taille de l'écran, contenu centré.
+@Composable
+private fun ZoneTirable(contenu: @Composable BoxScope.() -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Box(
+                modifier = Modifier.fillParentMaxSize(),
+                contentAlignment = Alignment.Center,
+                content = contenu,
+            )
         }
     }
 }
@@ -465,24 +488,23 @@ private fun CarteResultat(
     ) { contenu() }
 }
 
-// Haut de l'écran : le nom de l'appli, votre nom et votre niveau (un appui
-// ouvre le Profil, décision 82), et un menu (trois points).
+// Haut de l'écran : le nom de l'appli, puis votre nom et votre niveau (un
+// appui ouvre le Profil, décision 82). Plus de menu « ⋮ » (décisions 103 et
+// 104) : « Actualiser » se fait en tirant la liste vers le bas, « À propos » et
+// « Se déconnecter » sont dans les Paramètres.
 @Composable
 private fun EnTete(
     nom: String,
     progression: Progression?,
     onProfil: () -> Unit,
-    onActualiser: () -> Unit,
-    onAPropos: () -> Unit,
-    onDeconnexion: () -> Unit,
 ) {
-    var menuOuvert by remember { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding() // sous la barre d'état du téléphone
-                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                // À droite, 8 dp + les 8 dp du bloc du compte : 16 dp, comme à gauche.
+                .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -499,26 +521,6 @@ private fun EnTete(
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 BlocCompte(nom, progression, onProfil)
-            }
-            // Le menu s'ouvre sous le bouton (Box : point d'ancrage du menu).
-            Box {
-                IconButton(onClick = { menuOuvert = true }) {
-                    Icon(painterResource(R.drawable.menu), contentDescription = "Menu")
-                }
-                DropdownMenu(expanded = menuOuvert, onDismissRequest = { menuOuvert = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Actualiser") },
-                        onClick = { menuOuvert = false; onActualiser() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("À propos") },
-                        onClick = { menuOuvert = false; onAPropos() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Se déconnecter") },
-                        onClick = { menuOuvert = false; onDeconnexion() },
-                    )
-                }
             }
         }
     }

@@ -35,7 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -62,7 +64,10 @@ import kotlinx.coroutines.flow.collectLatest
 
 // Page « Paramètres » (décision 90), comme la page « parametres » du site :
 // « Connecté avec … », nom d'utilisateur, thème (partie A), export de la
-// sauvegarde (partie B) et import d'une sauvegarde (partie C).
+// sauvegarde (partie B) et import d'une sauvegarde (partie C). Depuis le
+// 24/11/2026, aussi « Se déconnecter », sous « Connecté avec … », et une ligne
+// « À propos » en bas de la page (décisions 103 et 104 : le menu de « Ma liste »
+// a été retiré).
 
 // Types de fichiers proposés dans la fenêtre « Ouvrir » : selon l'endroit où
 // il est rangé, un fichier .json peut être annoncé comme texte ou comme
@@ -72,6 +77,8 @@ private val TYPES_SAUVEGARDE = arrayOf("application/json", "text/*", "applicatio
 @Composable
 fun EcranParametres(
     onRetour: () -> Unit,
+    // Ligne « À propos » en bas de la page (décision 103).
+    onAPropos: () -> Unit,
     vm: ParametresViewModel = viewModel {
         ParametresViewModel(
             Conteneur.depotCompte,
@@ -86,6 +93,7 @@ fun EcranParametres(
     val theme by vm.theme.collectAsStateWithLifecycle()
     val exportEnCours by vm.exportEnCours.collectAsStateWithLifecycle()
     val etatImport by vm.etatImport.collectAsStateWithLifecycle()
+    val deconnexion by vm.deconnexion.collectAsStateWithLifecycle()
     val focus = LocalFocusManager.current
     val contexte = LocalContext.current
 
@@ -141,6 +149,11 @@ fun EcranParametres(
                 ) {
                     Text("Paramètres", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     if (vm.email.isNotEmpty()) TexteDoux("Connecté avec ${vm.email}")
+                    // Déconnexion (décision 104), sans confirmation, comme sur le
+                    // site ; grisée pendant une copie ou un import.
+                    OutlinedButton(onClick = vm::seDeconnecter, enabled = !deconnexion && !importBloquant) {
+                        Text(if (deconnexion) "Déconnexion…" else "Se déconnecter")
+                    }
 
                     // Nom d'utilisateur (décision 25)
                     Titre("Nom d'utilisateur")
@@ -197,6 +210,34 @@ fun EcranParametres(
                     if (etat != null) PanneauImport(etat, vm)
                 }
             }
+
+            // « À propos » (décision 103) : version, mention de TMDB, licence.
+            // Grisée pendant un import, comme le retour (quitter la page le couperait).
+            Spacer(Modifier.size(16.dp))
+            LigneAPropos(onClick = onAPropos, actif = !importBloquant)
+        }
+    }
+}
+
+// Ligne « À propos » : un cadre qu'on touche, avec une flèche vers la droite
+// (la flèche de « Ma liste », tournée d'un quart de tour ; choix de Claude, à
+// revoir après des tests).
+@Composable
+private fun LigneAPropos(onClick: () -> Unit, actif: Boolean) {
+    OutlinedCard(onClick = onClick, enabled = actif, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("À propos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                TexteDoux("Version de l'appli, données TMDB, licence")
+            }
+            Icon(
+                painterResource(R.drawable.chevron),
+                contentDescription = null,
+                modifier = Modifier.rotate(-90f),
+            )
         }
     }
 }

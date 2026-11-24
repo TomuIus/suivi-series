@@ -45,6 +45,7 @@ data class CleFiche(val serieId: Long) : NavKey
 @Serializable
 data class CleApercu(val tmdbId: Int) : NavKey
 
+/** « À propos » : version, mention de TMDB, licence (ouvert depuis les Paramètres, décision 103). */
 @Serializable
 data object CleAPropos : NavKey
 
@@ -106,10 +107,9 @@ private fun NavigationPrincipale() {
                 is CleMaListe -> NavEntry(cle) {
                     EcranListe(
                         // Un appui rapide sur deux séries n'ouvre qu'une fiche ; de même,
-                        // pas deux fois « À propos » dans l'historique.
+                        // pas deux fois le Profil dans l'historique.
                         onOuvrirSerie = { id -> if (historique.lastOrNull() == CleMaListe) historique.add(CleFiche(id)) },
                         onApercu = { tmdbId -> if (historique.lastOrNull() == CleMaListe) historique.add(CleApercu(tmdbId)) },
-                        onAPropos = { if (historique.lastOrNull() == CleMaListe) historique.add(CleAPropos) },
                         onProfil = { if (historique.lastOrNull() == CleMaListe) historique.add(CleProfil) },
                         // « Voir » d'une annonce (décision 96), comme le lien vers la page
                         // des badges sur le site : le Profil est mis dessous, pour que
@@ -160,7 +160,11 @@ private fun NavigationPrincipale() {
                     )
                 }
                 is CleParametres -> NavEntry(cle) {
-                    EcranParametres(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })
+                    EcranParametres(
+                        onRetour = { if (historique.size > 1) historique.removeLastOrNull() },
+                        // Pas deux fois « À propos » dans l'historique (appui rapide).
+                        onAPropos = { if (historique.lastOrNull() == CleParametres) historique.add(CleAPropos) },
+                    )
                 }
                 is CleBadges -> NavEntry(cle) {
                     EcranBadges(onRetour = { if (historique.size > 1) historique.removeLastOrNull() })

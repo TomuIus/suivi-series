@@ -122,6 +122,12 @@ fun BarreProgression(pourcentage: Int, modifier: Modifier = Modifier) {
             modifier = Modifier.weight(1f),
             color = if (pourcentage == 100) LocalCouleurSucces.current else MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.outlineVariant,
+            // Ni espace entre la partie remplie et le fond, ni point au bout du
+            // fond : Material 3 les dessine par défaut, le point de la couleur
+            // de la barre, ce qui faisait une tache rose près de 100 %
+            // (remarque du 24/11/2026). La barre ressemble ainsi à celle du site.
+            gapSize = 0.dp,
+            drawStopIndicator = {},
         )
         // Espace insécable ( ) avant « % », comme en français sur le site.
         Text("$pourcentage %", style = MaterialTheme.typography.labelMedium)

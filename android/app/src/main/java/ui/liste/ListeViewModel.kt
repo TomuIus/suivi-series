@@ -135,6 +135,12 @@ class ListeViewModel(
     private val titresEnCours = mutableSetOf<CleSaison>()
     private val limiteTitres = Semaphore(TITRES_SIMULTANES)
 
+    // Vrai pendant une actualisation par glissement vers le bas (« Actualiser »,
+    // décision 104) : l'indicateur de Material 3 tourne en haut de la liste,
+    // qui reste affichée.
+    private val _actualisation = MutableStateFlow(false)
+    val actualisation: StateFlow<Boolean> = _actualisation.asStateFlow()
+
     // Numéro de la dernière lecture de la liste : si deux lectures se croisent
     // (deux « Vu » rapprochés), seule la plus récente est affichée (comme
     // numeroChargement sur le site).
@@ -180,21 +186,8 @@ class ListeViewModel(
         charger()
     }
 
-    /**
-     * (Re)charge la liste depuis la base, avec l'indicateur d'attente.
-     * [oublierTitres] : redemander aussi les titres des épisodes (« Actualiser »).
-     */
-    fun charger(oublierTitres: Boolean = false) {
-        if (oublierTitres) {
-            depotTmdb.oublierTitres()
-            _titres.value = emptyMap()
-            // « Actualiser » vaut un rechargement de la page du site : l'entretien
-            // pourra se refaire (sauf si une mise à jour est encore en cours).
-            if (miseAJour?.isActive != true) {
-                nettoyageLance = false
-                miseAJourLancee = false
-            }
-        }
+    /** (Re)charge la liste depuis la base, avec l'indicateur d'attente (ouverture, « Réessayer »). */
+    fun charger() {
         _etat.value = EtatListe.Chargement
         viewModelScope.launch {
             try {
@@ -205,6 +198,41 @@ class ListeViewModel(
                 // Une autre lecture a pu réussir entre-temps : on ne remplace
                 // pas une liste affichée par l'erreur.
                 if (_etat.value is EtatListe.Chargement) _etat.value = EtatListe.Erreur(messageErreur(e))
+            }
+        }
+    }
+
+    /**
+     * « Actualiser » : liste tirée vers le bas quand on est tout en haut
+     * (décision 104, à la place de l'entrée du menu). Vaut un rechargement de
+     * la page du site : liste et niveau relus, titres des épisodes redemandés,
+     * entretien du catalogue refait (sauf si une mise à jour est encore en
+     * cours). Contrairement à l'ancien « Actualiser » du menu, la liste reste
+     * affichée pendant la lecture (choix de Claude, à revoir après des tests) :
+     * en cas d'échec, elle reste telle quelle avec « Liste non actualisée : … » ;
+     * sans liste (erreur affichée), l'erreur est remplacée par la nouvelle.
+     */
+    fun actualiser() {
+        if (_actualisation.value || _etat.value is EtatListe.Chargement) return
+        depotTmdb.oublierTitres()
+        if (miseAJour?.isActive != true) {
+            nettoyageLance = false
+            miseAJourLancee = false
+        }
+        _actualisation.value = true
+        viewModelScope.launch {
+            try {
+                relire(redemanderTitres = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (_etat.value is EtatListe.Pret) {
+                    _messages.send(Message("Liste non actualisée : ${messageErreur(e)}"))
+                } else {
+                    _etat.value = EtatListe.Erreur(messageErreur(e))
+                }
+            } finally {
+                _actualisation.value = false
             }
         }
     }
@@ -359,26 +387,14 @@ class ListeViewModel(
         viewModelScope.launch { _messages.send(Message(texte)) }
     }
 
-    /** Déconnexion : l'appli revient d'elle-même à l'écran de connexion. */
-    fun seDeconnecter() {
-        viewModelScope.launch {
-            try {
-                depotCompte.seDeconnecter()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _messages.send(Message(messageErreur(e)))
-            }
-        }
-    }
-
     // Lit la liste et l'affiche (si aucune lecture plus récente n'a été
     // lancée entre-temps), puis demande les titres qui manquent et lance
     // l'entretien du catalogue. La progression (niveau de l'en-tête) est lue
     // en même temps, comme chargerListe sur le site ; si elle échoue, la
     // liste s'affiche quand même et l'ancienne progression reste. Une erreur
-    // de la liste remonte à l'appelant.
-    private suspend fun relire(): Unit = coroutineScope {
+    // de la liste remonte à l'appelant. [redemanderTitres] : redemander aussi
+    // les titres déjà connus (« Actualiser »).
+    private suspend fun relire(redemanderTitres: Boolean = false): Unit = coroutineScope {
         val numero = ++numeroLecture
         val version = depotListe.version.value // relevée AVANT la lecture
         val progression = async {
@@ -397,7 +413,7 @@ class ListeViewModel(
         versionLue = version
         _etat.value = EtatListe.Pret(series.size, series)
         if (prog != null) _progression.value = prog
-        chargerTitres(series)
+        chargerTitres(series, redemanderTitres)
         entretenirCatalogue(series)
         if (prog != null) annoncerNouveautes(prog)
     }
@@ -488,12 +504,14 @@ class ListeViewModel(
     // la saison de son prochain épisode si on ne l'a pas déjà, 4 à la fois au
     // plus. En cas d'échec, rien n'est affiché et on réessaiera au prochain
     // chargement de la liste. Après « Vu », le prochain épisode est souvent
-    // dans la même saison : son titre est alors déjà connu.
-    private fun chargerTitres(series: List<SerieSuivie>) {
+    // dans la même saison : son titre est alors déjà connu. [redemander]
+    // (« Actualiser ») : les saisons déjà connues sont aussi redemandées ;
+    // les anciens titres restent affichés jusqu'à la réponse (et si elle échoue).
+    private fun chargerTitres(series: List<SerieSuivie>, redemander: Boolean = false) {
         for (s in series) {
             if (!peutCocher(s)) continue
             val cle = CleSaison(s.tmdbId, s.prochaineSaison ?: continue)
-            if (cle in _titres.value || !titresEnCours.add(cle)) continue // déjà connue ou en cours
+            if ((!redemander && cle in _titres.value) || !titresEnCours.add(cle)) continue // déjà connue ou en cours
             viewModelScope.launch {
                 try {
                     val episodes = limiteTitres.withPermit { depotTmdb.episodesSaison(cle.tmdbId, cle.saison) }

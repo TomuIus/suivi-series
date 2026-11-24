@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,12 +39,13 @@ import androidx.compose.ui.unit.dp
 import io.github.tomuius.canapilou.R
 
 // Écran « À propos » (décision 63) : version de l'appli, mention obligatoire
-// de TMDB, licence et liens. La FAQ de TMDB demande que la mention soit dans
-// une section « À propos » ou « Crédits » de l'appli, avec un logo TMDB moins
-// visible que celui de l'appli.
+// de TMDB et licence. La FAQ de TMDB demande que la mention soit dans une
+// section « À propos » ou « Crédits » de l'appli, avec un logo TMDB moins
+// visible que celui de l'appli. Ouvert depuis le bas de la page Paramètres
+// (décision 103) ; liens vers le site et vers le code source retirés à la
+// demande de l'utilisateur (24/11/2026), à remettre si l'appli était un jour
+// proposée au public.
 
-private const val ADRESSE_SITE = "https://tomuius.github.io/suivi-series/"
-private const val ADRESSE_DEPOT = "https://github.com/TomuIus/suivi-series"
 private const val ADRESSE_TMDB = "https://www.themoviedb.org/"
 
 // Phrase exacte demandée par la FAQ de TMDB (à ne pas modifier), puis sa
@@ -79,7 +79,6 @@ fun EcranAPropos(onRetour: () -> Unit) {
             )
             Text("Version $version", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Suivez les séries et les animés que vous regardez, avec le même compte que sur le site.")
-            TextButton(onClick = { liens.openUri(ADRESSE_SITE) }) { Text("Ouvrir le site Canapilou") }
 
             HorizontalDivider()
             Text("Données des séries", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -104,9 +103,8 @@ fun EcranAPropos(onRetour: () -> Unit) {
             )
 
             HorizontalDivider()
-            Text("Code source", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Licence", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text("Logiciel libre, sous licence GNU AGPL-3.0.")
-            TextButton(onClick = { liens.openUri(ADRESSE_DEPOT) }) { Text("Voir le code source sur GitHub") }
         }
     }
 }

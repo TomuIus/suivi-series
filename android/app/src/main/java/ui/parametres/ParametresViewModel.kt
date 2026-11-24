@@ -361,6 +361,34 @@ class ParametresViewModel(
     }
 
     /** « Enregistrer » : comme enregistrerNom sur le site. */
+    // --- Déconnexion (décision 104 : déplacée ici depuis le menu de « Ma liste ») ---
+
+    private val _deconnexion = MutableStateFlow(false)
+    /** Vrai pendant la déconnexion (bouton grisé, « Déconnexion… »). */
+    val deconnexion: StateFlow<Boolean> = _deconnexion.asStateFlow()
+
+    /**
+     * « Se déconnecter » : une fois la session fermée, l'appli revient d'elle-même
+     * à l'écran de connexion (AppCanapilou suit l'état de la connexion). En cas
+     * d'échec, message en bas de l'écran. Refusée pendant une copie ou un
+     * import, qui seraient coupés en route (le bouton est alors grisé).
+     */
+    fun seDeconnecter() {
+        if (_deconnexion.value || importBloquant) return
+        _deconnexion.value = true
+        viewModelScope.launch {
+            try {
+                depotCompte.seDeconnecter()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _messages.send(messageErreur(e))
+            } finally {
+                _deconnexion.value = false
+            }
+        }
+    }
+
     fun enregistrerNom() {
         if (_enregistrement.value) return
         val nom = nomSaisi.trim()
