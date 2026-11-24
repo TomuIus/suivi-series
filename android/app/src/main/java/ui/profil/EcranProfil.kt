@@ -1,5 +1,6 @@
 package io.github.tomuius.canapilou.ui.profil
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -35,11 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
 import io.github.tomuius.canapilou.Conteneur
 import io.github.tomuius.canapilou.R
 import io.github.tomuius.canapilou.donnees.Progression
-import io.github.tomuius.canapilou.donnees.URL_TILOU_POPCORN
 import io.github.tomuius.canapilou.ui.commun.BarreSimple
 
 // Écran « Profil » (décisions 81 et 82), partie A, comme la page « profil »
@@ -90,10 +89,12 @@ fun EcranProfil(
                                 is EtatProgression.Prete -> Niveau(e.progression)
                             }
                         }
-                        // 56 × 112 dp comme les 56 × 112 pixels du site ; chargée
-                        // depuis le site (décision 80). Décorative.
-                        AsyncImage(
-                            model = URL_TILOU_POPCORN,
+                        // 56 × 112 dp comme les 56 × 112 pixels du site. Image
+                        // intégrée à l'appli, comme celles de l'en-tête, de la
+                        // connexion et de la liste vide (décisions 106 et 107 ;
+                        // avant : chargée depuis le site). Décorative.
+                        Image(
+                            painter = painterResource(R.drawable.tilou_popcorn),
                             contentDescription = null,
                             modifier = Modifier.size(width = 56.dp, height = 112.dp),
                         )
