@@ -1,0 +1,7 @@
+{
+  "rangs": {
+    "2": { "nom": "Fan du dimanche", "niveau": 3, "source": "sources/rang-2-fan-du-dimanche.png" },
+    "3": { "nom": "Adepte du plaid", "niveau": 5, "source": "sources/rang-3-adepte-du-plaid.png" },
+    "5": { "nom": "As de la télécommande", "niveau": 12, "source": "sources/rang-5-as-de-la-telecommande.png" }
+  }
+}

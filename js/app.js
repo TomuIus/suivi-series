@@ -34,7 +34,7 @@ import { chercherDansListe, autresResultats } from './recherche.js';
 import { utiliserFiche } from './fiche.js';
 import {
   badgesObtenus, pageBadges, compteBadges, libellePalier, texteAvancement, pourcentageNiveau,
-  nouveautes, texteAnnonce, lireMemoire, enregistrerMemoire,
+  nouveautes, texteAnnonce, lireMemoire, enregistrerMemoire, imageRang,
 } from './badges.js';
 
 // Réglages de la recherche
@@ -242,6 +242,10 @@ createApp({
         niveauRangSuivant: p.niveau_rang_suivant,
       };
     });
+
+    // Profil : Tilou du rang (décisions 108 à 114), Tilou au pop-corn tant
+    // que la progression n'est pas lue ou si le rang n'a pas encore d'image.
+    const imageProfil = computed(() => imageRang(maProgression.value?.rang_numero));
 
     // Profil : seulement les badges obtenus, le palier le plus haut de chaque
     // famille (décision 43). Page « Tous les badges » : une tuile par famille
@@ -1198,7 +1202,7 @@ createApp({
       libelleStatut, libelleDiffusion, perteEpisodes, statutsManuels, valeurStatutManuel,
       filtres: FILTRES, filtre, comptes, listeFiltree,
       nomSaisi, enregistrementNom, nomAffiche, enregistrerNom, retourProfil,
-      filtreStats, statistiques, nombre, niveau,
+      filtreStats, statistiques, nombre, niveau, imageProfil,
       maProgression, badgesProfil, badgesPage, nombreBadges, annonce, libellePalier, texteAvancement,
       themes: THEMES, choixTheme, changerTheme,
       longueurMaxNom: LONGUEUR_MAX_NOM,

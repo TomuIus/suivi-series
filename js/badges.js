@@ -126,6 +126,19 @@ export function pourcentageNiveau(p) {
   return Math.min(100, Math.max(0, Math.floor((100 * (p.points - p.points_niveau)) / etendue)));
 }
 
+// --- Tilou du rang, sur le Profil (décisions 108 à 114) ---
+// Rangs qui ont déjà leur image (img/rangs/rang-N.png, N = rang_numero de la
+// vue ma_progression, de 1 à 11). Les autres gardent Tilou au pop-corn en
+// attendant la leur (décision 113). À compléter à chaque nouvelle image
+// (marche à suivre : outils/rangs/README.md), avec la même liste dans l'appli
+// (imageRang dans android/.../ui/profil/EcranProfil.kt).
+const RANGS_AVEC_IMAGE = [2, 3, 5];
+export const IMAGE_SANS_RANG = 'img/tilou-popcorn.png';
+
+export function imageRang(numero) {
+  return RANGS_AVEC_IMAGE.includes(numero) ? `img/rangs/rang-${numero}.png` : IMAGE_SANS_RANG;
+}
+
 // --- Annonces des nouveaux badges et rangs (décision 43, option 2) ---
 // Ce qui a déjà été annoncé est retenu dans le stockage local du navigateur
 // (propre à chaque appareil), sous une clé propre à chaque compte.

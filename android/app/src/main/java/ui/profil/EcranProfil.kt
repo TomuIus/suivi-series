@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -76,7 +78,8 @@ fun EcranProfil(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Nom et niveau à gauche, Tilou au pop-corn à droite (décision 39).
+                    // Nom et niveau à gauche, Tilou à droite : le Tilou du rang
+                    // (décisions 108 à 114), sinon Tilou au pop-corn (décision 39).
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -89,14 +92,16 @@ fun EcranProfil(
                                 is EtatProgression.Prete -> Niveau(e.progression)
                             }
                         }
-                        // 56 × 112 dp comme les 56 × 112 pixels du site. Image
-                        // intégrée à l'appli, comme celles de l'en-tête, de la
-                        // connexion et de la liste vide (décisions 106 et 107 ;
-                        // avant : chargée depuis le site). Décorative.
+                        // 112 dp de haut comme les 112 pixels du site, largeur
+                        // selon l'image (de 51 à 68 dp pour les images faites).
+                        // Images intégrées à l'appli (décision 114). Décorative.
+                        val image = painterResource(imageRang((etat as? EtatProgression.Prete)?.progression?.rangNumero))
                         Image(
-                            painter = painterResource(R.drawable.tilou_popcorn),
+                            painter = image,
                             contentDescription = null,
-                            modifier = Modifier.size(width = 56.dp, height = 112.dp),
+                            modifier = Modifier
+                                .height(112.dp)
+                                .aspectRatio(image.intrinsicSize.width / image.intrinsicSize.height),
                         )
                     }
                     (etat as? EtatProgression.Prete)?.let { BadgesObtenus(it.progression, onTousLesBadges) }
@@ -198,4 +203,17 @@ private fun BadgesObtenus(p: Progression, onTousLesBadges: () -> Unit) {
             Text("Voir tous les badges")
         }
     }
+}
+
+// Tilou du rang, sur le Profil (décisions 108 à 114) : rangs qui ont déjà leur
+// image (rang_numero de la vue ma_progression, de 1 à 11). Les autres, et le
+// Profil tant que la progression n'est pas lue, gardent Tilou au pop-corn en
+// attendant (décision 113). À compléter à chaque nouvelle image (marche à
+// suivre : outils/rangs/README.md), avec la même liste sur le site
+// (RANGS_AVEC_IMAGE dans js/badges.js).
+private fun imageRang(numero: Int?): Int = when (numero) {
+    2 -> R.drawable.tilou_rang_2 // Fan du dimanche
+    3 -> R.drawable.tilou_rang_3 // Adepte du plaid
+    5 -> R.drawable.tilou_rang_5 // As de la télécommande
+    else -> R.drawable.tilou_popcorn
 }
