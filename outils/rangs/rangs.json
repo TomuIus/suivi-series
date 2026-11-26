@@ -1,7 +1,9 @@
 {
   "rangs": {
+    "1": { "nom": "Touriste du salon", "niveau": 1, "source": "sources/rang-1-touriste-du-salon.png" },
     "2": { "nom": "Fan du dimanche", "niveau": 3, "source": "sources/rang-2-fan-du-dimanche.png" },
     "3": { "nom": "Adepte du plaid", "niveau": 5, "source": "sources/rang-3-adepte-du-plaid.png" },
+    "4": { "nom": "Fidèle des coussins", "niveau": 8, "source": "sources/rang-4-fidele-des-coussins.png" },
     "5": { "nom": "As de la télécommande", "niveau": 12, "source": "sources/rang-5-as-de-la-telecommande.png" }
   }
 }

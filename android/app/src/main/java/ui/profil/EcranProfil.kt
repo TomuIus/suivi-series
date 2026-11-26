@@ -212,8 +212,10 @@ private fun BadgesObtenus(p: Progression, onTousLesBadges: () -> Unit) {
 // suivre : outils/rangs/README.md), avec la même liste sur le site
 // (RANGS_AVEC_IMAGE dans js/badges.js).
 private fun imageRang(numero: Int?): Int = when (numero) {
+    1 -> R.drawable.tilou_rang_1 // Touriste du salon
     2 -> R.drawable.tilou_rang_2 // Fan du dimanche
     3 -> R.drawable.tilou_rang_3 // Adepte du plaid
+    4 -> R.drawable.tilou_rang_4 // Fidèle des coussins
     5 -> R.drawable.tilou_rang_5 // As de la télécommande
     else -> R.drawable.tilou_popcorn
 }

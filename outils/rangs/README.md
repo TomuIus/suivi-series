@@ -33,10 +33,10 @@ Les commandes se lancent depuis la racine du dépôt.
 
    | N | Niveau | Rang | Élément |
    |---|---|---|---|
-   | 1 | 1 | Touriste du salon | appareil photo autour du cou, l'air curieux et émerveillé |
+   | 1 | 1 | Touriste du salon | appareil photo autour du cou, l'air curieux et émerveillé (fait) |
    | 2 | 3 | Fan du dimanche | pyjama à rayures, chaussons moelleux, mug fumant (fait) |
    | 3 | 5 | Adepte du plaid | enroulé dans un plaid douillet (fait) |
-   | 4 | 8 | Fidèle des coussins | serre un gros coussin dans ses bras |
+   | 4 | 8 | Fidèle des coussins | serre un gros coussin moelleux dans ses bras, l'air câlin (fait) |
    | 5 | 12 | As de la télécommande | brandit une télécommande, l'air malin (fait) |
    | 6 | 17 | Sentinelle du pop-corn | garde un seau de pop-corn géant |
    | 7 | 25 | Pro du marathon | bandeau de sport et dossard |
@@ -62,6 +62,8 @@ Les commandes se lancent depuis la racine du dépôt.
    ```
 
    L'outil recadre Tilou au plus près, le met à 336 pixels de haut (3 pixels par point pour les 112 points du Profil ; largeur selon l'image) et le réduit à 256 couleurs sans tramage. Il écrit la même image pour le site et pour l'appli.
+
+   Ne fabriquer que les nouveaux rangs (en donnant leur numéro) : refabriquer une image existante donne les mêmes pixels, mais un fichier légèrement différent, que Git verrait comme modifié.
 
 5. **Vérifier** avec `python outils/rangs/rangs.py apercu` (planche en clair et en sombre, taille du Profil agrandie deux fois).
 

@@ -132,7 +132,7 @@ export function pourcentageNiveau(p) {
 // attendant la leur (décision 113). À compléter à chaque nouvelle image
 // (marche à suivre : outils/rangs/README.md), avec la même liste dans l'appli
 // (imageRang dans android/.../ui/profil/EcranProfil.kt).
-const RANGS_AVEC_IMAGE = [2, 3, 5];
+const RANGS_AVEC_IMAGE = [1, 2, 3, 4, 5];
 export const IMAGE_SANS_RANG = 'img/tilou-popcorn.png';
 
 export function imageRang(numero) {
