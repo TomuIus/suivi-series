@@ -78,6 +78,7 @@ import io.github.tomuius.canapilou.donnees.SerieSuivie
 import io.github.tomuius.canapilou.ui.commun.AfficheSerie
 import io.github.tomuius.canapilou.ui.commun.BarreProgression
 import io.github.tomuius.canapilou.ui.commun.BarreSimple
+import io.github.tomuius.canapilou.ui.commun.MotCanapilou
 import io.github.tomuius.canapilou.ui.commun.RangeeChoix
 import io.github.tomuius.canapilou.ui.commun.DUREE_ANNULATION
 import io.github.tomuius.canapilou.ui.commun.DUREE_MESSAGE
@@ -511,9 +512,9 @@ private fun CarteResultat(
     ) { contenu() }
 }
 
-// Haut de l'écran : Tilou au pop-corn et le nom de l'appli, comme le logo du
-// site (décision 106), puis votre nom et votre niveau (un appui ouvre le
-// Profil, décision 82). Plus de menu « ⋮ » (décisions 103 et
+// Haut de l'écran : Tilou au pop-corn et le mot « Canapilou » en deux
+// couleurs, comme le logo du site (décisions 106 et 120), puis votre nom et
+// votre niveau (un appui ouvre le Profil, décision 82). Plus de menu « ⋮ » (décisions 103 et
 // 104) : « Actualiser » se fait en tirant la liste vers le bas, « À propos » et
 // « Se déconnecter » sont dans les Paramètres.
 @Composable
@@ -543,12 +544,8 @@ private fun EnTete(
                     .aspectRatio(PROPORTIONS_LOGO_TILOU),
             )
             Spacer(Modifier.width(8.dp))
-            Text(
-                "Canapilou",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            // Même rapport que sur le site entre le mot (24 px) et Tilou (44 px).
+            MotCanapilou(hauteur = 22.dp)
             // Le reste de la largeur, aligné à droite ; un nom trop long finit par « … ».
             Box(
                 modifier = Modifier

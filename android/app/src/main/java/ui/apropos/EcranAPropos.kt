@@ -38,6 +38,7 @@ import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.tomuius.canapilou.R
+import io.github.tomuius.canapilou.ui.commun.MotCanapilou
 
 // Écran « À propos » (décision 63) : version de l'appli, mention obligatoire
 // de TMDB et licence. La FAQ de TMDB demande que la mention soit dans une
@@ -83,12 +84,9 @@ fun EcranAPropos(onRetour: () -> Unit) {
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        "Canapilou",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    // Le mot « Canapilou » du logo, en deux couleurs (décision 120) ;
+                    // 28 dp de haut : choix de Claude, à revoir après des tests.
+                    MotCanapilou(hauteur = 28.dp)
                     Text("Version $version", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Suivez les séries et les animés que vous regardez, avec le même compte que sur le site.")
                 }

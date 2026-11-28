@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.tomuius.canapilou.Conteneur
 import io.github.tomuius.canapilou.R
+import io.github.tomuius.canapilou.ui.commun.MotCanapilou
 
 // Proportions de l'image de Tilou sur son canapé (320 × 295 pixels, celle du site).
 private const val PROPORTIONS_CANAPE = 320f / 295f
@@ -62,12 +62,9 @@ fun EcranConnexion(
                     .width(160.dp)
                     .aspectRatio(PROPORTIONS_CANAPE),
             )
-            Text(
-                "Canapilou",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            // Le mot « Canapilou » du logo, en deux couleurs (décision 120) ;
+            // 32 dp de haut : choix de Claude, à revoir après des tests.
+            MotCanapilou(hauteur = 32.dp)
             Text(
                 "Connectez-vous avec votre compte du site.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
